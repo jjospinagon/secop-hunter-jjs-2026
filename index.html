@@ -40,6 +40,68 @@
     --radius-lg:14px;
     --radius-sm:6px;
   }
+  /* ===== TEMA CLARO ===== */
+  html[data-theme="light"]{
+    --bg:#f1f5f9;
+    --bg-2:#e2e8f0;
+    --panel:rgba(255,255,255,0.75);
+    --panel-solid:#ffffff;
+    --panel2:#f1f5f9;
+    --txt:#1e293b;
+    --txt-bright:#0f172a;
+    --muted:#64748b;
+    --muted-2:#94a3b8;
+    --acc:#0284c7;
+    --acc-bright:#0369a1;
+    --acc2:#0ea5e9;
+    --acc-glow:rgba(2,132,199,0.18);
+    --ok:#059669;
+    --ok-bright:#047857;
+    --warn:#d97706;
+    --err:#dc2626;
+    --err-bright:#b91c1c;
+    --border:rgba(203,213,225,0.8);
+    --border-bright:rgba(148,163,184,0.6);
+    --gradient-bg:linear-gradient(180deg,#f8fafc 0%,#e2e8f0 100%);
+    --shadow-sm:0 2px 4px rgba(15,23,42,0.06);
+    --shadow:0 4px 16px rgba(15,23,42,0.1);
+    --shadow-lg:0 12px 40px rgba(15,23,42,0.15);
+  }
+  html[data-theme="light"] body::before{
+    background:radial-gradient(circle at 20% 0%,rgba(14,165,233,0.06) 0%,transparent 50%),radial-gradient(circle at 80% 100%,rgba(16,185,129,0.05) 0%,transparent 50%);
+  }
+  html[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(100,116,139,0.3)}
+  html[data-theme="light"] *::-webkit-scrollbar-thumb:hover{background:rgba(100,116,139,0.5)}
+  html[data-theme="light"] header{background:linear-gradient(135deg,rgba(255,255,255,0.95),rgba(241,245,249,0.95));border-bottom-color:rgba(203,213,225,0.6)}
+  html[data-theme="light"] header h1{color:#0f172a}
+  html[data-theme="light"] header h1 small{color:#64748b}
+  html[data-theme="light"] .badge{background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);color:#0369a1}
+  html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{background:rgba(255,255,255,0.9);color:#1e293b}
+  html[data-theme="light"] input::placeholder{color:#94a3b8}
+  html[data-theme="light"] .table-wrap{background:rgba(255,255,255,0.6)}
+  html[data-theme="light"] th{background:linear-gradient(180deg,#0284c7,#0369a1);color:#fff}
+  html[data-theme="light"] tbody tr:nth-child(even) td{background:rgba(241,245,249,0.6)}
+  html[data-theme="light"] tbody tr:hover td{background:rgba(14,165,233,0.08) !important}
+  html[data-theme="light"] td.money{color:#16a34a}
+  html[data-theme="light"] .modal{background:linear-gradient(180deg,#ffffff,#f8fafc)}
+  html[data-theme="light"] .modal-tabs{background:rgba(241,245,249,0.6)}
+  html[data-theme="light"] .modal-tab.active{background:linear-gradient(180deg,transparent,rgba(14,165,233,0.06))}
+  html[data-theme="light"] .req-card{background:linear-gradient(180deg,rgba(255,255,255,0.9),rgba(248,250,252,0.7))}
+  html[data-theme="light"] .req-table{background:rgba(248,250,252,0.6)}
+  html[data-theme="light"] .req-table tr:hover td{background:rgba(14,165,233,0.05)}
+  html[data-theme="light"] .doc-list li{background:linear-gradient(180deg,rgba(255,255,255,0.9),rgba(248,250,252,0.7))}
+  html[data-theme="light"] .ai-panel{background:linear-gradient(135deg,rgba(186,230,253,0.5),rgba(165,243,252,0.3));border-color:rgba(14,165,233,0.4)}
+  html[data-theme="light"] .ai-panel .ai-title{color:#0369a1}
+  html[data-theme="light"] .ai-panel .hint{color:#475569}
+  html[data-theme="light"] .pdf-drop{background:linear-gradient(135deg,rgba(255,255,255,0.7),rgba(248,250,252,0.5));color:#475569}
+  html[data-theme="light"] #pdfLoadedInfo{background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.04))}
+  html[data-theme="light"] #pdfLoadedInfo .info .name{color:#1e293b}
+  html[data-theme="light"] #loginGate{background:linear-gradient(180deg,#f8fafc 0%,#e2e8f0 100%)}
+  html[data-theme="light"] #loginGate .box{background:linear-gradient(180deg,#ffffff,#f8fafc)}
+  html[data-theme="light"] #loginGate h2{color:#0f172a}
+  html[data-theme="light"] #loginGate input{background:rgba(255,255,255,0.9)}
+  html[data-theme="light"] .btn-mini-det{background:linear-gradient(135deg,rgba(186,230,253,0.7),rgba(125,211,252,0.5));color:#0369a1;border-color:rgba(14,165,233,0.5)}
+  html[data-theme="light"] .modal-close{background:rgba(241,245,249,0.8);color:#64748b}
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100vh;font-family:'Inter','Segoe UI',Roboto,system-ui,sans-serif;background:var(--gradient-bg);color:var(--txt);-webkit-font-smoothing:antialiased;letter-spacing:-0.01em}
   body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 0%,rgba(56,189,248,0.06) 0%,transparent 50%),radial-gradient(circle at 80% 100%,rgba(16,185,129,0.05) 0%,transparent 50%);pointer-events:none;z-index:0}
@@ -474,6 +536,13 @@
     .truncate{max-width:120px}
     table{font-size:11px;min-width:720px}
   }
+
+  /* Theme toggle button */
+  .theme-toggle{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px;cursor:pointer;color:#fff;width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;backdrop-filter:blur(10px)}
+  .theme-toggle:hover{background:rgba(255,255,255,0.2);transform:rotate(15deg) scale(1.05)}
+  .theme-toggle svg{transition:transform 0.3s}
+  html[data-theme="light"] .theme-toggle{background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);color:#0369a1}
+  html[data-theme="light"] .theme-toggle:hover{background:rgba(14,165,233,0.2)}
 </style>
 </head>
 <body>
@@ -497,7 +566,14 @@
     <div class="logo">S</div>
     <h1>SECOP II Hunter <small>Plataforma de busqueda y analisis con IA</small></h1>
   </div>
-  <span class="badge">v3.1 &middot; Powered by Groq AI</span>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button id="themeToggle" class="theme-toggle" title="Cambiar tema dia/noche" aria-label="Cambiar tema">
+      <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+    </button>
+    <span class="badge">v3.2 &middot; Powered by Groq AI</span>
+  </div>
 </header>
 
 <main>
@@ -2564,6 +2640,61 @@ const _form = $('form'); if(_form) _form.addEventListener('keydown', (e)=>{
   console.error('[SECOP] Error en wiring de botones:', __wireErr);
   alert('Error inicializando la app. Abre DevTools (F12) para detalle.');
 }
+
+/* ============ THEME TOGGLE (dia/noche) ============ */
+(function(){
+  const SAVED_KEY = 'theme_preference';
+  const ICON_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  const ICON_SUN = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+
+  function applyTheme(theme){
+    if(theme === 'light'){
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    const icon = document.getElementById('themeIcon');
+    if(icon){ icon.innerHTML = theme === 'light' ? ICON_MOON : ICON_SUN; }
+  }
+
+  function getInitialTheme(){
+    const saved = localStorage.getItem(SAVED_KEY);
+    if(saved === 'light' || saved === 'dark') return saved;
+    // Detectar preferencia del sistema
+    if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+    return 'dark';
+  }
+
+  function init(){
+    const theme = getInitialTheme();
+    applyTheme(theme);
+    const btn = document.getElementById('themeToggle');
+    if(btn){
+      btn.onclick = ()=>{
+        const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        const next = current === 'light' ? 'dark' : 'light';
+        localStorage.setItem(SAVED_KEY, next);
+        applyTheme(next);
+      };
+    }
+  }
+  // Aplicar tema antes que se vea el flash, ANTES de DOMContentLoaded
+  const earlyTheme = (function(){
+    try{
+      const s = localStorage.getItem(SAVED_KEY);
+      if(s === 'light' || s === 'dark') return s;
+    }catch(e){}
+    return null;
+  })();
+  if(earlyTheme === 'light') document.documentElement.setAttribute('data-theme','light');
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
 </script>
 </body>
 </html>
