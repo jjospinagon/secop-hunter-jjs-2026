@@ -946,23 +946,38 @@ function renderRequisitos(r){
   const idProc = r.id_del_proceso || r.id_del_portafolio || r.proceso_de_compra || r.referencia_del_proceso || '_';
   const cached = loadPliegoCache(idProc);
   const cont = document.getElementById('mdRequisitos');
-  const aiKey = localStorage.getItem('gemini_api_key') || '';
-  const aiOk = aiKey ? '<span class="ai-saved">CONFIGURADO</span>' : '';
-  cont.innerHTML =
-    '<div class="ai-panel">'+
-      '<div class="ai-title">Analisis con IA (Google Gemini) '+aiOk+'</div>'+
-      '<input type="password" id="aiKeyInput" placeholder="Pega aqui tu API key de Google Gemini" value="'+esc(aiKey)+'" autocomplete="off" />'+
+  const useEmbedded = !!EMBEDDED_GEMINI_KEY;
+  const aiKey = EMBEDDED_GEMINI_KEY || localStorage.getItem('gemini_api_key') || '';
+  const aiOk = aiKey ? '<span class="ai-saved">'+(useEmbedded?'INTEGRADA':'CONFIGURADA')+'</span>' : '';
+
+  let aiPanelHtml = '<div class="ai-panel">';
+  aiPanelHtml += '<div class="ai-title">Analisis con IA (Google Gemini) '+aiOk+'</div>';
+  if(useEmbedded){
+    // Key integrada, no mostrar inputs
+    aiPanelHtml +=
+      '<div class="ai-actions">'+
+        '<button class="btn-success" id="btnAiAnalyze">Analizar PDF con IA</button>'+
+      '</div>'+
+      '<div class="hint">La IA esta integrada en la app. Funciona en cualquier dispositivo. '+
+      'Carga el pliego abajo (arrastrar PDF, o tab Documentos > Analizar) y luego pulsa el boton.</div>';
+  } else {
+    // Sin key embebida, mostrar config
+    aiPanelHtml +=
+      '<input type="password" id="aiKeyInput" placeholder="Pega aqui tu API key de Google Gemini" value="'+esc(localStorage.getItem('gemini_api_key')||'')+'" autocomplete="off" />'+
       '<div class="ai-actions">'+
         '<button class="btn-primary" id="btnSaveKey">Guardar key</button>'+
         '<button class="btn-success" id="btnAiAnalyze" '+(aiKey?'':'disabled')+'>Analizar PDF con IA</button>'+
         '<button class="btn-secondary" id="btnAiClear">Borrar key</button>'+
       '</div>'+
       '<div class="hint">'+
-        'La IA analiza el PDF cargado abajo y extrae requisitos con precision real. '+
         '<b>Obten tu API key gratis</b> en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. '+
-        'Gemini Flash tiene 1500 analisis/dia gratis. La key se guarda solo en tu navegador.'+
-      '</div>'+
-    '</div>'+
+        'Gemini 1.5 Flash tiene 1500 analisis/dia gratis. La key se guarda solo en tu navegador.'+
+      '</div>';
+  }
+  aiPanelHtml += '</div>';
+
+  cont.innerHTML =
+    aiPanelHtml+
     '<div class="auto-try">'+
       '<button class="btn-secondary" id="btnAutoFetch">Intento automatico (descargar pliego)</button>'+
       '<span style="font-size:10px;color:var(--muted)">Usa proxy CORS publico. Si falla, carga el PDF manualmente abajo.</span>'+
@@ -1004,29 +1019,38 @@ function renderRequisitos(r){
 
   document.getElementById('btnAutoFetch').onclick = ()=> tryAutoFetchPdf(r, idProc);
 
-  // Wire IA
-  document.getElementById('btnSaveKey').onclick = ()=>{
+  // Wire IA (defensivo - estos elementos pueden no existir si key embebida)
+  const _bSave = document.getElementById('btnSaveKey');
+  if(_bSave) _bSave.onclick = ()=>{
     const v = document.getElementById('aiKeyInput').value.trim();
     if(!v){ alert('Pega la API key primero'); return; }
     localStorage.setItem('gemini_api_key', v);
     document.getElementById('btnAiAnalyze').disabled = false;
     alert('API key guardada en este navegador.');
   };
-  document.getElementById('btnAiClear').onclick = ()=>{
+  const _bClear = document.getElementById('btnAiClear');
+  if(_bClear) _bClear.onclick = ()=>{
     localStorage.removeItem('gemini_api_key');
     document.getElementById('aiKeyInput').value = '';
     document.getElementById('btnAiAnalyze').disabled = true;
   };
-  document.getElementById('btnAiAnalyze').onclick = ()=> analyzeWithAI(r, idProc);
+  const _bAnalyze = document.getElementById('btnAiAnalyze');
+  if(_bAnalyze) _bAnalyze.onclick = ()=> analyzeWithAI(r, idProc);
 }
 
 /* ============ ANALISIS CON IA (Google Gemini) ============ */
-const GEMINI_MODEL = 'gemini-2.0-flash';  // mas reciente y rapido
+
+/* API key embebida (restringida al dominio jjospinagon.github.io).
+   Si esta vacia, la app pide al usuario que ingrese su propia key.
+   Para embebir tu key: reemplaza la cadena vacia por tu key (debe estar
+   restringida en Google Cloud Console a HTTP referrer del dominio). */
+const EMBEDDED_GEMINI_KEY = 'AQ.Ab8RN6Innh1scUQ65LmIrVV9XyLuQvdIQtdwwTII0EHeObUGkg';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';  // free tier 1500 req/dia, estable
 const GEMINI_URL = (k)=> 'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent?key='+k;
 
 async function analyzeWithAI(r, idProc){
-  const apiKey = localStorage.getItem('gemini_api_key');
-  if(!apiKey){ alert('Configura tu API key de Gemini primero'); return; }
+  const apiKey = EMBEDDED_GEMINI_KEY || localStorage.getItem('gemini_api_key');
+  if(!apiKey){ alert('Configura tu API key de Gemini primero (o pidele al admin que la embeba en el codigo).'); return; }
 
   // Obtener texto del PDF: si hay cache de texto, usarlo; si no, pedir cargar PDF
   let pdfText = '';
@@ -1069,8 +1093,8 @@ async function analyzeWithAI(r, idProc){
 }
 
 async function callGeminiForPliego(pdfText, apiKey, onProgress){
-  // Truncar si es muy largo (Gemini Flash acepta ~1M tokens pero por costos y velocidad limitamos a ~80k chars)
-  const text = pdfText.length > 80000 ? pdfText.substring(0,80000)+'\n\n[...TRUNCADO]' : pdfText;
+  // Truncar a 60k chars para mantenerse seguro en TPM y velocidad
+  const text = pdfText.length > 60000 ? pdfText.substring(0,60000)+'\n\n[...TRUNCADO POR TAMANO]' : pdfText;
   if(onProgress) onProgress('Construyendo prompt para Gemini...', 0.1);
 
   const prompt = `Eres un experto auditor de pliegos de condiciones en contratacion publica colombiana (SECOP II).
@@ -1163,6 +1187,15 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
 
   if(!response.ok){
     const errText = await response.text();
+    if(response.status === 429){
+      throw new Error('Cuota agotada (HTTP 429). Espera 60s y reintenta, o crea una nueva API key. Limite Gemini 1.5 Flash: 1500/dia, 15/min.');
+    }
+    if(response.status === 400 && errText.indexOf('API_KEY_INVALID') >= 0){
+      throw new Error('API key invalida. Verifica que sea de Google AI Studio y este activa.');
+    }
+    if(response.status === 403){
+      throw new Error('Acceso denegado (HTTP 403). La key puede estar restringida a otro dominio. Restringela a *jjospinagon.github.io* o quitale la restriccion en console.cloud.google.com.');
+    }
     throw new Error('HTTP '+response.status+': '+errText.substring(0,300));
   }
   if(onProgress) onProgress('Parseando respuesta...', 0.9);
