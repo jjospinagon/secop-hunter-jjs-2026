@@ -103,7 +103,7 @@
   html[data-theme="light"] .btn-mini-det{background:linear-gradient(135deg,rgba(186,230,253,0.7),rgba(125,211,252,0.5));color:#0369a1;border-color:rgba(14,165,233,0.5)}
   html[data-theme="light"] .modal-close{background:rgba(241,245,249,0.8);color:#64748b}
   *{box-sizing:border-box}
-  html,body{margin:0;min-height:100vh;font-family:'Inter','Segoe UI',Roboto,system-ui,sans-serif;background:var(--gradient-bg);color:var(--txt);-webkit-font-smoothing:antialiased;letter-spacing:-0.01em}
+  html,body{margin:0;padding:0;width:100%;min-height:100vh;font-family:'Inter','Segoe UI',Roboto,system-ui,sans-serif;background:var(--gradient-bg);color:var(--txt);-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;overflow-x:hidden}
   body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 0%,rgba(56,189,248,0.06) 0%,transparent 50%),radial-gradient(circle at 80% 100%,rgba(16,185,129,0.05) 0%,transparent 50%);pointer-events:none;z-index:0}
   main,header{position:relative;z-index:1}
   /* Scrollbar custom global */
@@ -117,7 +117,7 @@
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes scaleIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
   @keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,0.4)}50%{box-shadow:0 0 0 8px rgba(56,189,248,0)}}
-  header{background:linear-gradient(135deg,rgba(12,74,110,0.95) 0%,rgba(14,116,144,0.95) 100%);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.3),inset 0 -1px 0 rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.08)}
+  header{width:100%;box-sizing:border-box;background:linear-gradient(135deg,rgba(12,74,110,0.95) 0%,rgba(14,116,144,0.95) 100%);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.3),inset 0 -1px 0 rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.08)}
   header::before{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--acc-bright),transparent);opacity:0.4}
   header .h-left{display:flex;align-items:center;gap:12px}
   header .logo{width:36px;height:36px;background:linear-gradient(135deg,var(--acc),var(--acc2));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;box-shadow:0 4px 12px rgba(14,165,233,0.4),inset 0 1px 0 rgba(255,255,255,0.2);flex-shrink:0}
@@ -433,63 +433,68 @@
   #pdfLoadedInfo .badge-mini{background:var(--ok);color:#052e16;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase}
   #pdfLoadedInfo .badge-mini.ocr{background:var(--warn);color:#451a03}
 
-  /* ============ VISTA MOVIL V2 - OPTIMIZADA ============ */
+  /* ============ VISTA MOVIL V3 - AMPLIADA ============ */
   @media (max-width:768px){
-    html{font-size:15px}  /* base mas grande */
-    body{font-size:14px}
-    main{padding:8px;gap:8px;grid-template-columns:1fr}
-    header{padding:10px 12px}
-    header h1{font-size:15px}
-    header .badge{font-size:10px}
-    .panel{padding:12px;border-radius:8px}
-    .panel h2{font-size:13px;margin-bottom:10px}
-    .row{grid-template-columns:1fr;gap:8px;margin-bottom:10px}
+    html{font-size:16px}  /* base */
+    body{font-size:15px}
+    main{padding:10px;gap:10px;grid-template-columns:1fr;width:100%;box-sizing:border-box;max-width:100%}
+    header{padding:12px 14px;width:100% !important;box-sizing:border-box;border-radius:0 !important}
+    header .h-left{flex:1;min-width:0}
+    header .logo{width:42px;height:42px;font-size:19px;border-radius:11px}
+    header h1{font-size:16px !important;font-weight:700}
+    header h1 small{font-size:11px;margin-top:3px;display:block}
+    header .badge{font-size:11px;padding:5px 11px}
+    .theme-toggle{width:42px;height:42px;padding:9px}
+    .theme-toggle svg{width:20px;height:20px}
+    .panel{padding:14px;border-radius:10px;width:100%;box-sizing:border-box}
+    .panel h2{font-size:13.5px;margin-bottom:12px}
+    .row{grid-template-columns:1fr;gap:10px;margin-bottom:12px}
     .row.full{grid-template-columns:1fr}
-    label{font-size:11px;margin-bottom:4px}
+    label{font-size:11.5px;margin-bottom:6px;letter-spacing:0.06em}
     /* iOS no hace zoom si fuente >= 16px */
-    input,select,textarea{font-size:16px !important;padding:10px 12px;border-radius:7px;min-height:44px}
-    select[multiple]{min-height:160px}
-    .actions{flex-direction:column;gap:8px;margin-top:12px}
-    .actions button{width:100%;min-height:48px;font-size:14px;padding:12px}
+    input,select,textarea{font-size:16px !important;padding:12px 14px;border-radius:8px;min-height:48px}
+    select[multiple]{min-height:180px;font-size:15px !important}
+    .actions{flex-direction:column;gap:10px;margin-top:14px}
+    .actions button{width:100%;min-height:52px;font-size:15px;padding:14px;font-weight:700;border-radius:9px}
     /* Tabla responsive */
-    .table-wrap{max-height:55vh;border-radius:7px}
-    table{font-size:11.5px;min-width:780px}
-    th{padding:8px 6px;font-size:10.5px}
-    td{padding:7px 6px}
-    .truncate{max-width:150px}
-    td.url a{padding:4px 6px;display:inline-block}
-    .btn-mini-det{padding:5px 8px;font-size:11px;min-height:30px}
+    .table-wrap{max-height:60vh;border-radius:10px}
+    table{font-size:13px;min-width:880px}
+    th{padding:10px 8px;font-size:11.5px}
+    td{padding:9px 8px}
+    .truncate{max-width:170px}
+    td.url a{padding:5px 9px;display:inline-block;font-size:11.5px;margin-bottom:3px}
+    .btn-mini-det,.btn-mini-share{padding:6px 10px;font-size:12px;min-height:34px;margin:2px 3px 2px 0}
     /* MODAL FULLSCREEN MOVIL */
     .modal-backdrop{padding:0;align-items:stretch;background:var(--panel)}
     .modal{width:100%;max-width:100%;max-height:100vh;height:100vh;border-radius:0;border:0;display:flex;flex-direction:column}
-    .modal-head{padding:11px 14px;position:sticky;top:0;background:var(--panel);z-index:5;border-bottom:1px solid var(--border)}
-    .modal-head h3{font-size:15px;line-height:1.2}
-    .modal-head .sub{font-size:11px;margin-top:3px}
+    .modal-head{padding:14px 16px;position:sticky;top:0;background:var(--panel-solid);z-index:5;border-bottom:1px solid var(--border)}
+    .modal-head h3{font-size:17px;line-height:1.25;font-weight:700}
+    .modal-head .sub{font-size:12.5px;margin-top:4px;color:var(--muted);line-height:1.4}
     .modal-close{font-size:30px;padding:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     /* Tabs touch */
-    .modal-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;position:sticky;top:60px;background:var(--panel);z-index:4}
+    .modal-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;position:sticky;top:68px;background:var(--panel-solid);z-index:4}
     .modal-tabs::-webkit-scrollbar{height:2px}
-    .modal-tab{padding:11px 14px;font-size:12px;white-space:nowrap;flex-shrink:0;min-height:44px;display:flex;align-items:center}
-    .modal-body{padding:12px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .modal-tab{padding:14px 18px;font-size:13.5px;white-space:nowrap;flex-shrink:0;min-height:48px;display:flex;align-items:center;font-weight:600}
+    .modal-body{padding:14px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
     .modal-foot{padding:10px;border-top:1px solid var(--border);flex-direction:column;align-items:stretch;gap:8px;background:var(--panel);position:sticky;bottom:0}
     .modal-foot > div:first-child{font-size:9.5px;text-align:center}
     .modal-foot > div:last-child{display:flex;gap:8px;width:100%}
     .modal-foot button, .modal-foot a{flex:1;text-align:center;padding:12px 8px !important;font-size:13px !important;min-height:46px;display:flex;align-items:center;justify-content:center}
     /* Drop zone PDF */
-    .pdf-drop{padding:28px 16px;font-size:14px;border-radius:10px}
-    .pdf-drop .ico{font-size:34px;margin-bottom:8px}
-    .pdf-drop .hint{font-size:11px;margin-top:6px}
+    .pdf-drop{padding:32px 18px;font-size:15px;border-radius:12px}
+    .pdf-drop .ico{font-size:40px;margin-bottom:10px}
+    .pdf-drop .hint{font-size:12px;margin-top:8px;line-height:1.5}
     /* PDF loaded info */
     #pdfLoadedInfo{padding:12px;flex-direction:row;gap:10px}
     #pdfLoadedInfo .info .name{font-size:13px}
     #pdfLoadedInfo .info .meta{font-size:10.5px}
     /* Panel IA */
-    .ai-panel{padding:12px}
-    .ai-panel .ai-title{font-size:12px}
-    .ai-panel input{font-size:16px !important;padding:10px;min-height:44px}
-    .ai-panel .ai-actions{flex-direction:column;gap:8px}
-    .ai-panel .ai-actions button{width:100%;min-height:44px;font-size:13px}
-    .ai-panel .hint{font-size:11px;line-height:1.5;margin-top:8px}
+    .ai-panel{padding:14px;border-radius:10px}
+    .ai-panel .ai-title{font-size:13px}
+    .ai-panel input{font-size:16px !important;padding:12px;min-height:48px}
+    .ai-panel .ai-actions{flex-direction:column;gap:10px}
+    .ai-panel .ai-actions button{width:100%;min-height:48px;font-size:14px;padding:12px}
+    .ai-panel .hint{font-size:12px;line-height:1.55;margin-top:10px}
     /* Auto try button */
     .auto-try{flex-direction:column;align-items:stretch;gap:8px}
     .auto-try button{width:100%;min-height:44px}
@@ -509,7 +514,7 @@
     .doc-list li > div:last-child{display:flex;gap:8px}
     .doc-list .btn-mini-det{flex:1;padding:11px;font-size:13px;min-height:44px}
     /* Status messages */
-    .status{font-size:12px;padding:11px 14px;line-height:1.5}
+    .status{font-size:13px;padding:13px 15px;line-height:1.55;border-radius:8px}
     /* Pager */
     .pager{flex-direction:row;gap:8px;font-size:13px;padding:6px}
     .pager button{padding:11px 16px;min-height:44px;flex:1;max-width:140px}
@@ -528,13 +533,22 @@
     .badge-mini, .source-tag{font-size:9px;padding:3px 7px}
   }
   @media (max-width:480px){
-    main{padding:6px;gap:6px}
-    .panel{padding:10px;border-radius:6px}
-    header h1{font-size:13.5px}
-    .modal-head h3{font-size:14px}
-    .modal-tab{padding:10px 12px;font-size:11.5px}
-    .truncate{max-width:120px}
-    table{font-size:11px;min-width:720px}
+    main{padding:8px;gap:8px}
+    .panel{padding:12px;border-radius:9px}
+    header{padding:10px 12px}
+    header h1{font-size:15px !important}
+    header h1 small{font-size:10.5px}
+    header .logo{width:38px;height:38px;font-size:17px}
+    .theme-toggle{width:38px;height:38px}
+    .badge{font-size:10px;padding:4px 9px}
+    .modal-head h3{font-size:15px}
+    .modal-tab{padding:12px 14px;font-size:12.5px}
+    .truncate{max-width:140px}
+    table{font-size:12px;min-width:820px}
+  }
+  @media (max-width:380px){
+    header h1 small{display:none}
+    header .badge{font-size:9.5px;padding:3px 8px}
   }
 
   /* Theme toggle button */
