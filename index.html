@@ -128,26 +128,26 @@
   header h1 small{opacity:.7;font-weight:400;font-size:12px;margin-left:6px}
   .badge{background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;letter-spacing:0.02em}
   /* ===== Layout fluido (responde a ancho de la VENTANA, no de la pantalla) ===== */
-  main{width:100%;margin:0 auto;padding:10px;display:grid;grid-template-columns:minmax(260px, 340px) 1fr;gap:10px;align-items:start;box-sizing:border-box}
+  main{width:100%;margin:0 auto;padding:10px;display:grid;grid-template-columns:minmax(260px, 340px) minmax(0, 1fr);gap:10px;align-items:start;box-sizing:border-box}
   /* Ultra wide >= 1900px: panel izq mas comodo */
   @media (min-width:1900px){
-    main{grid-template-columns:minmax(340px, 420px) 1fr;gap:18px;padding:18px}
+    main{grid-template-columns:minmax(340px, 420px) minmax(0, 1fr);gap:18px;padding:18px}
   }
   /* Wide 1500-1900px */
   @media (min-width:1500px) and (max-width:1899px){
-    main{grid-template-columns:minmax(320px, 380px) 1fr;gap:14px;padding:14px}
+    main{grid-template-columns:minmax(320px, 380px) minmax(0, 1fr);gap:14px;padding:14px}
   }
   /* Standard 1200-1500px */
   @media (min-width:1200px) and (max-width:1499px){
-    main{grid-template-columns:minmax(300px, 360px) 1fr;gap:12px;padding:12px}
+    main{grid-template-columns:minmax(300px, 360px) minmax(0, 1fr);gap:12px;padding:12px}
   }
   /* Laptop angosta 1000-1200px */
   @media (min-width:1000px) and (max-width:1199px){
-    main{grid-template-columns:minmax(280px, 320px) 1fr;gap:10px;padding:10px}
+    main{grid-template-columns:minmax(280px, 320px) minmax(0, 1fr);gap:10px;padding:10px}
   }
   /* Split-screen / tablet 760-1000px: panel izq mas estrecho aun */
   @media (min-width:760px) and (max-width:999px){
-    main{grid-template-columns:minmax(240px, 280px) 1fr;gap:8px;padding:8px}
+    main{grid-template-columns:minmax(240px, 280px) minmax(0, 1fr);gap:8px;padding:8px}
     .panel{padding:10px}
     .row{gap:6px;margin-bottom:7px}
     input,select{padding:6px 8px;font-size:11.5px}
@@ -643,6 +643,11 @@
     /* Auto try button */
     .auto-try button { width: 100% !important; padding: 12px 14px !important; white-space: normal; line-height: 1.3 }
   }
+
+  /* Fix grid overflow: forzar que celdas grid permitan que sus hijos hagan scroll */
+  main > .panel { min-width: 0 !important; }
+  .panel { min-width: 0 !important; }
+  .table-wrap { min-width: 0 !important; }
 </style>
 </head>
 <body>
