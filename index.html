@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SECOP II Hunter - App standalone</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#334155; --txt:#e2e8f0;
+    --muted:#94a3b8; --acc:#38bdf8; --acc2:#0ea5e9; --ok:#22c55e;
+    --warn:#f59e0b; --err:#ef4444; --border:#475569;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100vh;font-family:'Segoe UI',Roboto,system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+  header{background:linear-gradient(135deg,#0c4a6e,#0e7490);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  @media (min-width:1600px){ header{padding:14px 24px} header h1{font-size:19px} }
+  @media (max-width:600px){ header{padding:10px 12px} header h1{font-size:14px} header h1 small{display:none} }
+  header h1{margin:0;font-size:17px;font-weight:600}
+  header h1 small{opacity:.7;font-weight:400;font-size:12px;margin-left:6px}
+  .badge{background:#0369a1;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+  /* ===== Layout fluido por ancho de pantalla ===== */
+  main{width:100%;margin:0 auto;padding:12px;display:grid;grid-template-columns:360px 1fr;gap:12px;align-items:start;box-sizing:border-box}
+  /* Pantallas ultra anchas (>= 1900px): panel izq mas comodo, mas espacio para tabla */
+  @media (min-width:1900px){
+    main{grid-template-columns:400px 1fr;gap:16px;padding:16px;max-width:none}
+  }
+  /* Pantallas estandar 1280-1900px */
+  @media (min-width:1280px) and (max-width:1899px){
+    main{grid-template-columns:360px 1fr}
+  }
+  /* Tablet / laptop angosta 900-1280px */
+  @media (min-width:900px) and (max-width:1279px){
+    main{grid-template-columns:320px 1fr;gap:10px;padding:10px}
+  }
+  /* Movil (< 900px): apilar */
+  @media (max-width:899px){
+    main{grid-template-columns:1fr;padding:8px;gap:10px}
+    .form-scroll{max-height:none !important}
+    .table-wrap{max-height:60vh !important}
+  }
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .panel h2{margin:0 0 12px;font-size:13px;color:var(--acc);text-transform:uppercase;letter-spacing:.5px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+  .row.full{grid-template-columns:1fr}
+  label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+  input,select{width:100%;background:#0f172a;border:1px solid var(--border);color:var(--txt);padding:7px 9px;border-radius:5px;font-size:12px;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(56,189,248,.2)}
+  .actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  button{cursor:pointer;border:0;padding:9px 13px;border-radius:5px;font-weight:600;font-size:12px;transition:all .15s}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .btn-primary{background:var(--acc2);color:#fff}
+  .btn-primary:hover:not(:disabled){background:var(--acc)}
+  .btn-secondary{background:var(--panel2);color:var(--txt);border:1px solid var(--border)}
+  .btn-secondary:hover:not(:disabled){background:#475569}
+  .btn-success{background:var(--ok);color:#052e16}
+  .btn-success:hover:not(:disabled){filter:brightness(1.1)}
+  .status{margin-top:10px;padding:9px 11px;border-radius:5px;font-size:11px;display:none;line-height:1.45}
+  .status.show{display:block}
+  .status.info{background:rgba(56,189,248,.1);border:1px solid var(--acc)}
+  .status.ok{background:rgba(34,197,94,.1);border:1px solid var(--ok);color:#bbf7d0}
+  .status.err{background:rgba(239,68,68,.1);border:1px solid var(--err);color:#fecaca}
+  .spinner{display:inline-block;width:11px;height:11px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+  .toolbar .count{font-size:12px;color:var(--muted)}
+  .table-wrap{overflow:auto;max-height:calc(100vh - 200px);border:1px solid var(--border);border-radius:8px;width:100%}
+  table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
+  @media (min-width:1600px){ table{font-size:13px} th{font-size:12px;padding:10px 8px} td{padding:7px 8px} }
+  @media (min-width:1900px){ table{font-size:13.5px;min-width:1200px} }
+  th{background:#0c4a6e;color:#fff;padding:8px;text-align:left;font-weight:600;position:sticky;top:0;border-bottom:2px solid var(--acc2);white-space:nowrap;font-size:11px}
+  td{padding:6px 8px;border-bottom:1px solid #334155;vertical-align:top}
+  tr:hover td{background:rgba(56,189,248,.05)}
+  td.url a{color:var(--acc);text-decoration:none;font-weight:500}
+  td.url a:hover{text-decoration:underline}
+  td.money{text-align:right;font-variant-numeric:tabular-nums;color:#bef264;white-space:nowrap}
+  .truncate{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (min-width:1400px){ .truncate{max-width:380px} }
+  @media (min-width:1700px){ .truncate{max-width:500px} }
+  @media (min-width:2200px){ .truncate{max-width:650px} }
+  .truncate:hover{white-space:normal;overflow:visible}
+  .empty{padding:36px;text-align:center;color:var(--muted);font-size:13px}
+  .legend{font-size:10px;color:var(--muted);margin-top:8px;line-height:1.45}
+  .legend code{background:#0f172a;padding:1px 5px;border-radius:3px;color:var(--acc)}
+  details{margin-top:8px;border:1px solid var(--border);border-radius:5px;padding:6px 9px;background:#0f172a}
+  summary{cursor:pointer;font-size:11px;color:var(--acc);font-weight:600}
+  .pager{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)}
+  .form-scroll{max-height:calc(100vh - 200px);overflow-y:auto;padding-right:4px}
+  @media (min-width:1600px){ .form-scroll{max-height:calc(100vh - 220px)} }
+  /* Drop zone PDF */
+  .pdf-drop{border:2px dashed var(--acc);border-radius:8px;padding:18px;text-align:center;color:var(--muted);background:#0f172a;cursor:pointer;transition:all .15s;margin-bottom:12px}
+  .pdf-drop.over{background:rgba(56,189,248,.1);border-color:var(--ok);color:var(--txt)}
+  .pdf-drop input{display:none}
+  .pdf-drop .ico{font-size:22px;margin-bottom:4px}
+  .pdf-drop .hint{font-size:11px;margin-top:4px;color:var(--muted)}
+  .progress{height:6px;background:#0f172a;border-radius:3px;overflow:hidden;margin:6px 0}
+  .progress > div{height:100%;background:var(--acc);width:0%;transition:width .2s}
+  .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .tag{background:#1e3a5f;color:#bae6fd;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600}
+  .auto-try{display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+  .auto-try button{padding:6px 12px;font-size:11px}
+  .source-tag{display:inline-block;background:var(--ok);color:#052e16;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;margin-left:6px;text-transform:uppercase}
+  .source-tag.api{background:var(--warn);color:#451a03}
+  /* Modal de detalles */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-backdrop.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;width:96%;max-width:1100px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  @media (min-width:1600px){ .modal{max-width:1300px} }
+  @media (min-width:1900px){ .modal{max-width:1500px} }
+  @media (max-width:700px){ .modal-backdrop{padding:6px} .modal{width:100%} }
+  .modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:start;gap:10px}
+  .modal-head h3{margin:0 0 4px;font-size:15px;color:var(--acc)}
+  .modal-head .sub{font-size:11px;color:var(--muted);line-height:1.4}
+  .modal-close{background:transparent;color:var(--muted);font-size:22px;padding:0 6px;border:0;cursor:pointer}
+  .modal-close:hover{color:var(--err)}
+  .modal-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:#0f172a;flex-wrap:wrap}
+  .modal-tab{padding:9px 14px;cursor:pointer;font-size:12px;color:var(--muted);border-bottom:2px solid transparent;font-weight:600}
+  .modal-tab.active{color:var(--acc);border-bottom-color:var(--acc);background:var(--panel)}
+  .modal-body{padding:16px;overflow-y:auto;flex:1}
+  .modal-tab-content{display:none}
+  .modal-tab-content.active{display:block}
+  .kv-grid{display:grid;grid-template-columns:1fr 2fr;gap:8px 16px;font-size:12px}
+  .kv-grid dt{color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding-top:2px}
+  .kv-grid dd{margin:0;color:var(--txt);word-break:break-word}
+  .kv-grid dd a{color:var(--acc)}
+  .req-card{background:#0f172a;border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+  .req-card .ttl{font-size:11px;color:var(--acc);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+  .req-card .val{font-size:13px;color:var(--txt)}
+  .req-card.empty .val{color:var(--muted);font-style:italic;font-size:12px}
+  .doc-list{list-style:none;padding:0;margin:0}
+  .doc-list li{padding:8px 10px;background:#0f172a;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .doc-list a{color:var(--acc);text-decoration:none;font-size:12px;font-weight:600}
+  .doc-list .meta{font-size:10px;color:var(--muted)}
+  .modal-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn-mini-det{background:#1e3a5f;color:#bae6fd;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc2);margin-left:4px}
+  .btn-mini-det:hover{background:var(--acc2);color:#fff}
+
+  /* Tipografia fluida con clamp para resolucion alta */
+  @media (min-width:1600px){
+    input,select,textarea{font-size:13px;padding:8px 10px}
+    label{font-size:11px}
+    button{font-size:13px;padding:10px 14px}
+    .panel{padding:16px}
+    .panel h2{font-size:14px}
+    .row{margin-bottom:10px}
+  }
+  @media (min-width:1900px){
+    input,select,textarea{font-size:13.5px}
+    .panel{padding:18px}
+  }
+
+  /* ============ VISTA MOVIL OPTIMIZADA ============ */
+  @media (max-width:768px){
+    body{font-size:13px}
+    .row{grid-template-columns:1fr;gap:7px}
+    .panel{padding:11px}
+    .panel h2{font-size:12px}
+    label{font-size:10px}
+    input,select,textarea{font-size:14px;padding:9px 10px;border-radius:6px}
+    button{font-size:13px;padding:11px 14px;border-radius:6px;min-height:42px}
+    .actions{flex-direction:column;gap:8px}
+    .actions button{width:100%}
+    .table-wrap{max-height:50vh}
+    table{font-size:11px;min-width:900px}
+    th{padding:7px 5px;font-size:10px}
+    td{padding:6px 5px}
+    .truncate{max-width:180px}
+    /* Modal fullscreen en movil */
+    .modal-backdrop{padding:0;align-items:stretch}
+    .modal{width:100%;max-width:100%;max-height:100vh;border-radius:0;border-left:0;border-right:0}
+    .modal-head{padding:10px 12px;position:sticky;top:0;background:var(--panel);z-index:5}
+    .modal-head h3{font-size:14px}
+    .modal-head .sub{font-size:10px}
+    .modal-close{font-size:28px;padding:0 8px;min-width:40px;min-height:40px}
+    /* Tabs scrolleables horizontalmente */
+    .modal-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+    .modal-tabs::-webkit-scrollbar{height:3px}
+    .modal-tab{padding:9px 12px;font-size:11px;white-space:nowrap;flex-shrink:0}
+    .modal-body{padding:10px}
+    .modal-foot{padding:8px 10px;flex-direction:column;align-items:stretch}
+    .modal-foot > div{width:100%;display:flex;gap:6px;flex-wrap:wrap}
+    .modal-foot button, .modal-foot a{flex:1;text-align:center;padding:11px 8px !important;font-size:12px !important;min-height:42px}
+    /* Drop zone PDF mas grande para touch */
+    .pdf-drop{padding:24px 14px;font-size:13px}
+    .pdf-drop .ico{font-size:32px}
+    /* kv-grid en una columna */
+    .kv-grid{grid-template-columns:1fr;gap:5px 0}
+    .kv-grid dt{padding-top:6px;font-size:9px}
+    .kv-grid dd{font-size:12px;padding-bottom:6px;border-bottom:1px dashed #334155}
+    /* Req cards */
+    .req-card{padding:9px 11px}
+    .req-card .val{font-size:12px}
+    /* Doc list */
+    .doc-list li{flex-direction:column;align-items:stretch;gap:6px}
+    .doc-list li > div:last-child{display:flex;gap:6px}
+    .doc-list .btn-mini-det{flex:1;padding:8px 10px;font-size:11px}
+    /* Pager botones mas grandes */
+    .pager button{padding:10px 14px;min-height:40px}
+    /* Selector multiple departamento mas alto y comodo */
+    select[multiple]{min-height:140px;font-size:13px}
+    /* Header */
+    header h1{font-size:14px;line-height:1.3}
+    /* Tag y badges */
+    .badge{font-size:10px}
+    /* Auto-try del pliego */
+    .auto-try{flex-direction:column;align-items:stretch}
+    .auto-try button{width:100%}
+    /* Toolbar resultados */
+    .toolbar{flex-direction:column;align-items:stretch;gap:6px}
+    .toolbar > div{justify-content:space-between}
+  }
+  @media (max-width:480px){
+    main{padding:6px;gap:8px}
+    .panel{padding:9px;border-radius:7px}
+    table{font-size:10.5px;min-width:800px}
+    .truncate{max-width:130px}
+    .modal-tab{font-size:10px;padding:8px 10px}
+    .modal-body{padding:8px}
+  }
+
+  /* Tablas estructuradas dentro de los req-cards */
+  .req-table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0 4px;background:#0f172a;border-radius:5px;overflow:hidden}
+  .req-table th{background:#0c4a6e;color:#fff;padding:7px 9px;text-align:left;font-weight:600;font-size:11px;border-bottom:2px solid var(--acc2);text-transform:uppercase;letter-spacing:.3px}
+  .req-table td{padding:6px 9px;border-bottom:1px solid #334155;vertical-align:top;color:var(--txt)}
+  .req-table tr:last-child td{border-bottom:0}
+  .req-table tr:hover td{background:rgba(56,189,248,.05)}
+  .req-table .val-num{color:#bef264;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .req-table .ctx{color:var(--muted);font-size:10px;font-style:italic;display:block;margin-top:3px;line-height:1.3}
+  @media (max-width:768px){
+    .req-table{font-size:11px}
+    .req-table th, .req-table td{padding:5px 6px}
+  }
+  details.req-ctx{margin-top:6px;font-size:10px}
+  details.req-ctx summary{color:var(--muted);cursor:pointer}
+  details.req-ctx[open] summary{color:var(--acc)}
+  details.req-ctx .ctx-text{margin-top:4px;padding:6px;background:#0f172a;border-radius:4px;color:var(--muted);line-height:1.4;max-height:180px;overflow-y:auto}
+</style>
+</head>
+<body>
+<header>
+  <h1>SECOP II Hunter <small>- app standalone (sin instalacion)</small></h1>
+  <span class="badge">v3.0 - API datos.gov.co</span>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Criterios de busqueda</h2>
+    <form id="form" class="form-scroll">
+      <div class="row full"><div>
+        <label>Palabra clave (objeto / descripcion)</label>
+        <input name="q" placeholder="alcantarillado, acueducto, pavimentacion..." />
+      </div></div>
+      <div class="row">
+        <div><label>N proceso</label><input name="proceso" placeholder="LP-2026-001" /></div>
+        <div><label>Entidad estatal</label><input name="entidad" placeholder="Alcaldia, EPM, INVIAS..." /></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Departamento (Ctrl/Cmd+clic para varios)</label>
+          <select name="departamento" multiple size="6" id="selDep">
+            <option value="__ALL__" selected>-- TODOS LOS DEPARTAMENTOS --</option>
+            <option>Amazonas</option><option>Antioquia</option><option>Arauca</option>
+            <option>Atlantico</option><option>Bogota D.C.</option><option>Bolivar</option>
+            <option>Boyaca</option><option>Caldas</option><option>Caqueta</option>
+            <option>Casanare</option><option>Cauca</option><option>Cesar</option>
+            <option>Choco</option><option>Cordoba</option><option>Cundinamarca</option>
+            <option>Guainia</option><option>Guaviare</option><option>Huila</option>
+            <option>La Guajira</option><option>Magdalena</option><option>Meta</option>
+            <option>Narino</option><option>Norte de Santander</option><option>Putumayo</option>
+            <option>Quindio</option><option>Risaralda</option><option>San Andres y Providencia</option>
+            <option>Santander</option><option>Sucre</option><option>Tolima</option>
+            <option>Valle del Cauca</option><option>Vaupes</option><option>Vichada</option>
+          </select>
+        </div>
+        <div><label>Municipio</label><input name="ciudad" placeholder="Medellin" /></div>
+      </div>
+      <div class="row">
+        <div><label>Modalidad</label>
+          <select name="modalidad"><option value="">-- Todas --</option>
+            <option>Licitacion Publica</option>
+            <option>Seleccion Abreviada de Menor Cuantia</option>
+            <option>Seleccion Abreviada Subasta Inversa</option>
+            <option>Concurso de Meritos Abierto</option>
+            <option>Concurso de Meritos con Lista Corta</option>
+            <option>Contratacion Directa</option>
+            <option>Minima Cuantia</option>
+            <option>Regimen Especial</option>
+            <option>Acuerdo Marco</option>
+          </select>
+        </div>
+        <div><label>Estado</label>
+          <select name="estado"><option value="">-- Todos --</option>
+            <option>Convocado</option>
+            <option>Presentacion de oferta</option>
+            <option>En evaluacion</option>
+            <option>Adjudicado</option>
+            <option>Celebrado</option>
+            <option>Desierto</option>
+            <option>Suspendido</option>
+            <option>Terminado anormalmente</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>Fase</label>
+          <select name="fase"><option value="">-- Todas --</option>
+            <option>Presentacion de oferta</option>
+            <option>Evaluacion</option>
+            <option>Adjudicacion</option>
+            <option>Manifestacion de interes</option>
+          </select>
+        </div>
+        <div><label>Tipo de contrato</label>
+          <select name="tipo_contrato"><option value="">-- Todos --</option>
+            <option>Obra</option>
+            <option>Consultoria</option>
+            <option>Interventoria</option>
+            <option>Suministros</option>
+            <option>Prestacion de servicios</option>
+            <option>Compraventa</option>
+            <option>Concesion</option>
+            <option>Arrendamiento</option>
+            <option>Otros</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>Categoria UNSPSC</label><input name="unspsc" placeholder="72101500" /></div>
+        <div><label>Resultados / pagina</label>
+          <select name="limit"><option>50</option><option selected>100</option><option>250</option><option>500</option><option>1000</option></select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>Valor min (COP)</label><input type="number" name="valor_min" placeholder="100000000" /></div>
+        <div><label>Valor max (COP)</label><input type="number" name="valor_max" placeholder="5000000000" /></div>
+      </div>
+      <div class="row">
+        <div><label>Publicacion desde</label><input type="date" name="fecha_pub_desde" /></div>
+        <div><label>Publicacion hasta</label><input type="date" name="fecha_pub_hasta" /></div>
+      </div>
+      <div class="row">
+        <div><label>Cierre desde</label><input type="date" name="fecha_cierre_desde" /></div>
+        <div><label>Cierre hasta</label><input type="date" name="fecha_cierre_hasta" /></div>
+      </div>
+      <div class="row full"><div>
+        <label>Orden</label>
+        <select name="orden">
+          <option value="fecha_de_publicacion_del DESC">Fecha publicacion (mas reciente)</option>
+          <option value="fecha_de_publicacion_del ASC">Fecha publicacion (mas antigua)</option>
+          <option value="fecha_de_recepcion_de DESC">Fecha cierre (mas reciente)</option>
+          <option value="fecha_de_recepcion_de ASC">Fecha cierre (mas proxima)</option>
+          <option value="precio_base DESC">Valor (mayor a menor)</option>
+          <option value="precio_base ASC">Valor (menor a mayor)</option>
+        </select>
+      </div></div>
+    </form>
+
+    <div class="actions">
+      <button type="button" class="btn-primary" id="btnSearch">Buscar</button>
+      <button type="button" class="btn-secondary" id="btnClear">Limpiar</button>
+      <button type="button" class="btn-success" id="btnExport">Exportar Excel</button>
+      <button type="button" class="btn-secondary" id="btnDiag" title="Mostrar query construido">Diag</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="legend">
+      Consulta directa a la <b>API oficial</b> de Colombia Compra Eficiente
+      (<code>datos.gov.co</code>). No requiere CAPTCHA ni login.
+      Para procesos abiertos hoy: estado <i>Convocado</i> + fecha cierre desde <i>hoy</i>.
+    </div>
+
+    <details>
+      <summary>Como se mapean los filtros</summary>
+      <div class="legend">
+        Dataset: <code>p6dx-8zbt</code> (SECOP II Procesos de Contratacion).<br>
+        - Palabra clave -> <code>$q=</code> en todos los campos<br>
+        - Entidad -> <code>entidad like</code> (texto) o <code>nit_entidad</code> si pones un NIT<br>
+        - Depto/ciudad -> match exacto<br>
+        - Modalidad/estado/fase/tipo -> match exacto<br>
+        - Valor -> rango sobre <code>precio_base</code><br>
+        - Fechas -> rangos sobre publicacion y recepcion de ofertas<br>
+        - URL -> campo <code>urlproceso</code> (enlace directo a SECOP II)
+      </div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <h2 style="margin:0">Resultados</h2>
+      <span class="count" id="count">Sin busqueda</span>
+    </div>
+    <div class="table-wrap">
+      <table id="results">
+        <thead>
+          <tr>
+            <th>#</th><th>N Proceso</th><th>Entidad</th><th>Objeto</th>
+            <th>Modalidad</th><th>Estado</th><th>Fase</th><th>Tipo</th>
+            <th>Depto</th><th>Municipio</th><th>Valor (COP)</th>
+            <th>Publicacion</th><th>Cierre</th><th>Ver</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="14" class="empty">
+            Define tus criterios y pulsa <b>Buscar</b>. Sin filtros trae los procesos mas recientes.
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pager" id="pager"></div>
+  </section>
+</main>
+
+
+<div class="modal-backdrop" id="modalBack" onclick="if(event.target.id==='modalBack') closeModal()">
+  <div class="modal" role="dialog" aria-labelledby="mdTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="mdTitle">Detalle del proceso</h3>
+        <div class="sub" id="mdSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()" title="Cerrar (Esc)">&times;</button>
+    </div>
+    <div class="modal-tabs" id="mdTabs">
+      <div class="modal-tab active" data-tab="resumen">Resumen</div>
+      <div class="modal-tab" data-tab="requisitos">Analisis de pliego (PDF)</div>
+      <div class="modal-tab" data-tab="todos">Todos los campos</div>
+      <div class="modal-tab" data-tab="docs">Documentos</div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tab-content active" data-tab="resumen" id="mdResumen"></div>
+      <div class="modal-tab-content" data-tab="requisitos" id="mdRequisitos"></div>
+      <div class="modal-tab-content" data-tab="todos" id="mdTodos"></div>
+      <div class="modal-tab-content" data-tab="docs" id="mdDocs"></div>
+    </div>
+    <div class="modal-foot">
+      <div style="font-size:10px;color:var(--muted)">
+        Requisitos extraidos del pliego cargado o de la descripcion API.
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-secondary" id="mdCopiar" onclick="copiarDetalle()">Copiar resumen</button>
+        <a id="mdLinkSecop" href="#" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;display:inline-block;padding:9px 13px;border-radius:5px;font-weight:600;font-size:12px">Abrir en SECOP II</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://www.datos.gov.co/resource/p6dx-8zbt.json";
+const $ = (id) => document.getElementById(id);
+const tbody = document.querySelector("#results tbody");
+
+/* ============ Proxies CORS con fallback automatico ============ */
+const CORS_PROXIES_GET = [
+  // Devuelven JSON con contents: HTML
+  (u)=> ({url:'https://api.allorigins.win/get?url='+encodeURIComponent(u), parser:'json-contents'}),
+  (u)=> ({url:'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), parser:'text'}),
+  (u)=> ({url:'https://corsproxy.io/?'+encodeURIComponent(u), parser:'text'}),
+  (u)=> ({url:'https://api.cors.lol/?url='+encodeURIComponent(u), parser:'text'}),
+];
+const CORS_PROXIES_RAW = [
+  // Devuelven el cuerpo binario directamente
+  (u)=> 'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  (u)=> 'https://corsproxy.io/?'+encodeURIComponent(u),
+  (u)=> 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
+  (u)=> 'https://api.cors.lol/?url='+encodeURIComponent(u),
+];
+
+async function corsGetText(targetUrl, onProgressMsg){
+  let lastErr = null;
+  for(let i=0; i<CORS_PROXIES_GET.length; i++){
+    const cfg = CORS_PROXIES_GET[i](targetUrl);
+    if(onProgressMsg) onProgressMsg('Probando proxy '+(i+1)+'/'+CORS_PROXIES_GET.length+' ...');
+    try{
+      const r = await fetch(cfg.url, { signal: AbortSignal.timeout(20000) });
+      if(!r.ok){ lastErr = 'HTTP '+r.status; continue; }
+      if(cfg.parser === 'json-contents'){
+        const j = await r.json();
+        if(j && (j.contents !== undefined)) return j.contents || '';
+        lastErr = 'JSON sin contents';
+      } else {
+        const t = await r.text();
+        if(t && t.length > 100) return t;
+        lastErr = 'Respuesta vacia';
+      }
+    }catch(e){ lastErr = e.message || String(e); }
+  }
+  throw new Error('Todos los proxies fallaron. Ultimo error: '+lastErr);
+}
+
+async function corsGetBlob(targetUrl, onProgressMsg){
+  let lastErr = null;
+  for(let i=0; i<CORS_PROXIES_RAW.length; i++){
+    const proxyUrl = CORS_PROXIES_RAW[i](targetUrl);
+    if(onProgressMsg) onProgressMsg('Descargando via proxy '+(i+1)+'/'+CORS_PROXIES_RAW.length+' ...');
+    try{
+      const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(45000) });
+      if(!r.ok){ lastErr = 'HTTP '+r.status; continue; }
+      const b = await r.blob();
+      if(b && b.size > 1024) return b;
+      lastErr = 'Blob muy pequeno ('+b.size+' bytes)';
+    }catch(e){ lastErr = e.message || String(e); }
+  }
+  throw new Error('Todos los proxies fallaron al descargar. Ultimo error: '+lastErr);
+}
+
+
+let lastResults = [];
+let offset = 0;
+
+function setStatus(type, msg, spinner){
+  const s = $("status");
+  s.className = "status show " + type;
+  s.innerHTML = (spinner ? '<span class="spinner"></span>' : '') + msg;
+}
+function clearStatus(){ $("status").className = "status"; }
+function fmtMoney(v){
+  if(v===null||v===undefined||v==='') return '';
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if(isNaN(n)) return v;
+  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n);
+}
+function fmtDate(s){ if(!s) return ''; return String(s).substring(0,10); }
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));}
+
+function buildQuery(p, off, limit){
+  const where = [];
+  const sq = (s)=> String(s).replace(/'/g,"''");
+  if(p.entidad) {
+    const e = String(p.entidad).trim();
+    // Detectar si es NIT (solo digitos, opcionalmente con guion o punto)
+    if(/^[\d\-\.]+$/.test(e)){
+      const nit = e.replace(/[\-\.]/g,'');
+      where.push("nit_entidad like '%"+sq(nit)+"%'");
+    } else {
+      where.push("upper(entidad) like upper('%"+sq(e)+"%')");
+    }
+  }
+  if(p.proceso) where.push("upper(referencia_del_proceso) like upper('%"+sq(p.proceso)+"%')");
+  if(p.departamento && p.departamento.length){ const ins = p.departamento.map(d=>"upper('"+sq(d)+"')").join(','); where.push("upper(departamento_entidad) IN ("+ins+")"); }
+  if(p.ciudad) where.push("upper(ciudad_entidad)=upper('"+sq(p.ciudad)+"')");
+  if(p.modalidad) where.push("modalidad_de_contratacion='"+sq(p.modalidad)+"'");
+  if(p.estado) where.push("estado_del_procedimiento='"+sq(p.estado)+"'");
+  if(p.fase) where.push("fase='"+sq(p.fase)+"'");
+  if(p.tipo_contrato) where.push("tipo_de_contrato='"+sq(p.tipo_contrato)+"'");
+  if(p.unspsc) where.push("categorias like '%"+sq(p.unspsc)+"%'");
+  if(p.valor_min) where.push("precio_base >= "+parseFloat(p.valor_min));
+  if(p.valor_max) where.push("precio_base <= "+parseFloat(p.valor_max));
+  if(p.fecha_pub_desde) where.push("fecha_de_publicacion_del >= '"+p.fecha_pub_desde+"T00:00:00.000'");
+  if(p.fecha_pub_hasta) where.push("fecha_de_publicacion_del <= '"+p.fecha_pub_hasta+"T23:59:59.999'");
+  if(p.fecha_cierre_desde) where.push("fecha_de_recepcion_de >= '"+p.fecha_cierre_desde+"T00:00:00.000'");
+  if(p.fecha_cierre_hasta) where.push("fecha_de_recepcion_de <= '"+p.fecha_cierre_hasta+"T23:59:59.999'");
+
+  const params = new URLSearchParams();
+  if(where.length) params.set('$where', where.join(' AND '));
+  if(p.q) params.set('$q', p.q);
+  if(p.orden) params.set('$order', p.orden);
+  params.set('$limit', String(limit));
+  params.set('$offset', String(off));
+  return API + '?' + params.toString();
+}
+
+function getCriteria(){
+  const form = $('form');
+  if(!form){ throw new Error('Formulario no encontrado en el DOM'); }
+  const fd = new FormData(form);
+  const p = {};
+  for(const [k,v] of fd.entries()){
+    if(v===null || v===undefined || v==='') continue;
+    if(k === 'departamento'){
+      if(!p.departamento) p.departamento = [];
+      if(String(v).trim()) p.departamento.push(String(v).trim());
+    } else {
+      p[k] = v;
+    }
+  }
+  // Si entre los departamentos seleccionados esta __ALL__ o nada, no filtramos
+  if(p.departamento && (p.departamento.indexOf('__ALL__') >= 0 || p.departamento.length === 0)){
+    delete p.departamento;
+  }
+  p.limit = parseInt(p.limit||'100',10);
+  if(isNaN(p.limit) || p.limit < 1) p.limit = 100;
+  p.orden = p.orden || 'fecha_de_publicacion_del DESC';
+  return p;
+}
+
+async function runSearch(off){
+  off = off || 0;
+  let p, url;
+  try {
+    p = getCriteria();
+    offset = off;
+    url = buildQuery(p, off, p.limit);
+    console.log('[SECOP] Query URL:', url);
+    console.log('[SECOP] Criterios:', p);
+  } catch(e){
+    setStatus('err', 'Error preparando consulta: ' + (e.message||e));
+    console.error('[SECOP] Error en getCriteria/buildQuery:', e);
+    return;
+  }
+  setStatus('info', 'Consultando datos.gov.co... <a href="'+url+'" target="_blank" style="color:var(--acc);font-size:10px">(ver query)</a>', true);
+  try{
+    const r = await fetch(url, { headers:{'Accept':'application/json'} });
+    if(!r.ok){
+      const t = await r.text();
+      throw new Error("HTTP "+r.status+": "+t.substring(0,300));
+    }
+    const data = await r.json();
+    if(!Array.isArray(data)){
+      throw new Error("Respuesta inesperada: " + JSON.stringify(data).substring(0,200));
+    }
+    lastResults = data;
+    render(data, off);
+    setStatus('ok', data.length+" proceso(s) cargado(s). "+(data.length === p.limit ? 'Hay mas, usa Siguiente.' : ''));
+    renderPager(p, off, data.length);
+  }catch(e){
+    console.error('[SECOP] Error en fetch:', e);
+    setStatus('err','Error: ' + (e.message||e) + ' <br><small>Abre la consola (F12) para mas detalle. Verifica conexion a internet y que datos.gov.co este disponible.</small>');
+  }
+}
+
+function render(rows, off){
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="14" class="empty">Sin resultados para esos criterios.</td></tr>';
+    $('count').textContent = '0 procesos';
+    return;
+  }
+  tbody.innerHTML = rows.map((r,i)=>{
+    const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+    return '<tr>'+
+      '<td>'+(off+i+1)+'</td>'+
+      '<td>'+esc(r.referencia_del_proceso || r.proceso_de_compra || '')+'</td>'+
+      '<td class="truncate" title="'+esc(r.entidad)+'">'+esc(r.entidad)+'</td>'+
+      '<td class="truncate" title="'+esc(r.descripci_n_del_procedimiento)+'">'+esc(r.descripci_n_del_procedimiento)+'</td>'+
+      '<td>'+esc(r.modalidad_de_contratacion)+'</td>'+
+      '<td>'+esc(r.estado_del_procedimiento)+'</td>'+
+      '<td>'+esc(r.fase)+'</td>'+
+      '<td>'+esc(r.tipo_de_contrato)+'</td>'+
+      '<td>'+esc(r.departamento_entidad)+'</td>'+
+      '<td>'+esc(r.ciudad_entidad)+'</td>'+
+      '<td class="money">'+fmtMoney(r.precio_base)+'</td>'+
+      '<td>'+fmtDate(r.fecha_de_publicacion_del)+'</td>'+
+      '<td>'+fmtDate(r.fecha_de_recepcion_de)+'</td>'+
+      '<td class="url">'+(url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir</a>' : '')+'<button class="btn-mini-det" onclick="showDetails('+(off+i)+')">Detalles</button></td>'+
+    '</tr>';
+  }).join('');
+  $('count').textContent = 'Mostrando '+(off+1)+'-'+(off+rows.length);
+}
+
+function renderPager(p, off, gotCount){
+  const pg = $('pager');
+  const hasNext = gotCount >= p.limit;
+  const hasPrev = off > 0;
+  pg.innerHTML =
+    '<button class="btn-secondary" '+(hasPrev?'':'disabled')+' id="pgPrev">Anterior</button>'+
+    '<span>Pagina '+(Math.floor(off/p.limit)+1)+'</span>'+
+    '<button class="btn-secondary" '+(hasNext?'':'disabled')+' id="pgNext">Siguiente</button>';
+  if(hasPrev) $('pgPrev').onclick = ()=> runSearch(Math.max(0, off - p.limit));
+  if(hasNext) $('pgNext').onclick = ()=> runSearch(off + p.limit);
+}
+
+function exportXlsx(){
+  if(!lastResults.length){ alert('No hay resultados para exportar. Haz una busqueda primero.'); return; }
+  const data = lastResults.map((r,i)=>({
+    '#': offset+i+1,
+    'N Proceso': r.referencia_del_proceso || r.proceso_de_compra || '',
+    'Entidad': r.entidad || '',
+    'NIT Entidad': r.nit_entidad || '',
+    'Objeto': r.descripci_n_del_procedimiento || '',
+    'Modalidad': r.modalidad_de_contratacion || '',
+    'Estado': r.estado_del_procedimiento || '',
+    'Fase': r.fase || '',
+    'Tipo Contrato': r.tipo_de_contrato || '',
+    'Subtipo': r.subtipo_de_contrato || '',
+    'Departamento': r.departamento_entidad || '',
+    'Municipio': r.ciudad_entidad || '',
+    'Valor Estimado (COP)': r.precio_base ? Number(r.precio_base) : '',
+    'Duracion': r.duracion || '',
+    'Unidad Duracion': r.unidad_de_duracion || '',
+    'Fecha Publicacion': fmtDate(r.fecha_de_publicacion_del),
+    'Fecha Apertura': fmtDate(r.fecha_de_apertura_de_respuesta),
+    'Fecha Cierre Ofertas': fmtDate(r.fecha_de_recepcion_de),
+    'Categorias UNSPSC': r.categorias || '',
+    'Adjudicado': r.adjudicado || '',
+    'Valor Adjudicacion (COP)': r.valor_total_adjudicacion ? Number(r.valor_total_adjudicacion) : '',
+    'URL Proceso': (r.urlproceso && r.urlproceso.url) || '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    {wch:4},{wch:18},{wch:35},{wch:14},{wch:60},{wch:24},{wch:18},{wch:18},
+    {wch:16},{wch:16},{wch:18},{wch:18},{wch:20},{wch:10},{wch:12},
+    {wch:14},{wch:14},{wch:14},{wch:30},{wch:10},{wch:20},{wch:50}
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'SECOP_II');
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  XLSX.writeFile(wb, 'SECOP_II_'+ts+'.xlsx');
+}
+
+/* UX: comportamiento del selector multiple de Departamento */
+const selDep = document.getElementById('selDep');
+if(selDep){
+  selDep.addEventListener('change', ()=>{
+    const opts = Array.from(selDep.options);
+    const allOpt = opts.find(o => o.value === '__ALL__');
+    const anyOther = opts.some(o => o.value !== '__ALL__' && o.selected);
+    if(allOpt && allOpt.selected && anyOther){
+      // Si TODOS esta marcado junto con otros, desmarcar TODOS
+      allOpt.selected = false;
+    }
+    // Si no hay ninguno seleccionado, volver a TODOS
+    if(!opts.some(o => o.selected) && allOpt){
+      allOpt.selected = true;
+    }
+  });
+}
+
+
+/* ==================== MODAL DETALLES ==================== */
+let _currentRecord = null;
+/* Tracking del proceso activo en el modal (OCR/analisis/descarga) */
+const _modalProc = { active: false, type: '', worker: null, label: '' };
+function setProcessing(active, type, worker){
+  _modalProc.active = !!active;
+  _modalProc.type = type || '';
+  _modalProc.worker = worker || null;
+  _modalProc.label = type === 'ocr' ? 'OCR en curso' :
+                     type === 'analyze' ? 'analisis del PDF' :
+                     type === 'download' ? 'descarga del documento' :
+                     type === 'discover' ? 'rastreo de pliegos' : 'tarea';
+}
+async function cancelProcessing(){
+  if(_modalProc.worker){
+    try { await _modalProc.worker.terminate(); } catch(e){}
+  }
+  _modalProc.active = false;
+  _modalProc.type = '';
+  _modalProc.worker = null;
+}
+function confirmCloseIfBusy(){
+  if(!_modalProc.active) return true;
+  const ok = confirm(
+    'Hay un proceso en curso: ' + _modalProc.label + '.\n\n' +
+    '¿Cancelar la inspeccion del proceso? Se perdera el progreso.'
+  );
+  if(ok) cancelProcessing();
+  return ok;
+}
+
+function showDetails(idx){
+  const r = lastResults[idx - offset];
+  if(!r){ alert('Registro no encontrado'); return; }
+  _currentRecord = r;
+  document.getElementById('mdTitle').textContent = 'Proceso: ' + (r.referencia_del_proceso || r.proceso_de_compra || 's/n');
+  document.getElementById('mdSub').textContent = (r.entidad || '') + ' | ' + (r.modalidad_de_contratacion || '') + ' | ' + (r.estado_del_procedimiento || '');
+  const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+  document.getElementById('mdLinkSecop').href = url || '#';
+  renderResumen(r);
+  renderRequisitos(r);
+  renderTodos(r);
+  renderDocs(r);
+  document.getElementById('modalBack').classList.add('show');
+  // Activar primera tab
+  switchTab('resumen');
+}
+
+function closeModal(force){
+  if(!force && !confirmCloseIfBusy()) return;
+  document.getElementById('modalBack').classList.remove('show');
+  _currentRecord = null;
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    if(document.getElementById('modalBack').classList.contains('show')) closeModal();
+  }
+});
+
+function switchTab(name){
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.toggle('active', c.dataset.tab === name));
+}
+const _mdTabs = document.getElementById('mdTabs');
+if(_mdTabs){
+  _mdTabs.addEventListener('click', (e)=>{
+    const t = e.target.closest('.modal-tab');
+    if(t) switchTab(t.dataset.tab);
+  });
+} else { console.warn('[SECOP] mdTabs no encontrado (modal no presente)'); }
+
+function renderResumen(r){
+  const pairs = [
+    ['Numero de proceso', r.referencia_del_proceso || r.proceso_de_compra],
+    ['Entidad', r.entidad],
+    ['NIT entidad', r.nit_entidad],
+    ['Departamento / Municipio', [r.departamento_entidad, r.ciudad_entidad].filter(Boolean).join(' / ')],
+    ['Objeto', r.descripci_n_del_procedimiento || r.nombre_del_procedimiento],
+    ['Modalidad', r.modalidad_de_contratacion],
+    ['Tipo de contrato', [r.tipo_de_contrato, r.subtipo_de_contrato].filter(Boolean).join(' - ')],
+    ['Estado / Fase', [r.estado_del_procedimiento, r.fase].filter(Boolean).join(' / ')],
+    ['Valor estimado (COP)', fmtMoney(r.precio_base)],
+    ['Duracion', [r.duracion, r.unidad_de_duracion].filter(Boolean).join(' ')],
+    ['Fecha de publicacion', fmtDate(r.fecha_de_publicacion_del)],
+    ['Fecha apertura ofertas', fmtDate(r.fecha_de_apertura_de_respuesta) || fmtDate(r.fecha_de_apertura_efectiva)],
+    ['Fecha cierre ofertas', fmtDate(r.fecha_de_recepcion_de)],
+    ['Adjudicado', r.adjudicado],
+    ['Valor de adjudicacion', fmtMoney(r.valor_total_adjudicacion)],
+    ['Categorias UNSPSC', r.categorias],
+  ];
+  document.getElementById('mdResumen').innerHTML =
+    '<dl class="kv-grid">' +
+    pairs.filter(p => p[1]).map(p => '<dt>'+esc(p[0])+'</dt><dd>'+esc(p[1])+'</dd>').join('') +
+    '</dl>';
+}
+
+/* Heuristica para extraer requisitos desde la descripcion */
+function extractRequirements(r){
+  const txt = [
+    r.descripci_n_del_procedimiento || '',
+    r.justificacion_modalidad_de || '',
+    r.condiciones_de_participacion || '',
+    r.condiciones_habilitantes || '',
+    r.observaciones || ''
+  ].join(' \n ').replace(/\s+/g,' ');
+
+  const out = {};
+
+  // Plazo / duracion (combinacion campo + texto)
+  const plazoCampo = r.duracion ? (r.duracion + ' ' + (r.unidad_de_duracion || '')) : '';
+  const plazoRegex = txt.match(/(plazo|duraci[oó]n|t[eé]rmino)[^.,;]{0,80}?(\d+[\s\.]*[\d]*)\s*(d[ií]as|meses|a[nñ]os|semanas)/i);
+  out.plazo = plazoCampo || (plazoRegex ? plazoRegex[0].trim() : null);
+
+  // Experiencia (años, valor, SMMLV, etc.)
+  const expRegexes = [
+    /experiencia[^.;]{0,200}?(\d+)\s*(a[nñ]os?|meses?)/i,
+    /experiencia[^.;]{0,200}?(SMMLV|smmlv|salarios? m[ií]nimos?)/i,
+    /experiencia (m[ií]nima|espec[ií]fica|general)[^.;]{0,250}/i,
+    /haber ejecutado[^.;]{0,200}/i,
+    /acreditar experiencia[^.;]{0,200}/i,
+  ];
+  const expFound = [];
+  expRegexes.forEach(rg => { const m = txt.match(rg); if(m) expFound.push(m[0].trim()); });
+  out.experiencia = expFound.length ? Array.from(new Set(expFound)) : null;
+
+  // Personal minimo / equipo de trabajo
+  const personalRegexes = [
+    /personal m[ií]nimo[^.;]{0,300}/i,
+    /equipo (de )?trabajo[^.;]{0,300}/i,
+    /profesional(es)?[^.;]{0,200}?(ingenier[oa]|arquitect[oa]|director|residente|especialista)[^.;]{0,150}/i,
+    /director (de obra|del proyecto|t[eé]cnico)[^.;]{0,200}/i,
+    /residente (de obra|t[eé]cnico)[^.;]{0,200}/i,
+  ];
+  const personalFound = [];
+  personalRegexes.forEach(rg => { const m = txt.match(rg); if(m) personalFound.push(m[0].trim()); });
+  out.personal = personalFound.length ? Array.from(new Set(personalFound)) : null;
+
+  // Capacidad financiera / indicadores
+  const finRegexes = [
+    /(liquidez|endeudamiento|raz[oó]n de cobertura|capital de trabajo|patrimonio|K[\s_-]?contrataci[oó]n|K[\s_-]?residual)[^.;]{0,200}/gi,
+  ];
+  const finFound = [];
+  finRegexes.forEach(rg => { const m = txt.match(rg); if(m) finFound.push.apply(finFound, m.map(s=>s.trim())); });
+  out.financiero = finFound.length ? Array.from(new Set(finFound)) : null;
+
+  // Lugar de ejecucion
+  out.lugar = r.lugar_de_ejecucion || r.ciudad_de_ejecucion ||
+              (txt.match(/lugar de ejecuci[oó]n[^.;]{0,150}/i) || [null])[0];
+
+  // Garantias
+  const garRegex = txt.match(/garant[ií]a[^.;]{0,250}/gi);
+  out.garantias = garRegex ? Array.from(new Set(garRegex.map(s=>s.trim()))) : null;
+
+  return out;
+}
+
+function renderRequisitos(r){
+  const idProc = r.id_del_proceso || r.id_del_portafolio || r.proceso_de_compra || r.referencia_del_proceso || '_';
+  const cached = loadPliegoCache(idProc);
+  const cont = document.getElementById('mdRequisitos');
+  cont.innerHTML =
+    '<div class="auto-try">'+
+      '<button class="btn-secondary" id="btnAutoFetch">Intento automatico (descargar pliego)</button>'+
+      '<span style="font-size:10px;color:var(--muted)">Usa proxy CORS publico. Si falla, carga el PDF manualmente abajo.</span>'+
+    '</div>'+
+    '<label class="pdf-drop" id="pdfDrop">'+
+      '<div class="ico">📄</div>'+
+      '<div><b>Arrastra aqui el pliego (PDF)</b> o haz clic para seleccionar</div>'+
+      '<div class="hint">El PDF se procesa LOCAL en tu navegador. Si es <b>escaneado</b>, la app activa OCR automaticamente (espanol).</div>'+
+      '<input type="file" accept="application/pdf" id="pdfInput" />'+
+    '</label>'+
+    '<div id="pdfProgress" style="display:none">'+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:4px" id="pdfProgressText">Procesando...</div>'+
+      '<div class="progress"><div id="pdfProgressBar"></div></div>'+
+    '</div>'+
+    '<div id="pdfResults"></div>';
+
+  // Render heuristico inicial sobre la descripcion API
+  renderHeurResults(r, 'api');
+
+  // Si hay cache, renderizar inmediatamente
+  if(cached){
+    setTimeout(()=> renderPdfResults(cached.requirements, cached.size, 'cache'), 50);
+  }
+
+  // Wire drop zone
+  const drop = document.getElementById('pdfDrop');
+  const input = document.getElementById('pdfInput');
+  drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', ()=> drop.classList.remove('over'));
+  drop.addEventListener('drop', (e)=>{
+    e.preventDefault(); drop.classList.remove('over');
+    const f = e.dataTransfer.files[0];
+    if(f) processPdfFile(f, idProc);
+  });
+  input.addEventListener('change', (e)=>{
+    const f = e.target.files[0];
+    if(f) processPdfFile(f, idProc);
+  });
+
+  document.getElementById('btnAutoFetch').onclick = ()=> tryAutoFetchPdf(r, idProc);
+}
+
+function renderHeurResults(r, source){
+  const req = extractRequirements(r);
+  document.getElementById('pdfResults').innerHTML = buildReqHtml(req, source==='api'?'Extraido de la descripcion API':'Cache PDF', source);
+}
+
+function buildReqHtml(req, sourceLabel, sourceType){
+  const badge = '<span class="source-tag '+(sourceType==='pdf'||sourceType==='ocr'?'':'api')+'">'+esc(sourceLabel)+'</span>';
+  let html = '<div style="margin:4px 0 12px;font-size:11px;color:var(--muted)">Fuente: '+badge+'</div>';
+
+  // 1) PLAZO
+  html += '<div class="req-card'+(req.plazo?'':' empty')+'">';
+  html += '<div class="ttl">Plazo / Duracion</div>';
+  if(req.plazo && req.plazo.length){
+    html += '<table class="req-table"><thead><tr><th>Valor</th><th>Contexto</th></tr></thead><tbody>';
+    req.plazo.forEach(p => {
+      html += '<tr><td class="val-num">'+esc(p.valor)+'</td><td><span class="ctx">'+esc(p.contexto)+'</span></td></tr>';
+    });
+    html += '</tbody></table>';
+  } else html += '<div class="val">No detectado en el pliego.</div>';
+  html += '</div>';
+
+  // 2) PERSONAL (tabla)
+  html += '<div class="req-card'+(req.personal?'':' empty')+'">';
+  html += '<div class="ttl">Personal minimo / Equipo de trabajo</div>';
+  if(req.personal && req.personal.length){
+    html += '<table class="req-table"><thead><tr>'+
+      '<th style="width:5%">Cant</th>'+
+      '<th style="width:25%">Rol</th>'+
+      '<th style="width:30%">Profesion</th>'+
+      '<th style="width:18%">Exp. general</th>'+
+      '<th style="width:22%">Exp. especifica</th>'+
+      '</tr></thead><tbody>';
+    req.personal.forEach(p => {
+      html += '<tr>'+
+        '<td class="val-num">'+esc(p.cantidad)+'</td>'+
+        '<td>'+esc(p.rol)+'</td>'+
+        '<td>'+esc(p.profesion)+'</td>'+
+        '<td class="val-num">'+esc(p.expGeneral)+'</td>'+
+        '<td class="val-num">'+esc(p.expEspecifica)+'</td>'+
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    html += '<details class="req-ctx"><summary>Ver contexto de cada perfil</summary><div class="ctx-text">'+
+      req.personal.map((p,i)=>'<b>'+(i+1)+'. '+esc(p.rol)+':</b> '+esc(p.contexto)).join('<br><br>')+
+      '</div></details>';
+  } else html += '<div class="val">No detectado en el pliego.</div>';
+  html += '</div>';
+
+  // 3) EXPERIENCIA (firma)
+  html += '<div class="req-card'+(req.experiencia?'':' empty')+'">';
+  html += '<div class="ttl">Experiencia exigida (oferente)</div>';
+  if(req.experiencia && req.experiencia.length){
+    html += '<table class="req-table"><thead><tr><th style="width:35%">Tipo</th><th style="width:20%">Valor</th><th>Contexto</th></tr></thead><tbody>';
+    req.experiencia.forEach(e => {
+      html += '<tr><td>'+esc(e.tipo)+'</td><td class="val-num">'+esc(e.valor)+'</td><td><span class="ctx">'+esc(e.contexto)+'</span></td></tr>';
+    });
+    html += '</tbody></table>';
+  } else html += '<div class="val">No detectado en el pliego.</div>';
+  html += '</div>';
+
+  // 4) CAPACIDAD FINANCIERA (tabla)
+  html += '<div class="req-card'+(req.financiero?'':' empty')+'">';
+  html += '<div class="ttl">Capacidad financiera</div>';
+  if(req.financiero && req.financiero.length){
+    html += '<table class="req-table"><thead><tr><th style="width:40%">Indicador</th><th style="width:20%">Requisito</th><th>Contexto</th></tr></thead><tbody>';
+    req.financiero.forEach(f => {
+      html += '<tr><td>'+esc(f.indicador)+'</td><td class="val-num">'+esc(f.requisito)+'</td><td><span class="ctx">'+esc(f.contexto)+'</span></td></tr>';
+    });
+    html += '</tbody></table>';
+  } else html += '<div class="val">No detectado en el pliego.</div>';
+  html += '</div>';
+
+  // 5) GARANTIAS (tabla)
+  html += '<div class="req-card'+(req.garantias?'':' empty')+'">';
+  html += '<div class="ttl">Garantias</div>';
+  if(req.garantias && req.garantias.length){
+    html += '<table class="req-table"><thead><tr><th>Tipo</th><th>Cuantia</th><th>Vigencia</th></tr></thead><tbody>';
+    req.garantias.forEach(g => {
+      html += '<tr><td>'+esc(g.tipo)+'</td><td class="val-num">'+esc(g.cuantia)+'</td><td>'+esc(g.vigencia||'-')+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  } else html += '<div class="val">No detectado.</div>';
+  html += '</div>';
+
+  // 6) LUGAR
+  html += '<div class="req-card'+(req.lugar?'':' empty')+'">';
+  html += '<div class="ttl">Lugar de ejecucion</div>';
+  html += '<div class="val">'+esc(req.lugar||'No detectado.')+'</div>';
+  html += '</div>';
+
+  // 7) VISITA TECNICA
+  html += '<div class="req-card'+(req.visita?'':' empty')+'">';
+  html += '<div class="ttl">Visita tecnica</div>';
+  if(req.visita){
+    html += '<table class="req-table"><tbody>';
+    html += '<tr><td style="width:30%"><b>Caracter</b></td><td>'+esc(req.visita.obligatoria)+'</td></tr>';
+    if(req.visita.fecha) html += '<tr><td><b>Fecha</b></td><td class="val-num">'+esc(req.visita.fecha)+'</td></tr>';
+    html += '</tbody></table>';
+  } else html += '<div class="val">No detectado.</div>';
+  html += '</div>';
+
+  // 8) PAGO / ANTICIPO
+  html += '<div class="req-card'+(req.pago?'':' empty')+'">';
+  html += '<div class="ttl">Forma de pago / Anticipo</div>';
+  if(req.pago){
+    html += '<table class="req-table"><tbody>';
+    if(req.pago.anticipo) html += '<tr><td style="width:25%"><b>Anticipo</b></td><td>'+esc(req.pago.anticipo)+'</td></tr>';
+    if(req.pago.actas) html += '<tr><td><b>Modalidad</b></td><td>'+esc(req.pago.actas)+'</td></tr>';
+    if(req.pago.formaPago) html += '<tr><td><b>Forma de pago</b></td><td><span class="ctx">'+esc(req.pago.formaPago)+'</span></td></tr>';
+    html += '</tbody></table>';
+  } else html += '<div class="val">No detectado.</div>';
+  html += '</div>';
+
+  // 9) CRONOGRAMA
+  html += '<div class="req-card'+(req.cronograma?'':' empty')+'">';
+  html += '<div class="ttl">Cronograma / Fases</div>';
+  if(req.cronograma && req.cronograma.length){
+    html += '<ul style="margin:4px 0 0;padding-left:18px;font-size:11px">'+req.cronograma.map(c=>'<li style="margin-bottom:3px">'+esc(c)+'</li>').join('')+'</ul>';
+  } else html += '<div class="val">No detectado.</div>';
+  html += '</div>';
+
+  return html;
+}
+
+/* ============ Procesamiento de PDF con PDF.js ============ */
+async function processPdfFile(file, idProc){
+  const prog = document.getElementById('pdfProgress');
+  const bar = document.getElementById('pdfProgressBar');
+  const txt = document.getElementById('pdfProgressText');
+  prog.style.display = 'block';
+  bar.style.background = 'var(--acc)';
+  txt.textContent = 'Leyendo '+file.name+' ('+(file.size/1024/1024).toFixed(1)+' MB)...';
+  bar.style.width = '5%';
+  setProcessing(true, 'analyze');
+
+  try{
+    const fileBuf = await file.arrayBuffer();
+    const buf = fileBuf.slice(0); // copia para uso multiple
+    bar.style.width = '15%';
+    txt.textContent = 'Parseando PDF (extraccion de texto)...';
+    const text = await extractTextFromPdf(buf, (pct)=>{
+      bar.style.width = (15 + pct*40) + '%';
+      txt.textContent = 'Extrayendo pagina '+Math.round(pct*100)+'%...';
+    });
+
+    let finalText = text;
+    let usedOcr = false;
+
+    // Si texto es muy corto, el PDF es escaneado -> ofrecer OCR
+    if(text.trim().length < OCR_TEXT_THRESHOLD){
+      bar.style.width = '55%';
+      txt.innerHTML = 'PDF escaneado detectado (sin texto extraible). <button id="btnDoOcr" class="btn-mini-det" style="margin-left:8px">Activar OCR ahora</button> <span style="color:var(--muted)">~5-15s por pagina</span>';
+      const userOk = await new Promise(resolve => {
+        const b = document.getElementById('btnDoOcr');
+        if(b) b.onclick = ()=> resolve(true);
+        // Timeout auto-confirm despues de 3s si user no responde
+        setTimeout(()=> resolve(true), 30000);
+      });
+      if(userOk){
+        usedOcr = true;
+        bar.style.background = 'var(--warn)';
+        const ocrText = await ocrPdf(buf, (msg, pct)=>{
+          bar.style.width = (55 + pct*40) + '%';
+          txt.textContent = msg;
+        });
+        finalText = ocrText;
+      }
+    }
+
+    bar.style.width = '97%';
+    bar.style.background = 'var(--ok)';
+    txt.textContent = 'Analizando requisitos...';
+    const req = extractRequirementsFromText(finalText);
+    bar.style.width = '100%';
+    txt.innerHTML = 'Listo: <b>'+finalText.length+'</b> caracteres analizados '+(usedOcr?'<span style="color:var(--warn)">(via OCR)</span>':'<span style="color:var(--ok)">(texto nativo)</span>');
+    savePliegoCache(idProc, { requirements: req, size: file.size, name: file.name, ts: Date.now(), ocr: usedOcr });
+    renderPdfResults(req, file.size, usedOcr ? 'ocr' : 'pdf');
+    setTimeout(()=> { prog.style.display = 'none'; }, 3000);
+  }catch(e){
+    txt.textContent = 'Error: ' + (e.message||String(e));
+    bar.style.background = 'var(--err)';
+  } finally {
+    setProcessing(false);
+  }
+}
+
+async function extractTextFromPdf(arrayBuffer, onProgress){
+  if(!window.pdfjsLib){ throw new Error('PDF.js no cargo. Verifica conexion a internet.'); }
+  // Clonar a Uint8Array para que PDF.js NO detache el buffer original
+  const u8 = new Uint8Array(arrayBuffer.slice(0));
+  const doc = await pdfjsLib.getDocument({data: u8}).promise;
+  let fullText = '';
+  for(let i=1; i<=doc.numPages; i++){
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(it => it.str).join(' ') + '\n\n';
+    if(onProgress) onProgress(i/doc.numPages);
+  }
+  return fullText;
+}
+
+/* ============ OCR con Tesseract.js (lazy load) ============
+   Para PDFs escaneados (imagen, sin texto extraible) renderizamos cada
+   pagina a canvas y aplicamos OCR. Modelo: spa (espanol). */
+const OCR_TEXT_THRESHOLD = 250;  // si extractTextFromPdf < este, asumimos escaneado
+let _tesseractLoading = null;
+function loadTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(_tesseractLoading) return _tesseractLoading;
+  _tesseractLoading = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = ()=> resolve();
+    s.onerror = ()=> reject(new Error('No se pudo cargar Tesseract.js'));
+    document.head.appendChild(s);
+  });
+  return _tesseractLoading;
+}
+
+async function ocrPdf(arrayBuffer, onProgress, opts){
+  opts = opts || {};
+  const scale = opts.scale || 2.0;
+  const maxPages = opts.maxPages || 200;
+  if(onProgress) onProgress('Cargando motor OCR (primera vez ~5 MB)...', 0);
+  await loadTesseract();
+  const Tesseract = window.Tesseract;
+  if(onProgress) onProgress('Inicializando OCR en espanol...', 0.02);
+  const worker = await Tesseract.createWorker('spa');
+  setProcessing(true, 'ocr', worker);
+  try{
+    const u8 = new Uint8Array(arrayBuffer.slice(0));
+    const doc = await pdfjsLib.getDocument({data: u8}).promise;
+    const n = Math.min(doc.numPages, maxPages);
+    let fullText = '';
+    for(let i=1; i<=n; i++){
+      if(onProgress) onProgress('OCR pagina '+i+'/'+n+'...', (i-1)/n);
+      const page = await doc.getPage(i);
+      const viewport = page.getViewport({scale});
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      const ctx = canvas.getContext('2d');
+      await page.render({canvasContext: ctx, viewport}).promise;
+      try{
+        const res = await worker.recognize(canvas);
+        fullText += (res.data.text || '') + '\n\n';
+      }catch(e){
+        console.warn('OCR error pagina '+i+':', e);
+      }
+      // Liberar canvas
+      canvas.width = canvas.height = 0;
+    }
+    if(onProgress) onProgress('OCR completo: '+fullText.length+' caracteres extraidos.', 1);
+    return fullText;
+  } finally {
+    try{ await worker.terminate(); }catch(e){}
+    setProcessing(false);
+  }
+}
+
+
+function renderPdfResults(req, size, sourceType){
+  const label = sourceType==='pdf' ? 'Extraido del PDF cargado' :
+                sourceType==='ocr' ? 'Extraido por OCR del PDF escaneado' :
+                sourceType==='cache' ? 'Cache del pliego (carga previa)' :
+                sourceType==='auto' ? 'Extraido via descarga automatica' : 'API';
+  document.getElementById('pdfResults').innerHTML = buildReqHtml(req, label, 'pdf');
+}
+
+/* ============ Intento automatico via proxy CORS ============ */
+async function tryAutoFetchPdf(r, idProc){
+  setProcessing(true, 'download');
+  const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+  if(!url){ alert('Sin URL del proceso. No es posible intento automatico.'); return; }
+  const prog = document.getElementById('pdfProgress');
+  const bar = document.getElementById('pdfProgressBar');
+  const txt = document.getElementById('pdfProgressText');
+  prog.style.display = 'block';
+  bar.style.background = 'var(--acc)';
+  bar.style.width = '10%';
+  txt.textContent = 'Descargando pagina del proceso via proxy CORS...';
+
+  try{
+    const setMsg = (m)=>{ txt.textContent = m; };
+    const pageHtml = await corsGetText(url, setMsg);
+    bar.style.width = '30%';
+    txt.textContent = 'Buscando enlaces de pliego en la pagina...';
+
+    // 2) Buscar URLs de PDF en el HTML
+    const pdfUrls = Array.from(new Set(
+      (pageHtml.match(/https?:\/\/[^"'\s<>]+\.pdf[^"'\s<>]*/gi) || [])
+        .filter(u => /pliego|condici|tdr|anexo|t[eé]cnico/i.test(u) || true)
+    )).slice(0, 5);
+
+    if(!pdfUrls.length){
+      throw new Error('No se encontraron PDFs en la pagina. Carga el pliego manualmente.');
+    }
+
+    // 3) Descargar el primero (suele ser el pliego principal)
+    const pdfUrl = pdfUrls[0];
+    bar.style.width = '50%';
+    txt.textContent = 'Descargando PDF: '+pdfUrl.split('/').pop().slice(0,40)+'...';
+    const blobPdf = await corsGetBlob(pdfUrl, (m)=>{ txt.textContent = m; });
+    const buf = (await blobPdf.arrayBuffer()).slice(0);
+    bar.style.width = '75%';
+    txt.textContent = 'Parseando PDF ('+(buf.byteLength/1024/1024).toFixed(1)+' MB)...';
+
+    let text = await extractTextFromPdf(buf, (pct)=>{
+      bar.style.width = (75 + pct*10) + '%';
+    });
+    let usedOcr = false;
+    if(text.trim().length < OCR_TEXT_THRESHOLD){
+      usedOcr = true;
+      txt.textContent = 'PDF escaneado detectado. Activando OCR (espanol, puede tardar)...';
+      bar.style.background = 'var(--warn)';
+      text = await ocrPdf(buf, (msg, pct)=>{
+        bar.style.width = (85 + pct*10) + '%';
+        txt.textContent = msg;
+      });
+    }
+    const req = extractRequirementsFromText(text);
+    bar.style.width = '100%';
+    bar.style.background = 'var(--ok)';
+    txt.innerHTML = 'Listo (modo automatico). '+pdfUrls.length+' PDF(s) detectados. '+(usedOcr?'<span style="color:var(--warn)">via OCR</span>':'<span style="color:var(--ok)">texto nativo</span>');
+    savePliegoCache(idProc, { requirements: req, size: buf.byteLength, name: pdfUrl.split('/').pop(), ts: Date.now(), auto: true, ocr: usedOcr });
+    renderPdfResults(req, buf.byteLength, usedOcr ? 'ocr' : 'auto');
+    setTimeout(()=> { prog.style.display = 'none'; }, 2500);
+  }catch(e){
+    txt.textContent = 'Modo automatico fallo: ' + (e.message||e) + '. Carga el PDF manualmente.';
+    bar.style.background = 'var(--err)';
+  } finally {
+    setProcessing(false);
+  }
+}
+
+/* ============ Extraccion AVANZADA de requisitos desde texto PDF/OCR ============ */
+
+/* Limpieza del texto OCR: elimina basura, normaliza espacios, dedupe palabras repetidas */
+function cleanOcrText(raw){
+  if(!raw) return '';
+  let t = String(raw);
+  t = t.replace(/\uFFFD/g, ' ');                       // caracter replacement
+  t = t.replace(/[\x00-\x1F\x7F]/g, ' ');             // control chars
+  t = t.replace(/[ \t]+/g, ' ');                        // multi-espacios
+  t = t.replace(/\n{3,}/g, '\n\n');
+  // Quitar palabras repetidas consecutivas (tipico de tablas OCR)
+  t = t.replace(/\b(\w{3,})(\s+\1\b)+/gi, '$1');
+  return t.trim();
+}
+
+function extractRequirementsFromText(rawText){
+  const txt = cleanOcrText(rawText);
+  return {
+    plazo:        extractPlazo(txt),
+    personal:     extractPersonal(txt),
+    experiencia:  extractExperiencia(txt),
+    financiero:   extractFinanciero(txt),
+    garantias:    extractGarantias(txt),
+    lugar:        extractLugar(txt),
+    visita:       extractVisita(txt),
+    pago:         extractPago(txt),
+    cronograma:   extractCronograma(txt),
+    _rawSample:   txt.substring(0, 800)  // primera muestra para debug
+  };
+}
+
+function extractPlazo(txt){
+  // Patrones limpios: solo numero + unidad
+  const patterns = [
+    /plazo (de )?(ejecuci[oó]n|del contrato|contractual)[^.]{0,80}?(\d+)\s*(d[ií]as|meses|a[nñ]os)/i,
+    /duraci[oó]n (del contrato|de la ejecuci[oó]n|de ejecuci[oó]n)[^.]{0,40}?(\d+)\s*(d[ií]as|meses|a[nñ]os)/i,
+    /t[eé]rmino (de ejecuci[oó]n|de duraci[oó]n)[^.]{0,40}?(\d+)\s*(d[ií]as|meses|a[nñ]os)/i,
+    /ejecuci[oó]n del contrato[^.]{0,40}?(\d+)\s*(d[ií]as|meses|a[nñ]os)/i,
+    /el plazo[^.]{0,40}?(\d+)\s*(d[ií]as|meses|a[nñ]os)/i,
+    /(\d+)\s*(d[ií]as|meses|a[nñ]os)\s+(calendario|h[aá]biles|de ejecuci[oó]n|contados a partir)/i,
+  ];
+  const found = [];
+  for(const rg of patterns){
+    let m;
+    const reg = new RegExp(rg.source, 'gi');
+    while((m = reg.exec(txt)) !== null){
+      const numMatch = m[0].match(/(\d+)/);
+      const unitMatch = m[0].match(/(d[ií]as|meses|a[nñ]os)/i);
+      if(numMatch && unitMatch){
+        const val = numMatch[1] + ' ' + unitMatch[1].toLowerCase();
+        found.push({ valor: val, contexto: m[0].substring(0,150).trim() });
+      }
+    }
+  }
+  if(!found.length) return null;
+  // Dedupe por valor
+  const seen = new Set();
+  const unique = found.filter(f => { if(seen.has(f.valor)) return false; seen.add(f.valor); return true; });
+  return unique.slice(0, 4);
+}
+
+function extractPersonal(txt){
+  const roles = [
+    {name:'Director de obra',       rg:/director (de obra|del proyecto|t[eé]cnico)/i},
+    {name:'Residente de obra',      rg:/residente (de obra|t[eé]cnico|principal|auxiliar)?/i},
+    {name:'Especialista hidraulico',rg:/especialista (en )?hidr[aá]ulic[oa]/i},
+    {name:'Especialista estructural',rg:/especialista (en )?estructur(al|as)/i},
+    {name:'Especialista geotecnico',rg:/especialista (en )?geot[eé]cnic[oa]/i},
+    {name:'Especialista pavimentos', rg:/especialista (en )?pavimentos/i},
+    {name:'Especialista ambiental',  rg:/especialista (en )?ambiental/i},
+    {name:'Especialista electrico',  rg:/especialista (en )?(el[eé]ctric|el[eé]ctronic)/i},
+    {name:'Especialista SST',        rg:/(especialista|profesional) (en )?(SST|sst|seguridad y salud)/i},
+    {name:'Especialista (otro)',     rg:/especialista (en )?[a-záéíóúñ]+/i},
+    {name:'Coordinador',             rg:/coordinador (de obra|t[eé]cnico|de proyecto|hsec|hseq)/i},
+    {name:'Inspector',               rg:/inspector (de obra|t[eé]cnico)/i},
+    {name:'Topografo / Comision',    rg:/(top[oó]grafo|comisi[oó]n de topograf[ií]a)/i},
+    {name:'Maestro de obra',         rg:/maestro de obra/i},
+    {name:'Profesional ambiental',   rg:/profesional ambiental/i},
+    {name:'Profesional social',      rg:/(profesional|trabajador) social/i},
+    {name:'SISO / HSEQ',             rg:/(SISO|HSEQ|profesional (en )?seguridad)/i},
+  ];
+  const out = [];
+  roles.forEach(r => {
+    // Para cada rol, buscar contexto cercano (300 chars siguientes) con profesion + experiencia
+    const reg = new RegExp(r.rg.source + '[\\s\\S]{0,350}', 'gi');
+    let m;
+    while((m = reg.exec(txt)) !== null){
+      const ctx = m[0].replace(/\s+/g,' ').substring(0,350);
+      // Profesion
+      const profesion = (ctx.match(/(ingenier[oa] (civil|industrial|qu[íi]mico|electricista|mec[aá]nico|sanitario|ambiental|forestal|de sistemas|el[eé]ctric[oa])|arquitect[oa]|t[eé]cnic[oa] [a-záéíóúñ ]+|tecn[oó]logo [a-záéíóúñ]+|economista|contador|administrador|ge[oó]logo)/i) || [])[0] || '';
+      // Experiencia general
+      const expGen = (ctx.match(/experiencia general[^.;,]{0,80}?(\d+)\s*a[nñ]os?/i) || [])[0] || '';
+      const expGenN = (expGen.match(/(\d+)\s*a[nñ]os?/i) || [])[0] || '';
+      // Experiencia especifica
+      const expEsp = (ctx.match(/experiencia espec[ií]fica[^.;,]{0,150}?(\d+)\s*a[nñ]os?/i) || [])[0] || '';
+      const expEspN = (expEsp.match(/(\d+)\s*a[nñ]os?/i) || [])[0] || '';
+      // Total experiencia (si no hay general/especifica)
+      const expTotal = (!expGenN && !expEspN) ? ((ctx.match(/(\d+)\s*a[nñ]os?\s*(de )?experiencia/i) || [])[0] || '') : '';
+      // Cantidad (1 director, 2 residentes...)
+      const cantidad = (ctx.match(/\b(uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|\d+)\s+(director|residente|especialista|profesional|inspector)/i) || [])[0] || '';
+
+      const roleText = (ctx.match(r.rg) || [])[0] || r.name;
+      out.push({
+        rol: roleText.charAt(0).toUpperCase() + roleText.slice(1).toLowerCase(),
+        cantidad: cantidad.split(/\s+/)[0] || '1',
+        profesion: profesion || '?',
+        expGeneral: expGenN || expTotal || '?',
+        expEspecifica: expEspN || '?',
+        contexto: ctx.substring(0,260)
+      });
+    }
+  });
+  // Dedupe por rol + profesion
+  const seen = new Set();
+  const unique = [];
+  out.forEach(p => {
+    const k = (p.rol+'|'+p.profesion).toLowerCase();
+    if(seen.has(k)) return;
+    seen.add(k);
+    unique.push(p);
+  });
+  return unique.length ? unique.slice(0,15) : null;
+}
+
+function extractExperiencia(txt){
+  const out = [];
+  // Patrones tipicos de experiencia de la FIRMA
+  const defs = [
+    { tipo:'Experiencia general',     rg:/experiencia general[^.;]{0,300}/gi },
+    { tipo:'Experiencia especifica',  rg:/experiencia espec[ií]fica[^.;]{0,300}/gi },
+    { tipo:'Experiencia habilitante', rg:/experiencia habilitante[^.;]{0,300}/gi },
+    { tipo:'Contratos requeridos',    rg:/(m[ií]nimo\s+)?(\d+)\s+contratos?[^.;]{0,200}?(terminados?|ejecutados?|liquidados?|en ejecuci[oó]n)/gi },
+    { tipo:'Valor en SMMLV',          rg:/(\d+[.,]?\d*)\s*(SMMLV|smmlv|salarios m[ií]nimos)[^.;]{0,200}/gi },
+    { tipo:'Acreditacion',            rg:/acreditar[^.;]{0,300}?experiencia[^.;]{0,150}/gi },
+  ];
+  defs.forEach(d => {
+    let m;
+    while((m = d.rg.exec(txt)) !== null){
+      const ctx = m[0].replace(/\s+/g,' ').substring(0,280);
+      // Valor numerico relevante
+      const numMatch = ctx.match(/(\d+[.,]?\d*\s*(SMMLV|%|a[nñ]os?|contratos?|veces el (PO|presupuesto))?)/i);
+      out.push({
+        tipo: d.tipo,
+        valor: numMatch ? numMatch[0].trim() : '?',
+        contexto: ctx
+      });
+    }
+  });
+  // Dedupe por tipo+valor
+  const seen = new Set();
+  const unique = [];
+  out.forEach(e => {
+    const k = (e.tipo+'|'+e.valor).toLowerCase();
+    if(seen.has(k)) return;
+    seen.add(k);
+    unique.push(e);
+  });
+  return unique.length ? unique.slice(0,10) : null;
+}
+
+function extractFinanciero(txt){
+  const defs = [
+    { name:'Liquidez (razon corriente)',
+      rgs:[
+        /(raz[oó]n corriente|[íi]ndice de liquidez|liquidez)[^.;:]{0,80}?(mayor o igual a|mayor o igual que|>=|≥|igual o superior a)[^.;:]{0,15}?(\d+[.,]?\d*)/i,
+        /(liquidez)\s*(>=|\u2265|>)\s*(\d+[.,]?\d*)/i
+      ]},
+    { name:'Nivel de endeudamiento',
+      rgs:[
+        /(nivel de )?endeudamiento[^.;:]{0,80}?(menor o igual|menor que|<=|\u2264|no superior a|no mayor a)[^.;:]{0,15}?(\d+[.,]?\d*\s*%?)/i
+      ]},
+    { name:'Razon de cobertura de intereses',
+      rgs:[
+        /raz[oó]n de cobertura( de intereses)?[^.;:]{0,80}?(mayor|>=|\u2265|igual o superior)[^.;:]{0,15}?(\d+[.,]?\d*)/i
+      ]},
+    { name:'Capital de trabajo',
+      rgs:[
+        /capital de trabajo[^.;:]{0,150}?(mayor o igual|>=|\u2265|igual o superior)[^.;:]{0,80}?([\d.,]+\s*(SMMLV|smmlv|%|veces el presupuesto|del PO|del presupuesto oficial))/i,
+        /CT\s*(>=|>|\u2265|=)\s*([\d.,]+\s*(SMMLV|%)?)/i
+      ]},
+    { name:'Patrimonio',
+      rgs:[
+        /(patrimonio)[^.;:]{0,80}?(mayor|>=|\u2265|igual o superior)[^.;:]{0,40}?([\d.,]+\s*(SMMLV|smmlv|%|veces el PO)?)/i
+      ]},
+    { name:'Capacidad de contratacion (K)',
+      rgs:[
+        /(K[\s_-]?contrataci[oó]n|capacidad (residual de )?contrataci[oó]n)[^.;:]{0,100}?(mayor|>=|\u2265|igual o superior)[^.;:]{0,40}?([\d.,]+)/i
+      ]},
+    { name:'Capacidad residual (K residual)',
+      rgs:[
+        /(K[\s_-]?residual|capacidad residual)[^.;:]{0,100}?(mayor|>=|\u2265|igual o superior)[^.;:]{0,40}?([\d.,]+)/i
+      ]},
+    { name:'Rentabilidad del patrimonio',
+      rgs:[
+        /rentabilidad del patrimonio[^.;:]{0,80}?(mayor|>=|\u2265|igual o superior)[^.;:]{0,30}?(\d+[.,]?\d*\s*%?)/i
+      ]},
+    { name:'Rentabilidad del activo',
+      rgs:[
+        /rentabilidad del activo[^.;:]{0,80}?(mayor|>=|\u2265|igual o superior)[^.;:]{0,30}?(\d+[.,]?\d*\s*%?)/i
+      ]},
+  ];
+  const out = [];
+  defs.forEach(d => {
+    for(const rg of d.rgs){
+      const m = txt.match(rg);
+      if(m){
+        // Extraer numero
+        const numM = m[0].match(/(\d+[.,]?\d*\s*(%|SMMLV|smmlv|veces el (PO|presupuesto)|del (PO|presupuesto))?)/i);
+        out.push({
+          indicador: d.name,
+          requisito: numM ? numM[0].trim() : '?',
+          contexto: m[0].replace(/\s+/g,' ').substring(0,200).trim()
+        });
+        break;
+      }
+    }
+  });
+  return out.length ? out : null;
+}
+
+function extractGarantias(txt){
+  const defs = [
+    { tipo:'Seriedad de la oferta',
+      rg:/(garant[ií]a de )?seriedad[^.;]{0,250}?(\d+[.,]?\d*\s*%?[^.;]{0,80})/i },
+    { tipo:'Cumplimiento',
+      rg:/cumplimiento[^.;]{0,250}?(\d+[.,]?\d*\s*%?[^.;]{0,80})/i },
+    { tipo:'Estabilidad y calidad de la obra',
+      rg:/estabilidad (y calidad )?(de (la )?obra)?[^.;]{0,250}?(\d+[.,]?\d*\s*%?[^.;]{0,80})/i },
+    { tipo:'Salarios y prestaciones',
+      rg:/(salarios.{0,50}prestaciones|prestaciones sociales)[^.;]{0,250}?(\d+[.,]?\d*\s*%?[^.;]{0,80})/i },
+    { tipo:'Responsabilidad civil extracontractual',
+      rg:/(responsabilidad civil extracontractual|RCE)[^.;]{0,250}?(\d+[.,]?\d*\s*%?[^.;]{0,80})/i },
+    { tipo:'Buen manejo del anticipo',
+      rg:/(buen manejo )?(del )?anticipo[^.;]{0,250}?(\d+[.,]?\d*\s*%?[^.;]{0,80})/i },
+    { tipo:'Calidad del servicio',
+      rg:/calidad del servicio[^.;]{0,250}?(\d+[.,]?\d*\s*%?[^.;]{0,80})/i },
+  ];
+  const out = [];
+  defs.forEach(d => {
+    const m = txt.match(d.rg);
+    if(m){
+      const num = m[0].match(/(\d+[.,]?\d*\s*%?)/);
+      const vig = m[0].match(/vigencia[^.;]{0,80}?(\d+\s*(meses|a[nñ]os|d[ií]as))/i);
+      out.push({
+        tipo: d.tipo,
+        cuantia: num ? num[0] : '?',
+        vigencia: vig ? vig[0].replace(/\s+/g,' ').trim() : '',
+        contexto: m[0].replace(/\s+/g,' ').substring(0,220).trim()
+      });
+    }
+  });
+  return out.length ? out : null;
+}
+
+function extractLugar(txt){
+  const m = txt.match(/lugar de ejecuci[oó]n[^.]{0,250}/i);
+  return m ? m[0].replace(/\s+/g,' ').substring(0,250).trim() : null;
+}
+
+function extractVisita(txt){
+  const obl = /visita (al sitio|t[eé]cnica)[^.]{0,80}?(obligatoria|no obligatoria|opcional|recomendada)/i;
+  const fechaRg = /visita[^.]{0,250}?(\d{1,2}\s*(de )?[a-z]+\s*(de )?\d{4})/i;
+  const m1 = txt.match(obl);
+  const m2 = txt.match(fechaRg);
+  if(!m1 && !m2) return null;
+  return {
+    obligatoria: m1 ? m1[0].replace(/\s+/g,' ').trim() : 'No especificado',
+    fecha: m2 ? m2[0].replace(/\s+/g,' ').trim() : '',
+  };
+}
+
+function extractPago(txt){
+  const out = {};
+  const ant = txt.match(/anticipo[^.;]{0,200}?(\d+\s*%)/i);
+  if(ant) out.anticipo = ant[0].replace(/\s+/g,' ').substring(0,200).trim();
+  const fp = txt.match(/forma de pago[^.;]{0,400}/i);
+  if(fp) out.formaPago = fp[0].replace(/\s+/g,' ').substring(0,300).trim();
+  const actas = txt.match(/(actas? parciales?|pago contra entrega|pagos? mensuales?)[^.;]{0,200}/i);
+  if(actas) out.actas = actas[0].replace(/\s+/g,' ').substring(0,200).trim();
+  return Object.keys(out).length ? out : null;
+}
+
+function extractCronograma(txt){
+  const items = [];
+  const rgs = [
+    /(fase|etapa)\s*(de )?(planeaci[oó]n|preconstrucci[oó]n|ejecuci[oó]n|construcci[oó]n|liquidaci[oó]n|operaci[oó]n)[^.;]{0,150}/gi,
+    /cronograma[^.;]{0,250}/gi,
+  ];
+  rgs.forEach(rg => {
+    let m;
+    while((m = rg.exec(txt)) !== null){
+      items.push(m[0].replace(/\s+/g,' ').substring(0,200).trim());
+    }
+  });
+  if(!items.length) return null;
+  return Array.from(new Set(items)).slice(0,6);
+}
+
+/* ============ Cache de pliegos en localStorage ============ */
+function loadPliegoCache(idProc){
+  try{
+    const key = 'pliego_' + idProc;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function savePliegoCache(idProc, data){
+  try{
+    localStorage.setItem('pliego_' + idProc, JSON.stringify(data));
+  }catch(e){ /* quota llena, ignorar */ }
+}
+
+function renderTodos(r){
+  const keys = Object.keys(r).sort();
+  const html = '<dl class="kv-grid">' +
+    keys.map(k => {
+      let v = r[k];
+      if(v === null || v === undefined || v === '') return '';
+      if(typeof v === 'object'){
+        if(v.url) v = '<a href="'+esc(v.url)+'" target="_blank" rel="noopener">'+esc(v.url)+'</a>';
+        else v = '<code>'+esc(JSON.stringify(v))+'</code>';
+      } else {
+        v = esc(v);
+      }
+      return '<dt>'+esc(k)+'</dt><dd>'+v+'</dd>';
+    }).join('') +
+    '</dl>';
+  document.getElementById('mdTodos').innerHTML = html;
+}
+
+/* ============ Documentos del proceso: DESCUBRIMIENTO + DESCARGA + ANALISIS ============
+   Usa proxy CORS para leer la pagina SECOP II del proceso, extrae URLs de PDFs y
+   permite descargarlos o descargarlos+analizarlos directamente desde la app. */
+async function renderDocs(r){
+  const cont = document.getElementById('mdDocs');
+  const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+  const idProc = r.id_del_proceso || r.id_del_portafolio || r.proceso_de_compra || r.referencia_del_proceso || '_';
+
+  cont.innerHTML =
+    '<div style="margin-bottom:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+      '<button class="btn-primary" id="btnFindDocs">Buscar pliegos en SECOP II</button>'+
+      (url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" class="btn-secondary" style="text-decoration:none;display:inline-block;padding:9px 13px;border-radius:5px;font-weight:600;font-size:12px">Ver expediente completo</a>' : '')+
+    '</div>'+
+    '<div id="docsResult"><div style="color:var(--muted);font-size:12px">Pulsa "Buscar pliegos" para que la app rastree la pagina del proceso y liste los PDFs disponibles para descarga directa.</div></div>';
+
+  // Mostrar URLs embebidas en el registro (si las hay)
+  const inlineDocs = [];
+  Object.keys(r).forEach(k => {
+    const v = r[k];
+    if(v && typeof v === 'object' && v.url && /\.pdf/i.test(v.url)){
+      inlineDocs.push({nombre:k, url:v.url, source:'API'});
+    } else if(v && typeof v === 'string' && /^https?:.*\.pdf/i.test(v)){
+      inlineDocs.push({nombre:k, url:v, source:'API'});
+    }
+  });
+
+  const btn = document.getElementById('btnFindDocs');
+  btn.onclick = ()=> discoverAndListDocs(r, idProc, inlineDocs);
+}
+
+async function discoverAndListDocs(r, idProc, inlineDocs){
+  setProcessing(true, 'discover');
+  const result = document.getElementById('docsResult');
+  const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+  if(!url){
+    result.innerHTML = '<div style="color:var(--err);font-size:12px">No hay URL del proceso. No es posible buscar pliegos automaticamente.</div>';
+    return;
+  }
+  result.innerHTML = '<div style="color:var(--muted);font-size:12px"><span class="spinner"></span>Rastreando pagina del proceso en SECOP II...</div>';
+
+  let allDocs = [...inlineDocs];
+  try{
+    const setMsg = (m)=>{ result.innerHTML = '<div style="color:var(--muted);font-size:12px"><span class="spinner"></span>'+esc(m)+'</div>'; };
+    const pageHtml = await corsGetText(url, setMsg);
+
+    // Extraer URLs PDF
+    const rawUrls = (pageHtml.match(/https?:\/\/[^"'\s<>]+\.(?:pdf|PDF)[^"'\s<>]*/g) || []);
+
+    // Extraer tambien URLs que sean enlaces de descarga aunque no terminen en .pdf
+    // (algunos SECOP usan URLs estilo /DocumentDownload?id=...)
+    const downloadUrls = (pageHtml.match(/https?:\/\/[^"'\s<>]+(?:DocumentDownload|FileDownload|Document\/Download|DownloadDocument)[^"'\s<>]*/gi) || []);
+
+    const combined = Array.from(new Set([...rawUrls, ...downloadUrls]));
+    combined.forEach(u => {
+      // Inferir nombre del archivo desde la URL
+      let name = '';
+      try{
+        const cleanUrl = u.split('?')[0];
+        const parts = cleanUrl.split('/');
+        name = decodeURIComponent(parts[parts.length-1] || 'documento');
+      }catch(e){ name = 'documento'; }
+      // Clasificar
+      const lower = (name+' '+u).toLowerCase();
+      let tipo = 'OTRO';
+      if(/pliego|condici/.test(lower)) tipo = 'PLIEGO';
+      else if(/anexo/.test(lower)) tipo = 'ANEXO';
+      else if(/adenda/.test(lower)) tipo = 'ADENDA';
+      else if(/estudios?\s*previos?/.test(lower)) tipo = 'ESTUDIOS PREVIOS';
+      else if(/respuesta|observac/.test(lower)) tipo = 'OBSERVACIONES';
+      else if(/formulario|formato/.test(lower)) tipo = 'FORMATO';
+      else if(/cronograma/.test(lower)) tipo = 'CRONOGRAMA';
+      else if(/matriz|riesgo/.test(lower)) tipo = 'MATRIZ RIESGOS';
+      allDocs.push({nombre: name, url: u, source:'SECOP', tipo});
+    });
+
+    // Dedupe
+    const seen = new Set();
+    allDocs = allDocs.filter(d => { if(seen.has(d.url)) return false; seen.add(d.url); return true; });
+
+    if(!allDocs.length){
+      result.innerHTML = '<div style="color:var(--warn);font-size:12px">No se encontraron PDFs en la pagina del proceso. '+
+        'Puede que sea un proceso muy reciente o que SECOP II los proteja con sesion. '+
+        '<br>Abre el <a href="'+esc(url)+'" target="_blank" style="color:var(--acc)">expediente completo</a> y descarga manualmente.</div>';
+      return;
+    }
+
+    // Ordenar: pliego primero, anexos, adendas, etc.
+    const order = {'PLIEGO':1,'ANEXO':2,'ADENDA':3,'ESTUDIOS PREVIOS':4,'CRONOGRAMA':5,'MATRIZ RIESGOS':6,'FORMATO':7,'OBSERVACIONES':8,'OTRO':9};
+    allDocs.sort((a,b)=> (order[a.tipo]||9) - (order[b.tipo]||9));
+
+    // Render
+    result.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+
+      allDocs.length+' documento(s) detectado(s). Pulsa <b>Descargar</b> para guardar el PDF o <b>Analizar</b> para extraer requisitos directamente.</div>'+
+      '<ul class="doc-list">' +
+      allDocs.map((d,i)=>{
+        const safeName = d.nombre.length > 60 ? d.nombre.substring(0,57)+'...' : d.nombre;
+        const tipoBadge = '<span class="tag" style="background:'+(d.tipo==='PLIEGO'?'#16a34a':'#1e3a5f')+';color:#fff">'+esc(d.tipo)+'</span>';
+        return '<li>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div style="font-weight:600;font-size:12px;color:var(--txt);word-break:break-all" title="'+esc(d.nombre)+'">'+esc(safeName)+'</div>'+
+            '<div class="meta">'+tipoBadge+' <span style="margin-left:6px">'+esc(d.source)+'</span></div>'+
+          '</div>'+
+          '<div style="display:flex;gap:4px;flex-shrink:0">'+
+            '<button class="btn-mini-det" onclick="downloadDocDirect('+i+', false)" title="Descargar PDF a tu PC">Descargar</button>'+
+            '<button class="btn-mini-det" style="background:#15803d;border-color:#22c55e" onclick="downloadDocDirect('+i+', true)" title="Descargar y analizar requisitos">Analizar</button>'+
+          '</div>'+
+        '</li>';
+      }).join('') + '</ul>';
+
+    // Guardar la lista en variable global para los handlers
+    window._currentDocs = allDocs;
+    window._currentIdProc = idProc;
+
+  }catch(e){
+    result.innerHTML = '<div style="color:var(--err);font-size:12px"><b>Error rastreando:</b> '+esc(e.message||String(e))+
+      '<br><br>El proxy CORS puede estar lento o caido. '+
+      'Como alternativa, abre el <a href="'+esc(url)+'" target="_blank" style="color:var(--acc)">expediente en SECOP II</a> '+
+      'y descarga el pliego manualmente, luego arrastralo a la pestaña <b>Analisis de pliego</b>.</div>';
+  } finally {
+    setProcessing(false);
+  }
+}
+
+async function downloadDocDirect(idx, alsoAnalyze){
+  const docs = window._currentDocs || [];
+  const doc = docs[idx];
+  if(!doc){ alert('Documento no encontrado'); return; }
+  const idProc = window._currentIdProc || '_';
+  setProcessing(true, alsoAnalyze ? 'analyze' : 'download');
+
+  const result = document.getElementById('docsResult');
+  const status = document.createElement('div');
+  status.style.cssText = 'margin-top:8px;padding:8px;background:#0f172a;border:1px solid var(--acc);border-radius:5px;font-size:11px';
+  status.innerHTML = '<span class="spinner"></span>Descargando: '+esc(doc.nombre)+'...';
+  result.appendChild(status);
+
+  try{
+    const setMsg = (m)=>{ status.innerHTML = '<span class="spinner"></span>'+esc(m); };
+    const blob = await corsGetBlob(doc.url, setMsg);
+
+    // Guardar a disco
+    const dlUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = dlUrl;
+    a.download = doc.nombre.endsWith('.pdf') ? doc.nombre : doc.nombre + '.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=> URL.revokeObjectURL(dlUrl), 5000);
+
+    status.innerHTML = '<span style="color:var(--ok)">✓</span> Descargado: '+esc(doc.nombre)+' ('+(blob.size/1024/1024).toFixed(2)+' MB)';
+    status.style.borderColor = 'var(--ok)';
+
+    if(alsoAnalyze){
+      // Cambiar a tab Analisis y procesar
+      switchTab('requisitos');
+      const buf = (await blob.arrayBuffer()).slice(0);
+      const prog = document.getElementById('pdfProgress');
+      const bar = document.getElementById('pdfProgressBar');
+      const txt = document.getElementById('pdfProgressText');
+      if(prog){ prog.style.display = 'block'; bar.style.width = '20%'; txt.textContent = 'Analizando '+doc.nombre+'...'; }
+
+      let text = await extractTextFromPdf(buf, (pct)=>{
+        if(bar) bar.style.width = (20 + pct*40) + '%';
+        if(txt) txt.textContent = 'Extrayendo pagina '+Math.round(pct*100)+'%...';
+      });
+      let usedOcr = false;
+      if(text.trim().length < OCR_TEXT_THRESHOLD){
+        usedOcr = true;
+        if(txt) txt.textContent = 'PDF escaneado detectado. Activando OCR (espanol)...';
+        if(bar) bar.style.background = 'var(--warn)';
+        text = await ocrPdf(buf, (msg, pct)=>{
+          if(bar) bar.style.width = (60 + pct*35) + '%';
+          if(txt) txt.textContent = msg;
+        });
+      }
+      const req = extractRequirementsFromText(text);
+      if(bar){ bar.style.width = '100%'; bar.style.background = 'var(--ok)'; }
+      if(txt) txt.innerHTML = 'Listo. '+text.length+' chars '+(usedOcr?'(OCR)':'(texto nativo)');
+      savePliegoCache(idProc, { requirements: req, size: blob.size, name: doc.nombre, ts: Date.now(), auto: true, ocr: usedOcr });
+      renderPdfResults(req, blob.size, usedOcr ? 'ocr' : 'pdf');
+      setTimeout(()=> { if(prog) prog.style.display = 'none'; }, 2000);
+    }
+  }catch(e){
+    status.innerHTML = '<span style="color:var(--err)">✗</span> Error: '+esc(e.message||String(e))+
+      '<br><a href="'+esc(doc.url)+'" target="_blank" style="color:var(--acc)">Abrir URL original</a>';
+    status.style.borderColor = 'var(--err)';
+  } finally {
+    setProcessing(false);
+  }
+}
+
+function copiarDetalle(){
+  const r = _currentRecord; if(!r) return;
+  const req = extractRequirements(r);
+  const txt = [
+    'Proceso: ' + (r.referencia_del_proceso || ''),
+    'Entidad: ' + (r.entidad || ''),
+    'Departamento/Municipio: ' + (r.departamento_entidad || '') + ' / ' + (r.ciudad_entidad || ''),
+    'Modalidad: ' + (r.modalidad_de_contratacion || ''),
+    'Tipo: ' + (r.tipo_de_contrato || ''),
+    'Estado/Fase: ' + (r.estado_del_procedimiento || '') + ' / ' + (r.fase || ''),
+    'Valor: ' + fmtMoney(r.precio_base),
+    'Plazo: ' + (req.plazo || 'n/d'),
+    'Publicacion: ' + fmtDate(r.fecha_de_publicacion_del),
+    'Cierre: ' + fmtDate(r.fecha_de_recepcion_de),
+    '',
+    '--- REQUISITOS DETECTADOS ---',
+    'Experiencia: ' + (req.experiencia ? req.experiencia.join(' | ') : 'n/d'),
+    'Personal: ' + (req.personal ? req.personal.join(' | ') : 'n/d'),
+    'Financiero: ' + (req.financiero ? req.financiero.join(' | ') : 'n/d'),
+    'Lugar: ' + (req.lugar || 'n/d'),
+    '',
+    'URL: ' + ((r.urlproceso && r.urlproceso.url) || ''),
+    '',
+    'Objeto: ' + (r.descripci_n_del_procedimiento || ''),
+  ].join('\n');
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn = document.getElementById('mdCopiar');
+    const old = btn.textContent; btn.textContent = 'Copiado!'; btn.style.background = 'var(--ok)';
+    setTimeout(()=>{ btn.textContent = old; btn.style.background = ''; }, 1500);
+  });
+}
+
+try {
+  // Wire de botones principales (blindado)
+  const _btnSearch = $('btnSearch'); if(_btnSearch) _btnSearch.onclick = ()=> runSearch(0);
+const _btnClear = $('btnClear'); if(_btnClear) _btnClear.onclick = ()=> {
+  $('form').reset(); clearStatus();
+  // Restaurar seleccion default del departamento (TODOS)
+  if(selDep){ Array.from(selDep.options).forEach(o => o.selected = (o.value === '__ALL__')); }
+  tbody.innerHTML = '<tr><td colspan="14" class="empty">Sin busquedas aun.</td></tr>';
+  $('count').textContent='Sin busqueda'; $('pager').innerHTML=''; lastResults=[];
+};
+const _btnExport = $('btnExport'); if(_btnExport) _btnExport.onclick = exportXlsx;
+const _btnDiag = $('btnDiag'); if(_btnDiag) _btnDiag.onclick = ()=>{
+  try{
+    const p = getCriteria();
+    const url = buildQuery(p, 0, p.limit);
+    const html = 'CRITERIOS:<br><pre style="font-size:10px;max-height:140px;overflow:auto;background:#0f172a;padding:6px;border-radius:4px">'+
+      JSON.stringify(p, null, 2)+'</pre>'+
+      'URL:<br><a href="'+url+'" target="_blank" style="color:var(--acc);word-break:break-all;font-size:10px">'+url+'</a>';
+    setStatus('info', html);
+  }catch(e){
+    setStatus('err','Diag error: '+(e.message||e));
+  }
+};
+const _form = $('form'); if(_form) _form.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && e.target.tagName==='INPUT'){
+    e.preventDefault(); runSearch(0);
+  }
+});
+} catch(__wireErr){
+  console.error('[SECOP] Error en wiring de botones:', __wireErr);
+  alert('Error inicializando la app. Abre DevTools (F12) para detalle.');
+}
+</script>
+</body>
+</html>
