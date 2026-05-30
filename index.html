@@ -543,6 +543,11 @@
   .theme-toggle svg{transition:transform 0.3s}
   html[data-theme="light"] .theme-toggle{background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);color:#0369a1}
   html[data-theme="light"] .theme-toggle:hover{background:rgba(14,165,233,0.2)}
+
+  /* Boton compartir en fila */
+  .btn-mini-share{background:linear-gradient(135deg,rgba(16,185,129,0.6),rgba(5,150,105,0.4));color:#a7f3d0;padding:4px 9px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(16,185,129,0.4);margin-left:5px;transition:all 0.15s;line-height:1}
+  .btn-mini-share:hover{background:linear-gradient(135deg,var(--ok),#059669);color:#fff;transform:translateY(-1px);box-shadow:0 3px 10px rgba(16,185,129,0.4);border-color:transparent}
+  html[data-theme="light"] .btn-mini-share{background:linear-gradient(135deg,rgba(167,243,208,0.7),rgba(110,231,183,0.5));color:#047857;border-color:rgba(16,185,129,0.5)}
 </style>
 </head>
 <body>
@@ -773,6 +778,7 @@
       </div>
       <div style="display:flex;gap:6px">
         <button class="btn-secondary" id="mdCopiar" onclick="copiarDetalle()">Copiar resumen</button>
+        <button class="btn-success" id="mdShare" onclick="shareCurrent()">&#x2709; Enviar por correo</button>
         <a id="mdLinkSecop" href="#" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;display:inline-block;padding:9px 13px;border-radius:5px;font-weight:600;font-size:12px">Abrir en SECOP II</a>
       </div>
     </div>
@@ -1010,7 +1016,7 @@ function render(rows, off){
       '<td class="money">'+fmtMoney(r.precio_base)+'</td>'+
       '<td>'+fmtDate(r.fecha_de_publicacion_del)+'</td>'+
       '<td>'+fmtDate(r.fecha_de_recepcion_de)+'</td>'+
-      '<td class="url">'+(url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir</a>' : '')+'<button class="btn-mini-det" onclick="showDetails('+(off+i)+')">Detalles</button></td>'+
+      '<td class="url">'+(url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir</a>' : '')+'<button class="btn-mini-det" onclick="showDetails('+(off+i)+')">Detalles</button><button class="btn-mini-share" onclick="shareProcess('+(off+i)+')" title="Enviar por correo">&#x2709;</button></td>'+
     '</tr>';
   }).join('');
   $('count').textContent = 'Mostrando '+(off+1)+'-'+(off+rows.length);
@@ -1084,6 +1090,173 @@ if(selDep){
   });
 }
 
+
+
+/* ============ COMPARTIR PROCESO POR EMAIL ============ */
+function shareProcess(idx){
+  const r = lastResults[idx - offset];
+  if(!r){ alert('Proceso no encontrado en la lista actual.'); return; }
+  const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+  const proc = r.referencia_del_proceso || r.proceso_de_compra || 's/n';
+  const ent = r.nombre_entidad || r.entidad || '';
+  const objeto = r.descripci_n_del_procedimiento || r.nombre_del_procedimiento || '';
+  const subject = '[SECOP II] ' + proc + ' - ' + (ent.length > 60 ? ent.substring(0,60)+'...' : ent);
+
+  const lines = [];
+  lines.push('PROCESO DE INTERES - SECOP II');
+  lines.push('=====================================');
+  lines.push('');
+  lines.push('Numero de proceso: ' + proc);
+  lines.push('Entidad: ' + ent);
+  if(r.nit_entidad) lines.push('NIT: ' + r.nit_entidad);
+  lines.push('');
+  lines.push('--- OBJETO ---');
+  lines.push(objeto);
+  lines.push('');
+  lines.push('--- DETALLES ---');
+  if(r.modalidad_de_contratacion) lines.push('Modalidad: ' + r.modalidad_de_contratacion);
+  if(r.estado_del_procedimiento) lines.push('Estado: ' + r.estado_del_procedimiento);
+  if(r.fase) lines.push('Fase: ' + r.fase);
+  if(r.tipo_de_contrato) lines.push('Tipo de contrato: ' + r.tipo_de_contrato);
+  if(r.subtipo_de_contrato) lines.push('Subtipo: ' + r.subtipo_de_contrato);
+  if(r.departamento_entidad || r.ciudad_entidad){
+    lines.push('Ubicacion: ' + [r.departamento_entidad, r.ciudad_entidad].filter(Boolean).join(' / '));
+  }
+  if(r.duracion) lines.push('Duracion: ' + r.duracion + ' ' + (r.unidad_de_duracion || ''));
+  lines.push('');
+  if(r.precio_base){
+    lines.push('--- VALOR ---');
+    lines.push('Presupuesto: ' + fmtMoney(r.precio_base));
+    if(r.valor_total_adjudicacion) lines.push('Valor adjudicacion: ' + fmtMoney(r.valor_total_adjudicacion));
+    lines.push('');
+  }
+  lines.push('--- FECHAS CLAVE ---');
+  if(r.fecha_de_publicacion_del) lines.push('Publicacion: ' + fmtDate(r.fecha_de_publicacion_del));
+  if(r.fecha_de_apertura_de_respuesta) lines.push('Apertura ofertas: ' + fmtDate(r.fecha_de_apertura_de_respuesta));
+  if(r.fecha_de_recepcion_de) lines.push('CIERRE OFERTAS: ' + fmtDate(r.fecha_de_recepcion_de));
+  lines.push('');
+  if(r.categorias){
+    lines.push('Categorias UNSPSC: ' + r.categorias);
+    lines.push('');
+  }
+  if(url){
+    lines.push('--- ENLACE AL PROCESO ---');
+    lines.push(url);
+    lines.push('');
+  }
+  lines.push('---');
+  lines.push('Compartido desde SECOP II Hunter');
+  lines.push(window.location.href);
+
+  const body = lines.join('\n');
+  const to = ALLOWED_EMAILS.join(',');
+  const mailto = 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+
+  // Algunos clientes tienen limites: si excede, ofrecer copiar
+  if(mailto.length > 6000){
+    if(confirm('La informacion del proceso es muy larga para abrir en el cliente de correo (limite del navegador). \n\nPulsa Aceptar para copiar al portapapeles, luego pega manualmente en un correo nuevo a:\n\n' + to)){
+      navigator.clipboard.writeText('Para: ' + to + '\nAsunto: ' + subject + '\n\n' + body);
+      alert('Copiado al portapapeles.');
+    }
+    return;
+  }
+
+  // Abrir cliente de correo
+  window.location.href = mailto;
+}
+
+
+/* Compartir desde el modal: incluye analisis IA si esta disponible */
+function shareCurrent(){
+  const r = _currentRecord;
+  if(!r){ alert('Sin proceso activo'); return; }
+  // Buscar el indice del registro actual en lastResults
+  const idx = lastResults.indexOf(r);
+  const absIdx = idx >= 0 ? idx + offset : 0;
+  // Si hay analisis IA cacheado, agregar al cuerpo
+  const idProc = r.id_del_proceso || r.id_del_portafolio || r.proceso_de_compra || r.referencia_del_proceso;
+  const cached = loadPliegoCache(idProc);
+  if(cached && cached.requirements){
+    shareProcessWithAnalysis(r, cached.requirements, idx >= 0 ? absIdx : null);
+  } else {
+    if(idx >= 0) shareProcess(absIdx);
+    else { alert('Para compartir, primero busca el proceso desde la lista de resultados.'); }
+  }
+}
+
+function shareProcessWithAnalysis(r, req, absIdx){
+  const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+  const proc = r.referencia_del_proceso || r.proceso_de_compra || 's/n';
+  const ent = r.nombre_entidad || r.entidad || '';
+  const subject = '[SECOP II + ANALISIS IA] ' + proc + ' - ' + (ent.length > 50 ? ent.substring(0,50)+'...' : ent);
+
+  const lines = [];
+  lines.push('PROCESO DE INTERES + ANALISIS DE PLIEGO (IA)');
+  lines.push('==============================================');
+  lines.push('');
+  lines.push('Numero: ' + proc);
+  lines.push('Entidad: ' + ent);
+  if(r.precio_base) lines.push('Valor: ' + fmtMoney(r.precio_base));
+  if(r.fecha_de_recepcion_de) lines.push('Cierre ofertas: ' + fmtDate(r.fecha_de_recepcion_de));
+  lines.push('Estado: ' + (r.estado_del_procedimiento || ''));
+  lines.push('');
+  lines.push('OBJETO: ' + (r.descripci_n_del_procedimiento || ''));
+  lines.push('');
+  lines.push('--- REQUISITOS EXTRAIDOS POR IA ---');
+  if(req.plazo && req.plazo.length){
+    lines.push('PLAZO:');
+    req.plazo.forEach(p => lines.push('  - ' + (p.valor || p)));
+  }
+  if(req.personal && req.personal.length){
+    lines.push('');
+    lines.push('PERSONAL MINIMO:');
+    req.personal.forEach(p => lines.push('  - ' + (p.cantidad||'1') + ' x ' + (p.rol||'') + ' | ' + (p.profesion||'') + ' | Gen: ' + (p.expGeneral||'?') + ' | Esp: ' + (p.expEspecifica||'?')));
+  }
+  if(req.experiencia && req.experiencia.length){
+    lines.push('');
+    lines.push('EXPERIENCIA OFERENTE:');
+    req.experiencia.forEach(e => lines.push('  - ' + (e.tipo||'') + ': ' + (e.valor||'') + (e.requisito? ' ('+e.requisito+')':'')));
+  }
+  if(req.financiero && req.financiero.length){
+    lines.push('');
+    lines.push('INDICADORES FINANCIEROS:');
+    req.financiero.forEach(f => lines.push('  - ' + (f.indicador||'') + ': ' + (f.requisito||'')));
+  }
+  if(req.garantias && req.garantias.length){
+    lines.push('');
+    lines.push('GARANTIAS:');
+    req.garantias.forEach(g => lines.push('  - ' + (g.tipo||'') + ': ' + (g.cuantia||'') + (g.vigencia? ' / Vig: '+g.vigencia : '')));
+  }
+  if(req.lugar) lines.push('\nLugar ejecucion: ' + req.lugar);
+  if(req.visita) lines.push('Visita tecnica: ' + (req.visita.obligatoria || JSON.stringify(req.visita)));
+  if(req.pago){
+    lines.push('Forma de pago: ' + (req.pago.actas || req.pago.formaPago || ''));
+    if(req.pago.anticipo) lines.push('Anticipo: ' + req.pago.anticipo);
+  }
+  if(req.observaciones_clave && req.observaciones_clave.length){
+    lines.push('');
+    lines.push('ALERTAS CLAVE:');
+    req.observaciones_clave.forEach(o => lines.push('  ! ' + o));
+  }
+  lines.push('');
+  if(url){
+    lines.push('Enlace al proceso: ' + url);
+  }
+  lines.push('Plataforma: ' + window.location.href);
+
+  const body = lines.join('\n');
+  const to = ALLOWED_EMAILS.join(',');
+  const mailto = 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+
+  if(mailto.length > 7500){
+    if(confirm('Analisis muy largo para mailto. Pulsa Aceptar para copiar al portapapeles.')){
+      navigator.clipboard.writeText('Para: ' + to + '\nAsunto: ' + subject + '\n\n' + body);
+      alert('Copiado al portapapeles. Pega en un correo nuevo.');
+    }
+    return;
+  }
+  window.location.href = mailto;
+}
 
 /* ==================== MODAL DETALLES ==================== */
 let _currentRecord = null;
