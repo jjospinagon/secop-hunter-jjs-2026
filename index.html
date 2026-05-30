@@ -82,7 +82,10 @@
   @media (max-height:700px){ .table-wrap{max-height:calc(100vh - 160px)} }
   @media (max-height:500px){ .table-wrap{max-height:calc(100vh - 130px)} }
   table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
-  @media (max-width:1100px){ table{min-width:900px;font-size:11px} th, td{padding:5px 6px} }
+  /* Split-screen: tabla mucho mas compacta para que quepa sin scroll horizontal cosmetico */
+  @media (max-width:1400px){ table{min-width:0;font-size:11.5px} th, td{padding:5px 6px} }
+  @media (max-width:1200px){ table{font-size:11px} th, td{padding:4px 5px} .truncate{max-width:160px} }
+  @media (max-width:1000px){ table{font-size:10.5px;min-width:850px} th, td{padding:4px 4px} .truncate{max-width:130px} }
   @media (max-width:760px){ table{min-width:780px;font-size:10.5px} }
   @media (min-width:1600px){ table{font-size:13px} th{font-size:12px;padding:10px 8px} td{padding:7px 8px} }
   @media (min-width:1900px){ table{font-size:13.5px;min-width:1200px} }
@@ -269,6 +272,19 @@
   #loginGate .err{color:var(--err);font-size:11px;margin-top:8px;display:none}
   #loginGate .err.show{display:block}
   #loginGate .footer{font-size:10px;color:var(--muted);margin-top:14px;text-align:center;line-height:1.4}
+
+  /* Ocultar columnas secundarias en split-screen para evitar scroll horizontal */
+  @media (max-width:1300px){
+    #results th:nth-child(7), #results td:nth-child(7),  /* Fase */
+    #results th:nth-child(8), #results td:nth-child(8){  /* Tipo */
+      display:none;
+    }
+  }
+  @media (max-width:1000px){
+    #results th:nth-child(6), #results td:nth-child(6){  /* Estado */
+      display:none;
+    }
+  }
 </style>
 </head>
 <body>
@@ -822,13 +838,17 @@ async function cancelProcessing(){
   _modalProc.worker = null;
 }
 function confirmCloseIfBusy(){
-  if(!_modalProc.active) return true;
-  const ok = confirm(
-    'Hay un proceso en curso: ' + _modalProc.label + '.\n\n' +
-    '¿Cancelar la inspeccion del proceso? Se perdera el progreso.'
-  );
-  if(ok) cancelProcessing();
-  return ok;
+  // Si hay proceso activo, mensaje especifico
+  if(_modalProc.active){
+    const ok = confirm(
+      'Hay un proceso en curso: ' + _modalProc.label + '.\n\n' +
+      '¿Cancelar la inspeccion del proceso? Se perdera el progreso.'
+    );
+    if(ok) cancelProcessing();
+    return ok;
+  }
+  // Sin proceso activo, igual preguntar antes de cerrar
+  return confirm('¿Cerrar la inspeccion del proceso?');
 }
 
 function showDetails(idx){
