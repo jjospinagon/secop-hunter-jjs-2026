@@ -296,6 +296,16 @@
   .ai-panel .hint{font-size:10px;color:#cbd5e1;margin-top:4px;line-height:1.4}
   .ai-panel a{color:#bae6fd;text-decoration:underline}
   .ai-saved{background:var(--ok);color:#052e16;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700}
+
+  /* Estado de PDF cargado */
+  .pdf-drop.loaded{border-color:var(--ok);background:rgba(34,197,94,.08)}
+  #pdfLoadedInfo{margin:-4px 0 10px;background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));border:1px solid var(--ok);border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #pdfLoadedInfo .check{color:var(--ok);font-size:18px;flex-shrink:0}
+  #pdfLoadedInfo .info{flex:1;min-width:200px}
+  #pdfLoadedInfo .info .name{color:var(--txt);font-size:12px;font-weight:600;word-break:break-all}
+  #pdfLoadedInfo .info .meta{color:var(--muted);font-size:10px;margin-top:2px}
+  #pdfLoadedInfo .badge-mini{background:var(--ok);color:#052e16;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase}
+  #pdfLoadedInfo .badge-mini.ocr{background:var(--warn);color:#451a03}
 </style>
 </head>
 <body>
@@ -983,11 +993,12 @@ function renderRequisitos(r){
       '<span style="font-size:10px;color:var(--muted)">Usa proxy CORS publico. Si falla, carga el PDF manualmente abajo.</span>'+
     '</div>'+
     '<label class="pdf-drop" id="pdfDrop">'+
-      '<div class="ico">📄</div>'+
-      '<div><b>Arrastra aqui el pliego (PDF)</b> o haz clic para seleccionar</div>'+
-      '<div class="hint">El PDF se procesa LOCAL en tu navegador. Si es <b>escaneado</b>, la app activa OCR automaticamente (espanol).</div>'+
+      '<div class="ico" id="pdfIco">📄</div>'+
+      '<div id="pdfDropLabel"><b>Arrastra aqui el pliego (PDF)</b> o haz clic para seleccionar</div>'+
+      '<div class="hint" id="pdfDropHint">El PDF se procesa LOCAL en tu navegador. Si es <b>escaneado</b>, la app activa OCR automaticamente (espanol).</div>'+
       '<input type="file" accept="application/pdf" id="pdfInput" />'+
     '</label>'+
+    '<div id="pdfLoadedInfo" style="display:none"></div>'+
     '<div id="pdfProgress" style="display:none">'+
       '<div style="font-size:11px;color:var(--muted);margin-bottom:4px" id="pdfProgressText">Procesando...</div>'+
       '<div class="progress"><div id="pdfProgressBar"></div></div>'+
@@ -997,9 +1008,14 @@ function renderRequisitos(r){
   // Render heuristico inicial sobre la descripcion API
   renderHeurResults(r, 'api');
 
-  // Si hay cache, renderizar inmediatamente
+  // Si hay cache, renderizar inmediatamente y mostrar info del PDF cargado previamente
   if(cached){
-    setTimeout(()=> renderPdfResults(cached.requirements, cached.size, 'cache'), 50);
+    setTimeout(()=> {
+      renderPdfResults(cached.requirements, cached.size, 'cache');
+      if(cached.name){
+        showPdfLoadedInfo(cached.name, cached.size || 0, (cached.rawText||'').length || 0, cached.ocr || false);
+      }
+    }, 50);
   }
 
   // Wire drop zone
@@ -1046,7 +1062,7 @@ function renderRequisitos(r){
    restringida en Google Cloud Console a HTTP referrer del dominio). */
 const EMBEDDED_GEMINI_KEY = 'AQ.Ab8RN6Innh1scUQ65LmIrVV9XyLuQvdIQtdwwTII0EHeObUGkg';
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';  // free tier 1500 req/dia, estable
-const GEMINI_URL = (k)=> 'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent?key='+k;
+const GEMINI_URL = ()=> 'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent';
 
 async function analyzeWithAI(r, idProc){
   const apiKey = EMBEDDED_GEMINI_KEY || localStorage.getItem('gemini_api_key');
@@ -1172,9 +1188,12 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
 
   if(onProgress) onProgress('Llamando a Gemini AI...', 0.3);
 
-  const response = await fetch(GEMINI_URL(apiKey), {
+  const response = await fetch(GEMINI_URL(), {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
     body: JSON.stringify({
       contents: [{parts: [{text: prompt}]}],
       generationConfig: {
@@ -1910,6 +1929,30 @@ function extractCronograma(txt){
   });
   if(!items.length) return null;
   return Array.from(new Set(items)).slice(0,6);
+}
+
+function showPdfLoadedInfo(name, size, chars, ocr){
+  const info = document.getElementById('pdfLoadedInfo');
+  if(!info) return;
+  const drop = document.getElementById('pdfDrop');
+  if(drop) drop.classList.add('loaded');
+  // Cambiar icono del drop
+  const ico = document.getElementById('pdfIco');
+  if(ico) ico.textContent = '\u2705';  // ✅
+  const lbl = document.getElementById('pdfDropLabel');
+  if(lbl) lbl.innerHTML = '<b style="color:var(--ok)">PDF cargado correctamente</b> - clic para reemplazar';
+  const hint = document.getElementById('pdfDropHint');
+  if(hint) hint.textContent = 'Ahora pulsa "Analizar PDF con IA" arriba para extraer requisitos con precision.';
+
+  info.style.display = 'flex';
+  const mb = (size/1024/1024).toFixed(2);
+  const ocrBadge = ocr ? '<span class="badge-mini ocr">OCR</span>' : '<span class="badge-mini">TEXTO NATIVO</span>';
+  info.innerHTML =
+    '<div class="check">\u2714</div>'+
+    '<div class="info">'+
+      '<div class="name">'+esc(name)+'</div>'+
+      '<div class="meta"><b>'+mb+' MB</b> | '+chars.toLocaleString()+' caracteres extraidos '+ocrBadge+'</div>'+
+    '</div>';
 }
 
 /* ============ Cache de pliegos en localStorage ============ */
