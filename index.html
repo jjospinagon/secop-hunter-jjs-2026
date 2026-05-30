@@ -576,6 +576,47 @@
   @keyframes toastOut{to{opacity:0;transform:translate(-50%,20px)}}
   .toast.leaving{animation:toastOut 0.25s ease-in forwards}
   html[data-theme="light"] .toast{background:linear-gradient(135deg,#ffffff,#f8fafc)}
+
+  /* FIX CRITICO: overflow horizontal en mobile + box-sizing */
+  *, *::before, *::after { box-sizing: border-box }
+  @media (max-width:768px){
+    html, body { overflow-x: hidden; max-width: 100vw; width: 100%; }
+    main { max-width: 100% !important; overflow-x: hidden; }
+    .panel { max-width: 100% !important; width: 100% !important; overflow-x: hidden }
+    .actions { width: 100% !important; max-width: 100% !important }
+    .actions button { 
+      width: 100% !important; 
+      max-width: 100% !important; 
+      box-sizing: border-box !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+      padding: 14px 16px !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+    input, select, textarea { 
+      width: 100% !important; 
+      max-width: 100% !important; 
+      box-sizing: border-box !important; 
+    }
+    .row { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important }
+    .form-scroll { width: 100% !important; max-width: 100% !important; overflow-x: hidden !important }
+    /* Tabla SIGUE permitiendo scroll horizontal en su contenedor */
+    .table-wrap { overflow-x: auto !important; max-width: 100% !important; -webkit-overflow-scrolling: touch }
+    /* Header dentro de safe area */
+    header { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important }
+    .toolbar { flex-wrap: wrap; width: 100% }
+    .toolbar > div { max-width: 100% }
+    .toolbar button { white-space: nowrap; padding: 10px 14px !important }
+    /* Ai panel */
+    .ai-panel, .ai-panel input, .ai-panel button { max-width: 100%; box-sizing: border-box }
+    .ai-panel .ai-actions button { width: 100% !important }
+    /* Auto try button */
+    .auto-try button { width: 100% !important; padding: 12px 14px !important; white-space: normal; line-height: 1.3 }
+  }
 </style>
 </head>
 <body>
