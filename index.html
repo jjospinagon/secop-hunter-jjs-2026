@@ -18,28 +18,40 @@
   header{background:linear-gradient(135deg,#0c4a6e,#0e7490);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.35)}
   @media (min-width:1600px){ header{padding:14px 24px} header h1{font-size:19px} }
   @media (max-width:600px){ header{padding:10px 12px} header h1{font-size:14px} header h1 small{display:none} }
-  header h1{margin:0;font-size:17px;font-weight:600}
+  header h1{margin:0;font-size:clamp(13px, 1.4vw, 18px);font-weight:600}
   header h1 small{opacity:.7;font-weight:400;font-size:12px;margin-left:6px}
   .badge{background:#0369a1;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
-  /* ===== Layout fluido por ancho de pantalla ===== */
-  main{width:100%;margin:0 auto;padding:12px;display:grid;grid-template-columns:360px 1fr;gap:12px;align-items:start;box-sizing:border-box}
-  /* Pantallas ultra anchas (>= 1900px): panel izq mas comodo, mas espacio para tabla */
+  /* ===== Layout fluido (responde a ancho de la VENTANA, no de la pantalla) ===== */
+  main{width:100%;margin:0 auto;padding:10px;display:grid;grid-template-columns:minmax(260px, 340px) 1fr;gap:10px;align-items:start;box-sizing:border-box}
+  /* Ultra wide >= 1900px: panel izq mas comodo */
   @media (min-width:1900px){
-    main{grid-template-columns:400px 1fr;gap:16px;padding:16px;max-width:none}
+    main{grid-template-columns:minmax(340px, 420px) 1fr;gap:18px;padding:18px}
   }
-  /* Pantallas estandar 1280-1900px */
-  @media (min-width:1280px) and (max-width:1899px){
-    main{grid-template-columns:360px 1fr}
+  /* Wide 1500-1900px */
+  @media (min-width:1500px) and (max-width:1899px){
+    main{grid-template-columns:minmax(320px, 380px) 1fr;gap:14px;padding:14px}
   }
-  /* Tablet / laptop angosta 900-1280px */
-  @media (min-width:900px) and (max-width:1279px){
-    main{grid-template-columns:320px 1fr;gap:10px;padding:10px}
+  /* Standard 1200-1500px */
+  @media (min-width:1200px) and (max-width:1499px){
+    main{grid-template-columns:minmax(300px, 360px) 1fr;gap:12px;padding:12px}
   }
-  /* Movil (< 900px): apilar */
-  @media (max-width:899px){
+  /* Laptop angosta 1000-1200px */
+  @media (min-width:1000px) and (max-width:1199px){
+    main{grid-template-columns:minmax(280px, 320px) 1fr;gap:10px;padding:10px}
+  }
+  /* Split-screen / tablet 760-1000px: panel izq mas estrecho aun */
+  @media (min-width:760px) and (max-width:999px){
+    main{grid-template-columns:minmax(240px, 280px) 1fr;gap:8px;padding:8px}
+    .panel{padding:10px}
+    .row{gap:6px;margin-bottom:7px}
+    input,select{padding:6px 8px;font-size:11.5px}
+    label{font-size:9.5px}
+  }
+  /* Movil/columna estrecha < 760px: apilar */
+  @media (max-width:759px){
     main{grid-template-columns:1fr;padding:8px;gap:10px}
     .form-scroll{max-height:none !important}
-    .table-wrap{max-height:60vh !important}
+    .table-wrap{max-height:55vh !important}
   }
   .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px}
   .panel h2{margin:0 0 12px;font-size:13px;color:var(--acc);text-transform:uppercase;letter-spacing:.5px}
@@ -67,7 +79,11 @@
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
   .toolbar .count{font-size:12px;color:var(--muted)}
   .table-wrap{overflow:auto;max-height:calc(100vh - 200px);border:1px solid var(--border);border-radius:8px;width:100%}
+  @media (max-height:700px){ .table-wrap{max-height:calc(100vh - 160px)} }
+  @media (max-height:500px){ .table-wrap{max-height:calc(100vh - 130px)} }
   table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
+  @media (max-width:1100px){ table{min-width:900px;font-size:11px} th, td{padding:5px 6px} }
+  @media (max-width:760px){ table{min-width:780px;font-size:10.5px} }
   @media (min-width:1600px){ table{font-size:13px} th{font-size:12px;padding:10px 8px} td{padding:7px 8px} }
   @media (min-width:1900px){ table{font-size:13.5px;min-width:1200px} }
   th{background:#0c4a6e;color:#fff;padding:8px;text-align:left;font-weight:600;position:sticky;top:0;border-bottom:2px solid var(--acc2);white-space:nowrap;font-size:11px}
@@ -89,6 +105,8 @@
   .pager{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)}
   .form-scroll{max-height:calc(100vh - 200px);overflow-y:auto;padding-right:4px}
   @media (min-width:1600px){ .form-scroll{max-height:calc(100vh - 220px)} }
+  @media (max-height:700px){ .form-scroll{max-height:calc(100vh - 160px)} }
+  @media (max-height:500px){ .form-scroll{max-height:calc(100vh - 120px)} }
   /* Drop zone PDF */
   .pdf-drop{border:2px dashed var(--acc);border-radius:8px;padding:18px;text-align:center;color:var(--muted);background:#0f172a;cursor:pointer;transition:all .15s;margin-bottom:12px}
   .pdf-drop.over{background:rgba(56,189,248,.1);border-color:var(--ok);color:var(--txt)}
@@ -879,64 +897,18 @@ function renderResumen(r){
     '</dl>';
 }
 
-/* Heuristica para extraer requisitos desde la descripcion */
+/* Heuristica unificada: junta los campos de texto del registro API y aplica
+   el mismo extractor estructurado que se usa con PDFs. */
 function extractRequirements(r){
   const txt = [
     r.descripci_n_del_procedimiento || '',
+    r.nombre_del_procedimiento || '',
     r.justificacion_modalidad_de || '',
     r.condiciones_de_participacion || '',
     r.condiciones_habilitantes || '',
     r.observaciones || ''
-  ].join(' \n ').replace(/\s+/g,' ');
-
-  const out = {};
-
-  // Plazo / duracion (combinacion campo + texto)
-  const plazoCampo = r.duracion ? (r.duracion + ' ' + (r.unidad_de_duracion || '')) : '';
-  const plazoRegex = txt.match(/(plazo|duraci[oó]n|t[eé]rmino)[^.,;]{0,80}?(\d+[\s\.]*[\d]*)\s*(d[ií]as|meses|a[nñ]os|semanas)/i);
-  out.plazo = plazoCampo || (plazoRegex ? plazoRegex[0].trim() : null);
-
-  // Experiencia (años, valor, SMMLV, etc.)
-  const expRegexes = [
-    /experiencia[^.;]{0,200}?(\d+)\s*(a[nñ]os?|meses?)/i,
-    /experiencia[^.;]{0,200}?(SMMLV|smmlv|salarios? m[ií]nimos?)/i,
-    /experiencia (m[ií]nima|espec[ií]fica|general)[^.;]{0,250}/i,
-    /haber ejecutado[^.;]{0,200}/i,
-    /acreditar experiencia[^.;]{0,200}/i,
-  ];
-  const expFound = [];
-  expRegexes.forEach(rg => { const m = txt.match(rg); if(m) expFound.push(m[0].trim()); });
-  out.experiencia = expFound.length ? Array.from(new Set(expFound)) : null;
-
-  // Personal minimo / equipo de trabajo
-  const personalRegexes = [
-    /personal m[ií]nimo[^.;]{0,300}/i,
-    /equipo (de )?trabajo[^.;]{0,300}/i,
-    /profesional(es)?[^.;]{0,200}?(ingenier[oa]|arquitect[oa]|director|residente|especialista)[^.;]{0,150}/i,
-    /director (de obra|del proyecto|t[eé]cnico)[^.;]{0,200}/i,
-    /residente (de obra|t[eé]cnico)[^.;]{0,200}/i,
-  ];
-  const personalFound = [];
-  personalRegexes.forEach(rg => { const m = txt.match(rg); if(m) personalFound.push(m[0].trim()); });
-  out.personal = personalFound.length ? Array.from(new Set(personalFound)) : null;
-
-  // Capacidad financiera / indicadores
-  const finRegexes = [
-    /(liquidez|endeudamiento|raz[oó]n de cobertura|capital de trabajo|patrimonio|K[\s_-]?contrataci[oó]n|K[\s_-]?residual)[^.;]{0,200}/gi,
-  ];
-  const finFound = [];
-  finRegexes.forEach(rg => { const m = txt.match(rg); if(m) finFound.push.apply(finFound, m.map(s=>s.trim())); });
-  out.financiero = finFound.length ? Array.from(new Set(finFound)) : null;
-
-  // Lugar de ejecucion
-  out.lugar = r.lugar_de_ejecucion || r.ciudad_de_ejecucion ||
-              (txt.match(/lugar de ejecuci[oó]n[^.;]{0,150}/i) || [null])[0];
-
-  // Garantias
-  const garRegex = txt.match(/garant[ií]a[^.;]{0,250}/gi);
-  out.garantias = garRegex ? Array.from(new Set(garRegex.map(s=>s.trim()))) : null;
-
-  return out;
+  ].join(' \n ');
+  return extractRequirementsFromText(txt);
 }
 
 function renderRequisitos(r){
