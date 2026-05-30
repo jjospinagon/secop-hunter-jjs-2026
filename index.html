@@ -236,9 +236,38 @@
   details.req-ctx summary{color:var(--muted);cursor:pointer}
   details.req-ctx[open] summary{color:var(--acc)}
   details.req-ctx .ctx-text{margin-top:4px;padding:6px;background:#0f172a;border-radius:4px;color:var(--muted);line-height:1.4;max-height:180px;overflow-y:auto}
+
+  /* ===== LOGIN GATE ===== */
+  #loginGate{position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+  #loginGate.hidden{display:none}
+  #loginGate .box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #loginGate h2{margin:0 0 6px;color:var(--acc);font-size:18px}
+  #loginGate p{color:var(--muted);font-size:12px;margin:0 0 18px;line-height:1.5}
+  #loginGate label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+  #loginGate input{width:100%;background:#0f172a;border:1px solid var(--border);color:var(--txt);padding:10px 12px;border-radius:6px;font-size:14px;margin-bottom:14px}
+  #loginGate input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(56,189,248,.2)}
+  #loginGate .btn-login{width:100%;background:var(--acc2);color:#fff;padding:11px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:0}
+  #loginGate .btn-login:hover{background:var(--acc)}
+  #loginGate .err{color:var(--err);font-size:11px;margin-top:8px;display:none}
+  #loginGate .err.show{display:block}
+  #loginGate .footer{font-size:10px;color:var(--muted);margin-top:14px;text-align:center;line-height:1.4}
 </style>
 </head>
 <body>
+<div id="loginGate">
+  <div class="box">
+    <h2>SECOP II Hunter</h2>
+    <p>Esta plataforma es de uso privado. Ingresa el correo autorizado para acceder.</p>
+    <form id="loginForm" autocomplete="off">
+      <label for="emailInput">Correo electronico</label>
+      <input type="email" id="emailInput" placeholder="tu@correo.com" autofocus required />
+      <button type="submit" class="btn-login">Entrar</button>
+      <div class="err" id="loginErr">Correo no autorizado. Solicita acceso al administrador.</div>
+    </form>
+    <div class="footer">Acceso restringido. Si tu correo deberia estar en la lista, contacta al administrador del repositorio.</div>
+  </div>
+</div>
+
 <header>
   <h1>SECOP II Hunter <small>- app standalone (sin instalacion)</small></h1>
   <span class="badge">v3.0 - API datos.gov.co</span>
@@ -451,6 +480,41 @@
 const API = "https://www.datos.gov.co/resource/p6dx-8zbt.json";
 const $ = (id) => document.getElementById(id);
 const tbody = document.querySelector("#results tbody");
+/* ============ LOGIN GATE ============ */
+const ALLOWED_EMAILS = ['jjospinagon@gmail.com', 'ing.jjgomezm@gmail.com'];
+const LOGIN_KEY = 'secop_hunter_user_v1';
+
+function checkAccess(){
+  const saved = (localStorage.getItem(LOGIN_KEY) || '').toLowerCase().trim();
+  if(saved && ALLOWED_EMAILS.includes(saved)){
+    document.getElementById('loginGate').classList.add('hidden');
+    return true;
+  }
+  return false;
+}
+
+(function(){
+  const gate = document.getElementById('loginGate');
+  const form = document.getElementById('loginForm');
+  const input = document.getElementById('emailInput');
+  const err = document.getElementById('loginErr');
+  if(checkAccess()) return;
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const v = (input.value || '').toLowerCase().trim();
+    if(ALLOWED_EMAILS.includes(v)){
+      localStorage.setItem(LOGIN_KEY, v);
+      gate.classList.add('hidden');
+      err.classList.remove('show');
+    } else {
+      err.classList.add('show');
+      input.focus();
+      input.select();
+    }
+  });
+})();
+
+
 
 /* ============ Proxies CORS con fallback automatico ============ */
 const CORS_PROXIES_GET = [
