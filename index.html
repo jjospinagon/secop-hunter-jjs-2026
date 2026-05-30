@@ -285,6 +285,17 @@
       display:none;
     }
   }
+
+  /* ===== Panel de IA ===== */
+  .ai-panel{background:linear-gradient(135deg,#1e3a5f,#0c4a6e);border:1px solid var(--acc);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+  .ai-panel .ai-title{font-size:11px;font-weight:700;color:#bae6fd;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .ai-panel .ai-title::before{content:"AI";background:var(--acc2);color:#fff;padding:1px 6px;border-radius:3px;font-size:9px}
+  .ai-panel input{font-size:11px;padding:6px 8px;margin-bottom:6px}
+  .ai-panel .ai-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .ai-panel .ai-actions button{font-size:11px;padding:6px 10px}
+  .ai-panel .hint{font-size:10px;color:#cbd5e1;margin-top:4px;line-height:1.4}
+  .ai-panel a{color:#bae6fd;text-decoration:underline}
+  .ai-saved{background:var(--ok);color:#052e16;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700}
 </style>
 </head>
 <body>
@@ -935,7 +946,23 @@ function renderRequisitos(r){
   const idProc = r.id_del_proceso || r.id_del_portafolio || r.proceso_de_compra || r.referencia_del_proceso || '_';
   const cached = loadPliegoCache(idProc);
   const cont = document.getElementById('mdRequisitos');
+  const aiKey = localStorage.getItem('gemini_api_key') || '';
+  const aiOk = aiKey ? '<span class="ai-saved">CONFIGURADO</span>' : '';
   cont.innerHTML =
+    '<div class="ai-panel">'+
+      '<div class="ai-title">Analisis con IA (Google Gemini) '+aiOk+'</div>'+
+      '<input type="password" id="aiKeyInput" placeholder="Pega aqui tu API key de Google Gemini" value="'+esc(aiKey)+'" autocomplete="off" />'+
+      '<div class="ai-actions">'+
+        '<button class="btn-primary" id="btnSaveKey">Guardar key</button>'+
+        '<button class="btn-success" id="btnAiAnalyze" '+(aiKey?'':'disabled')+'>Analizar PDF con IA</button>'+
+        '<button class="btn-secondary" id="btnAiClear">Borrar key</button>'+
+      '</div>'+
+      '<div class="hint">'+
+        'La IA analiza el PDF cargado abajo y extrae requisitos con precision real. '+
+        '<b>Obten tu API key gratis</b> en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. '+
+        'Gemini Flash tiene 1500 analisis/dia gratis. La key se guarda solo en tu navegador.'+
+      '</div>'+
+    '</div>'+
     '<div class="auto-try">'+
       '<button class="btn-secondary" id="btnAutoFetch">Intento automatico (descargar pliego)</button>'+
       '<span style="font-size:10px;color:var(--muted)">Usa proxy CORS publico. Si falla, carga el PDF manualmente abajo.</span>'+
@@ -976,6 +1003,211 @@ function renderRequisitos(r){
   });
 
   document.getElementById('btnAutoFetch').onclick = ()=> tryAutoFetchPdf(r, idProc);
+
+  // Wire IA
+  document.getElementById('btnSaveKey').onclick = ()=>{
+    const v = document.getElementById('aiKeyInput').value.trim();
+    if(!v){ alert('Pega la API key primero'); return; }
+    localStorage.setItem('gemini_api_key', v);
+    document.getElementById('btnAiAnalyze').disabled = false;
+    alert('API key guardada en este navegador.');
+  };
+  document.getElementById('btnAiClear').onclick = ()=>{
+    localStorage.removeItem('gemini_api_key');
+    document.getElementById('aiKeyInput').value = '';
+    document.getElementById('btnAiAnalyze').disabled = true;
+  };
+  document.getElementById('btnAiAnalyze').onclick = ()=> analyzeWithAI(r, idProc);
+}
+
+/* ============ ANALISIS CON IA (Google Gemini) ============ */
+const GEMINI_MODEL = 'gemini-2.0-flash';  // mas reciente y rapido
+const GEMINI_URL = (k)=> 'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent?key='+k;
+
+async function analyzeWithAI(r, idProc){
+  const apiKey = localStorage.getItem('gemini_api_key');
+  if(!apiKey){ alert('Configura tu API key de Gemini primero'); return; }
+
+  // Obtener texto del PDF: si hay cache de texto, usarlo; si no, pedir cargar PDF
+  let pdfText = '';
+  const cached = loadPliegoCache(idProc);
+  if(cached && cached.rawText){
+    pdfText = cached.rawText;
+  } else if(window._lastPdfText){
+    pdfText = window._lastPdfText;
+  } else {
+    alert('Primero carga el PDF (arrastrandolo abajo, o con "Intento automatico" o desde la pestaña Documentos > Analizar).');
+    return;
+  }
+
+  setProcessing(true, 'analyze');
+  const prog = document.getElementById('pdfProgress');
+  const bar = document.getElementById('pdfProgressBar');
+  const txt = document.getElementById('pdfProgressText');
+  prog.style.display = 'block';
+  bar.style.background = 'var(--acc)';
+  bar.style.width = '20%';
+  txt.textContent = 'Enviando texto del pliego a Gemini AI ('+(pdfText.length/1000).toFixed(0)+'k chars)...';
+
+  try{
+    const result = await callGeminiForPliego(pdfText, apiKey, (msg, pct)=>{
+      bar.style.width = (20 + pct*70) + '%';
+      txt.textContent = msg;
+    });
+    bar.style.width = '100%';
+    bar.style.background = 'var(--ok)';
+    txt.innerHTML = 'Listo: analisis con IA completado <span class="ai-saved">AI</span>';
+    savePliegoCache(idProc, { requirements: result, size: (cached?cached.size:0), name: (cached?cached.name:''), ts: Date.now(), ai: true, rawText: pdfText });
+    renderPdfResults(result, 0, 'ai');
+    setTimeout(()=> { prog.style.display = 'none'; }, 2500);
+  }catch(e){
+    txt.textContent = 'Error IA: ' + (e.message||String(e));
+    bar.style.background = 'var(--err)';
+  } finally {
+    setProcessing(false);
+  }
+}
+
+async function callGeminiForPliego(pdfText, apiKey, onProgress){
+  // Truncar si es muy largo (Gemini Flash acepta ~1M tokens pero por costos y velocidad limitamos a ~80k chars)
+  const text = pdfText.length > 80000 ? pdfText.substring(0,80000)+'\n\n[...TRUNCADO]' : pdfText;
+  if(onProgress) onProgress('Construyendo prompt para Gemini...', 0.1);
+
+  const prompt = `Eres un experto auditor de pliegos de condiciones en contratacion publica colombiana (SECOP II).
+Analiza el siguiente pliego (o estudios previos) y extrae los REQUISITOS EXACTAMENTE como aparecen en el documento.
+Si un campo no esta en el documento, devuelve null o un array vacio. NO inventes informacion.
+
+DOCUMENTO:
+"""
+${text}
+"""
+
+DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) con esta estructura exacta:
+
+{
+  "objeto": "string corto, el objeto contractual",
+  "modalidad": "string, la modalidad de seleccion",
+  "valor_estimado": "string, valor con moneda",
+  "presupuesto_oficial": "string si hay PO definido",
+  "plazo": [
+    {"valor": "30 dias calendario", "etapa": "Ejecucion", "contexto": "cita textual breve"}
+  ],
+  "personal": [
+    {
+      "rol": "Director de Obra",
+      "cantidad": "1",
+      "profesion": "Ingeniero Civil o Sanitario",
+      "expGeneral": "10 anios desde matricula profesional",
+      "expEspecifica": "5 anios en obras de acueducto/alcantarillado",
+      "dedicacion": "100%",
+      "tarjeta": "Tarjeta profesional vigente",
+      "contexto": "cita textual breve"
+    }
+  ],
+  "experiencia_oferente": [
+    {
+      "tipo": "General / Especifica / Habilitante",
+      "requisito": "descripcion clara",
+      "numero_contratos": "X contratos terminados",
+      "valor_minimo": "100% del PO o XX SMMLV",
+      "antiguedad": "ultimos 10 anios",
+      "contexto": "cita textual breve"
+    }
+  ],
+  "financiero": [
+    {"indicador": "Liquidez (razon corriente)", "operador": ">=", "valor": "1.5", "formula": "Activo corriente / Pasivo corriente", "contexto": "cita textual breve"},
+    {"indicador": "Nivel de endeudamiento", "operador": "<=", "valor": "70%", "formula": "Pasivo total / Activo total", "contexto": "..."},
+    {"indicador": "Razon de cobertura de intereses", "operador": ">=", "valor": "1.0", "contexto": "..."},
+    {"indicador": "Capital de trabajo", "operador": ">=", "valor": "50% del PO", "contexto": "..."},
+    {"indicador": "Patrimonio", "operador": ">=", "valor": "30% del PO", "contexto": "..."},
+    {"indicador": "Capacidad de contratacion (K)", "operador": ">=", "valor": "...", "contexto": "..."},
+    {"indicador": "Capacidad residual", "operador": ">=", "valor": "...", "contexto": "..."},
+    {"indicador": "Rentabilidad del patrimonio", "operador": ">=", "valor": "...", "contexto": "..."},
+    {"indicador": "Rentabilidad del activo", "operador": ">=", "valor": "...", "contexto": "..."}
+  ],
+  "garantias": [
+    {"tipo": "Seriedad de la oferta", "cuantia": "10% del PO", "vigencia": "90 dias desde cierre", "contexto": "..."},
+    {"tipo": "Cumplimiento", "cuantia": "20% del valor del contrato", "vigencia": "plazo + 6 meses", "contexto": "..."},
+    {"tipo": "Estabilidad y calidad de la obra", "cuantia": "...", "vigencia": "5 anios", "contexto": "..."},
+    {"tipo": "Salarios y prestaciones sociales", "cuantia": "...", "vigencia": "...", "contexto": "..."},
+    {"tipo": "Buen manejo del anticipo", "cuantia": "100% del anticipo", "vigencia": "...", "contexto": "..."},
+    {"tipo": "Responsabilidad civil extracontractual", "cuantia": "...", "vigencia": "...", "contexto": "..."}
+  ],
+  "lugar": "lugar de ejecucion (departamento/municipio especifico)",
+  "visita": {"obligatoria": true, "fecha": "DD/MM/AAAA HH:MM", "lugar": "..."},
+  "pago": {"anticipo": "30% del valor del contrato", "actas": "Mensuales por avance de obra", "formaPago": "descripcion"},
+  "cronograma": [
+    {"fase": "Apertura", "fecha": "..."},
+    {"fase": "Cierre de ofertas", "fecha": "..."},
+    {"fase": "Adjudicacion", "fecha": "..."}
+  ],
+  "criterios_seleccion": ["Precio (X%)", "Experiencia (Y%)", "etc"],
+  "causales_rechazo": ["..."],
+  "observaciones_clave": ["alertas importantes que un proponente debe saber"]
+}`;
+
+  if(onProgress) onProgress('Llamando a Gemini AI...', 0.3);
+
+  const response = await fetch(GEMINI_URL(apiKey), {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      contents: [{parts: [{text: prompt}]}],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json'
+      }
+    })
+  });
+
+  if(!response.ok){
+    const errText = await response.text();
+    throw new Error('HTTP '+response.status+': '+errText.substring(0,300));
+  }
+  if(onProgress) onProgress('Parseando respuesta...', 0.9);
+  const data = await response.json();
+  const txtResp = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if(!txtResp) throw new Error('Respuesta vacia de Gemini');
+
+  let parsed;
+  try {
+    parsed = JSON.parse(txtResp);
+  } catch(e){
+    // intentar extraer JSON entre llaves
+    const m = txtResp.match(/\{[\s\S]*\}/);
+    if(m) parsed = JSON.parse(m[0]);
+    else throw new Error('No se pudo parsear JSON: '+txtResp.substring(0,200));
+  }
+  return adaptGeminiResponse(parsed);
+}
+
+/* Adapta la respuesta de Gemini al formato del renderer existente, agregando campos extra */
+function adaptGeminiResponse(g){
+  return {
+    objeto: g.objeto || null,
+    modalidad: g.modalidad || null,
+    valor_estimado: g.valor_estimado || null,
+    presupuesto_oficial: g.presupuesto_oficial || null,
+    plazo: (g.plazo && g.plazo.length) ? g.plazo : null,
+    personal: (g.personal && g.personal.length) ? g.personal : null,
+    experiencia: (g.experiencia_oferente && g.experiencia_oferente.length) ? g.experiencia_oferente.map(e=>({
+      tipo: e.tipo, valor: e.numero_contratos || e.valor_minimo || '?',
+      requisito: e.requisito, antiguedad: e.antiguedad, contexto: e.contexto
+    })) : null,
+    financiero: (g.financiero && g.financiero.length) ? g.financiero.filter(f=>f.valor && f.valor !== '...').map(f=>({
+      indicador: f.indicador, requisito: (f.operador||'') + ' ' + (f.valor||'?'),
+      formula: f.formula, contexto: f.contexto
+    })) : null,
+    garantias: (g.garantias && g.garantias.length) ? g.garantias.filter(x=>x.cuantia && x.cuantia !== '...') : null,
+    lugar: g.lugar || null,
+    visita: g.visita || null,
+    pago: g.pago || null,
+    cronograma: (g.cronograma && g.cronograma.length) ? g.cronograma.map(c=>(c.fase + (c.fecha?(': '+c.fecha):''))) : null,
+    criterios_seleccion: g.criterios_seleccion || null,
+    causales_rechazo: g.causales_rechazo || null,
+    observaciones_clave: g.observaciones_clave || null,
+  };
 }
 
 function renderHeurResults(r, source){
@@ -984,8 +1216,20 @@ function renderHeurResults(r, source){
 }
 
 function buildReqHtml(req, sourceLabel, sourceType){
+  // Mostrar resumen ejecutivo si viene de IA con campos extra
+  let executiveBlock = '';
+  if(req.objeto || req.modalidad || req.valor_estimado){
+    executiveBlock = '<div class="req-card" style="border-left:3px solid var(--ok)">'+
+      '<div class="ttl">Resumen ejecutivo</div>'+
+      '<table class="req-table"><tbody>';
+    if(req.objeto) executiveBlock += '<tr><td style="width:25%"><b>Objeto</b></td><td>'+esc(req.objeto)+'</td></tr>';
+    if(req.modalidad) executiveBlock += '<tr><td><b>Modalidad</b></td><td>'+esc(req.modalidad)+'</td></tr>';
+    if(req.valor_estimado) executiveBlock += '<tr><td><b>Valor estimado</b></td><td class="val-num">'+esc(req.valor_estimado)+'</td></tr>';
+    if(req.presupuesto_oficial) executiveBlock += '<tr><td><b>Presupuesto oficial</b></td><td class="val-num">'+esc(req.presupuesto_oficial)+'</td></tr>';
+    executiveBlock += '</tbody></table></div>';
+  }
   const badge = '<span class="source-tag '+(sourceType==='pdf'||sourceType==='ocr'?'':'api')+'">'+esc(sourceLabel)+'</span>';
-  let html = '<div style="margin:4px 0 12px;font-size:11px;color:var(--muted)">Fuente: '+badge+'</div>';
+  let html = '<div style="margin:4px 0 12px;font-size:11px;color:var(--muted)">Fuente: '+badge+'</div>' + executiveBlock;
 
   // 1) PLAZO
   html += '<div class="req-card'+(req.plazo?'':' empty')+'">';
@@ -1099,6 +1343,27 @@ function buildReqHtml(req, sourceLabel, sourceType){
   } else html += '<div class="val">No detectado.</div>';
   html += '</div>';
 
+  // 10) Criterios de seleccion / evaluacion (IA only)
+  if(req.criterios_seleccion && req.criterios_seleccion.length){
+    html += '<div class="req-card"><div class="ttl">Criterios de evaluacion / Calificacion</div>';
+    html += '<ul style="margin:4px 0 0;padding-left:18px;font-size:11px">'+req.criterios_seleccion.map(c=>'<li style="margin-bottom:3px">'+esc(c)+'</li>').join('')+'</ul>';
+    html += '</div>';
+  }
+
+  // 11) Causales de rechazo
+  if(req.causales_rechazo && req.causales_rechazo.length){
+    html += '<div class="req-card" style="border-left:3px solid var(--err)"><div class="ttl" style="color:var(--err)">Causales de rechazo</div>';
+    html += '<ul style="margin:4px 0 0;padding-left:18px;font-size:11px">'+req.causales_rechazo.map(c=>'<li style="margin-bottom:3px">'+esc(c)+'</li>').join('')+'</ul>';
+    html += '</div>';
+  }
+
+  // 12) Observaciones clave (alertas)
+  if(req.observaciones_clave && req.observaciones_clave.length){
+    html += '<div class="req-card" style="border-left:3px solid var(--warn)"><div class="ttl" style="color:var(--warn)">Alertas / Observaciones clave</div>';
+    html += '<ul style="margin:4px 0 0;padding-left:18px;font-size:11px">'+req.observaciones_clave.map(c=>'<li style="margin-bottom:3px">'+esc(c)+'</li>').join('')+'</ul>';
+    html += '</div>';
+  }
+
   return html;
 }
 
@@ -1153,7 +1418,8 @@ async function processPdfFile(file, idProc){
     const req = extractRequirementsFromText(finalText);
     bar.style.width = '100%';
     txt.innerHTML = 'Listo: <b>'+finalText.length+'</b> caracteres analizados '+(usedOcr?'<span style="color:var(--warn)">(via OCR)</span>':'<span style="color:var(--ok)">(texto nativo)</span>');
-    savePliegoCache(idProc, { requirements: req, size: file.size, name: file.name, ts: Date.now(), ocr: usedOcr });
+    window._lastPdfText = finalText;
+    savePliegoCache(idProc, { requirements: req, size: file.size, name: file.name, ts: Date.now(), ocr: usedOcr, rawText: finalText });
     renderPdfResults(req, file.size, usedOcr ? 'ocr' : 'pdf');
     setTimeout(()=> { prog.style.display = 'none'; }, 3000);
   }catch(e){
@@ -1240,7 +1506,8 @@ async function ocrPdf(arrayBuffer, onProgress, opts){
 
 
 function renderPdfResults(req, size, sourceType){
-  const label = sourceType==='pdf' ? 'Extraido del PDF cargado' :
+  const label = sourceType==='ai' ? 'Analisis con IA (Gemini)' :
+                sourceType==='pdf' ? 'Extraido del PDF cargado' :
                 sourceType==='ocr' ? 'Extraido por OCR del PDF escaneado' :
                 sourceType==='cache' ? 'Cache del pliego (carga previa)' :
                 sourceType==='auto' ? 'Extraido via descarga automatica' : 'API';
@@ -1302,7 +1569,8 @@ async function tryAutoFetchPdf(r, idProc){
     bar.style.width = '100%';
     bar.style.background = 'var(--ok)';
     txt.innerHTML = 'Listo (modo automatico). '+pdfUrls.length+' PDF(s) detectados. '+(usedOcr?'<span style="color:var(--warn)">via OCR</span>':'<span style="color:var(--ok)">texto nativo</span>');
-    savePliegoCache(idProc, { requirements: req, size: buf.byteLength, name: pdfUrl.split('/').pop(), ts: Date.now(), auto: true, ocr: usedOcr });
+    window._lastPdfText = text;
+    savePliegoCache(idProc, { requirements: req, size: buf.byteLength, name: pdfUrl.split('/').pop(), ts: Date.now(), auto: true, ocr: usedOcr, rawText: text });
     renderPdfResults(req, buf.byteLength, usedOcr ? 'ocr' : 'auto');
     setTimeout(()=> { prog.style.display = 'none'; }, 2500);
   }catch(e){
@@ -1820,7 +2088,8 @@ async function downloadDocDirect(idx, alsoAnalyze){
       const req = extractRequirementsFromText(text);
       if(bar){ bar.style.width = '100%'; bar.style.background = 'var(--ok)'; }
       if(txt) txt.innerHTML = 'Listo. '+text.length+' chars '+(usedOcr?'(OCR)':'(texto nativo)');
-      savePliegoCache(idProc, { requirements: req, size: blob.size, name: doc.nombre, ts: Date.now(), auto: true, ocr: usedOcr });
+      window._lastPdfText = text;
+      savePliegoCache(idProc, { requirements: req, size: blob.size, name: doc.nombre, ts: Date.now(), auto: true, ocr: usedOcr, rawText: text });
       renderPdfResults(req, blob.size, usedOcr ? 'ocr' : 'pdf');
       setTimeout(()=> { if(prog) prog.style.display = 'none'; }, 2000);
     }
