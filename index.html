@@ -1332,7 +1332,7 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
   const data = await response.json();
   const txtResp = data?.choices?.[0]?.message?.content || '';
   if(!txtResp) throw new Error('Respuesta vacia de Groq');
-  if(wasTruncated && onProgress) onProgress('Aviso: documento truncado a primeras 22k caracteres por limite TPM.', 0.95);
+  if(wasCompressed && onProgress) onProgress('Comprimido inteligentemente para caber en limite TPM.', 0.95);
 
   let parsed;
   try {
