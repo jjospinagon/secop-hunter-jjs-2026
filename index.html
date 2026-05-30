@@ -581,8 +581,10 @@
   *, *::before, *::after { box-sizing: border-box }
   @media (max-width:768px){
     html, body { overflow-x: hidden; max-width: 100vw; width: 100%; }
-    main { max-width: 100% !important; overflow-x: hidden; }
-    .panel { max-width: 100% !important; width: 100% !important; overflow-x: hidden }
+    main { max-width: 100% !important; overflow-x: visible; }
+    .panel { max-width: 100% !important; width: 100% !important; overflow: visible !important; }
+    .results-panel { overflow: visible !important; max-width: 100% !important; width: 100% !important; }
+    .results-panel > * { max-width: 100% !important }
     .actions { width: 100% !important; max-width: 100% !important }
     .actions button { 
       width: 100% !important; 
@@ -603,9 +605,33 @@
       box-sizing: border-box !important; 
     }
     .row { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important }
-    .form-scroll { width: 100% !important; max-width: 100% !important; overflow-x: hidden !important }
+    .form-scroll { width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; overflow-y: auto }
     /* Tabla SIGUE permitiendo scroll horizontal en su contenedor */
-    .table-wrap { overflow-x: auto !important; max-width: 100% !important; -webkit-overflow-scrolling: touch }
+    .table-wrap { 
+      overflow-x: scroll !important; 
+      overflow-y: auto !important; 
+      max-width: 100% !important; 
+      width: 100% !important;
+      -webkit-overflow-scrolling: touch !important;
+      display: block !important;
+      position: relative !important;
+    }
+    .table-wrap table { 
+      display: table !important; 
+      width: max-content !important; 
+      max-width: none !important;
+      min-width: 880px !important; 
+    }
+    /* Indicador visual del scroll horizontal */
+    .table-wrap::after {
+      content: '';
+      position: sticky;
+      bottom: 0;
+      right: 0;
+      display: block;
+      height: 6px;
+      pointer-events: none;
+    }
     /* Header dentro de safe area */
     header { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important }
     .toolbar { flex-wrap: wrap; width: 100% }
@@ -793,7 +819,7 @@
     </details>
   </section>
 
-  <section class="panel">
+  <section class="panel results-panel">
     <div class="toolbar">
       <h2 style="margin:0">Resultados</h2>
       <span class="count" id="count">Sin busqueda</span>
@@ -1213,7 +1239,9 @@ function buildGmailComposeUrl(to, subject, body){
   return 'https://mail.google.com/mail/?' + params.toString();
 }
 
-/* ============ COMPARTIR PROCESO POR EMAIL ============ */
+/* ============ COMPARTIR PROCESO POR EMAIL (Apps Script Mailer) ============ */
+const MAILER_URL = 'https://script.google.com/macros/s/AKfycbwfBiWhi9zr3q9jSS2flFmJFOSrRYANpaF5DZN-iDeO3MOa7pdBTo0iT3_7Hy7S_aZFmw/exec';
+
 function shareProcess(idx){
   const r = lastResults[idx - offset];
   if(!r){ alert('Proceso no encontrado en la lista actual.'); return; }
@@ -1272,38 +1300,51 @@ function shareProcess(idx){
   sendByGmail(subject, lines.join('\n'));
 }
 
-/* Envia abriendo Gmail web compose en pestana nueva + toast confirmacion */
-function sendByGmail(subject, body){
+/* Envia automaticamente via Apps Script Web App + toast */
+async function sendByGmail(subject, body){
   const to = ALLOWED_EMAILS.join(',');
   const fullText = 'Para: ' + to + '\nAsunto: ' + subject + '\n\n' + body;
 
-  const gmailUrl = buildGmailComposeUrl(to, subject, body);
-  // Gmail compose URL puede ser muy larga (limite ~8000 chars), si excede usar copiar
-  if(gmailUrl.length > 7500){
-    navigator.clipboard.writeText(fullText).then(()=>{
-      showToast('Resumen copiado al portapapeles (era muy largo para Gmail). Pega en un correo nuevo a: '+to, 'info', {duration: 8000});
-    }).catch(()=>{
-      showToast('No se pudo copiar. Abriendo Gmail en blanco.', 'err');
-      window.open('https://mail.google.com/mail/?view=cm&to='+to+'&su='+encodeURIComponent(subject), '_blank');
+  // Toast de progreso
+  const progressToast = showToast('Enviando correo...', 'info', {duration: 0});
+
+  try {
+    if(!MAILER_URL || MAILER_URL.length < 30){
+      throw new Error('MAILER_URL no configurado');
+    }
+    // Apps Script Web App: POST con text/plain para evitar preflight CORS
+    const r = await fetch(MAILER_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ to: to, subject: subject, body: body })
     });
-    return;
-  }
-  const win = window.open(gmailUrl, '_blank', 'noopener');
-  if(!win){
-    // Bloqueado por popup. Ofrecer fallback
-    showToast('El navegador bloqueo la ventana emergente. Permite popups o copia el resumen.', 'err', {
+    removeToast(progressToast);
+    if(!r.ok){
+      throw new Error('HTTP ' + r.status);
+    }
+    const data = await r.json();
+    if(data.ok){
+      showToast('Correo enviado automaticamente a ' + (data.sent_to || []).join(', '), 'ok', {duration: 6000});
+    } else {
+      throw new Error(data.error || 'respuesta sin OK');
+    }
+  } catch(e) {
+    removeToast(progressToast);
+    // Fallback: copiar al portapapeles
+    try { await navigator.clipboard.writeText(fullText); } catch(err){}
+    showToast('No se pudo enviar automaticamente: ' + (e.message||String(e)) + '. Resumen copiado al portapapeles.', 'err', {
       duration: 0,
       actions: [
-        { label: 'Copiar resumen', style: 'primary', onClick: ()=> {
-          navigator.clipboard.writeText(fullText);
-          showToast('Copiado al portapapeles.', 'ok');
-        }},
-        { label: 'Abrir Gmail', style: 'secondary', onClick: ()=> window.open(gmailUrl, '_blank') }
+        { label: 'Reintentar', style: 'primary', onClick: ()=> sendByGmail(subject, body) },
+        { label: 'Abrir Gmail manual', style: 'secondary', onClick: ()=> {
+          const u = buildGmailComposeUrl(to, subject, body);
+          window.open(u, '_blank');
+        }}
       ]
     });
-    return;
   }
-  showToast('Gmail abierto en nueva pestaña con el correo prellenado para '+to+'. Solo dale clic en Enviar.', 'ok', {duration:6000});
 }
 
 
