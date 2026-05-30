@@ -956,8 +956,8 @@ function renderRequisitos(r){
   const idProc = r.id_del_proceso || r.id_del_portafolio || r.proceso_de_compra || r.referencia_del_proceso || '_';
   const cached = loadPliegoCache(idProc);
   const cont = document.getElementById('mdRequisitos');
-  const useEmbedded = !!EMBEDDED_GEMINI_KEY;
-  const aiKey = EMBEDDED_GEMINI_KEY || localStorage.getItem('gemini_api_key') || '';
+  const useEmbedded = !!EMBEDDED_GROQ_KEY;
+  const aiKey = EMBEDDED_GROQ_KEY || localStorage.getItem('groq_api_key') || '';
   const aiOk = aiKey ? '<span class="ai-saved">'+(useEmbedded?'INTEGRADA':'CONFIGURADA')+'</span>' : '';
 
   let aiPanelHtml = '<div class="ai-panel">';
@@ -973,7 +973,7 @@ function renderRequisitos(r){
   } else {
     // Sin key embebida, mostrar config
     aiPanelHtml +=
-      '<input type="password" id="aiKeyInput" placeholder="Pega aqui tu API key de Groq" value="'+esc(localStorage.getItem('gemini_api_key')||'')+'" autocomplete="off" />'+
+      '<input type="password" id="aiKeyInput" placeholder="Pega aqui tu API key de Groq" value="'+esc(localStorage.getItem('groq_api_key')||'')+'" autocomplete="off" />'+
       '<div class="ai-actions">'+
         '<button class="btn-primary" id="btnSaveKey">Guardar key</button>'+
         '<button class="btn-success" id="btnAiAnalyze" '+(aiKey?'':'disabled')+'>Analizar PDF con IA</button>'+
@@ -1040,13 +1040,13 @@ function renderRequisitos(r){
   if(_bSave) _bSave.onclick = ()=>{
     const v = document.getElementById('aiKeyInput').value.trim();
     if(!v){ alert('Pega la API key primero'); return; }
-    localStorage.setItem('gemini_api_key', v);
+    localStorage.setItem('groq_api_key', v);
     document.getElementById('btnAiAnalyze').disabled = false;
     alert('API key guardada en este navegador.');
   };
   const _bClear = document.getElementById('btnAiClear');
   if(_bClear) _bClear.onclick = ()=>{
-    localStorage.removeItem('gemini_api_key');
+    localStorage.removeItem('groq_api_key');
     document.getElementById('aiKeyInput').value = '';
     document.getElementById('btnAiAnalyze').disabled = true;
   };
