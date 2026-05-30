@@ -961,7 +961,7 @@ function renderRequisitos(r){
   const aiOk = aiKey ? '<span class="ai-saved">'+(useEmbedded?'INTEGRADA':'CONFIGURADA')+'</span>' : '';
 
   let aiPanelHtml = '<div class="ai-panel">';
-  aiPanelHtml += '<div class="ai-title">Analisis con IA (Google Gemini) '+aiOk+'</div>';
+  aiPanelHtml += '<div class="ai-title">Analisis con IA (Groq Llama 3.3 70B) '+aiOk+'</div>';
   if(useEmbedded){
     // Key integrada, no mostrar inputs
     aiPanelHtml +=
@@ -973,15 +973,15 @@ function renderRequisitos(r){
   } else {
     // Sin key embebida, mostrar config
     aiPanelHtml +=
-      '<input type="password" id="aiKeyInput" placeholder="Pega aqui tu API key de Google Gemini" value="'+esc(localStorage.getItem('gemini_api_key')||'')+'" autocomplete="off" />'+
+      '<input type="password" id="aiKeyInput" placeholder="Pega aqui tu API key de Groq" value="'+esc(localStorage.getItem('gemini_api_key')||'')+'" autocomplete="off" />'+
       '<div class="ai-actions">'+
         '<button class="btn-primary" id="btnSaveKey">Guardar key</button>'+
         '<button class="btn-success" id="btnAiAnalyze" '+(aiKey?'':'disabled')+'>Analizar PDF con IA</button>'+
         '<button class="btn-secondary" id="btnAiClear">Borrar key</button>'+
       '</div>'+
       '<div class="hint">'+
-        '<b>Obten tu API key gratis</b> en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. '+
-        'Gemini 1.5 Flash tiene 1500 analisis/dia gratis. La key se guarda solo en tu navegador.'+
+        '<b>Obten tu API key gratis</b> en <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>. '+
+        'Groq Llama 3.3 70B: 14,400 analisis/dia gratis. La key se guarda solo en tu navegador.'+
       '</div>';
   }
   aiPanelHtml += '</div>';
@@ -1054,19 +1054,17 @@ function renderRequisitos(r){
   if(_bAnalyze) _bAnalyze.onclick = ()=> analyzeWithAI(r, idProc);
 }
 
-/* ============ ANALISIS CON IA (Google Gemini) ============ */
+/* ============ ANALISIS CON IA (Groq Llama 3.3 70B) ============ */
 
-/* API key embebida (restringida al dominio jjospinagon.github.io).
-   Si esta vacia, la app pide al usuario que ingrese su propia key.
-   Para embebir tu key: reemplaza la cadena vacia por tu key (debe estar
-   restringida en Google Cloud Console a HTTP referrer del dominio). */
-const EMBEDDED_GEMINI_KEY = 'AQ.Ab8RN6Innh1scUQ65LmIrVV9XyLuQvdIQtdwwTII0EHeObUGkg';
-const GEMINI_MODEL = 'gemini-1.5-flash-latest';  // free tier 1500 req/dia, estable
-const GEMINI_URL = ()=> 'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent';
+/* API key embebida de Groq. Free tier: 14400 req/dia.
+   Las keys empiezan con gsk_*. Para crear: console.groq.com/keys */
+const EMBEDDED_GROQ_KEY = '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';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 async function analyzeWithAI(r, idProc){
-  const apiKey = EMBEDDED_GEMINI_KEY || localStorage.getItem('gemini_api_key');
-  if(!apiKey){ alert('Configura tu API key de Gemini primero (o pidele al admin que la embeba en el codigo).'); return; }
+  const apiKey = EMBEDDED_GROQ_KEY || localStorage.getItem('groq_api_key');
+  if(!apiKey){ alert('Configura tu API key de Groq primero (o pidele al admin que la embeba en el codigo). Obten una gratis en console.groq.com/keys'); return; }
 
   // Obtener texto del PDF: si hay cache de texto, usarlo; si no, pedir cargar PDF
   let pdfText = '';
@@ -1087,10 +1085,10 @@ async function analyzeWithAI(r, idProc){
   prog.style.display = 'block';
   bar.style.background = 'var(--acc)';
   bar.style.width = '20%';
-  txt.textContent = 'Enviando texto del pliego a Gemini AI ('+(pdfText.length/1000).toFixed(0)+'k chars)...';
+  txt.textContent = 'Enviando texto del pliego a Groq AI ('+(pdfText.length/1000).toFixed(0)+'k chars)...';
 
   try{
-    const result = await callGeminiForPliego(pdfText, apiKey, (msg, pct)=>{
+    const result = await callGroqForPliego(pdfText, apiKey, (msg, pct)=>{
       bar.style.width = (20 + pct*70) + '%';
       txt.textContent = msg;
     });
@@ -1108,10 +1106,10 @@ async function analyzeWithAI(r, idProc){
   }
 }
 
-async function callGeminiForPliego(pdfText, apiKey, onProgress){
-  // Truncar a 60k chars para mantenerse seguro en TPM y velocidad
-  const text = pdfText.length > 60000 ? pdfText.substring(0,60000)+'\n\n[...TRUNCADO POR TAMANO]' : pdfText;
-  if(onProgress) onProgress('Construyendo prompt para Gemini...', 0.1);
+async function callGroqForPliego(pdfText, apiKey, onProgress){
+  // Truncar a 50k chars (Llama 3.3 70B context = 128k tokens, mantenemos margen)
+  const text = pdfText.length > 50000 ? pdfText.substring(0,50000)+'\n\n[...TRUNCADO POR TAMANO]' : pdfText;
+  if(onProgress) onProgress('Construyendo prompt para Groq Llama 3.3...', 0.1);
 
   const prompt = `Eres un experto auditor de pliegos de condiciones en contratacion publica colombiana (SECOP II).
 Analiza el siguiente pliego (o estudios previos) y extrae los REQUISITOS EXACTAMENTE como aparecen en el documento.
@@ -1186,41 +1184,40 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
   "observaciones_clave": ["alertas importantes que un proponente debe saber"]
 }`;
 
-  if(onProgress) onProgress('Llamando a Gemini AI...', 0.3);
+  if(onProgress) onProgress('Llamando a Groq Llama 3.3...', 0.3);
 
-  const response = await fetch(GEMINI_URL(), {
+  const response = await fetch(GROQ_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey
+      'Authorization': 'Bearer ' + apiKey
     },
     body: JSON.stringify({
-      contents: [{parts: [{text: prompt}]}],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 8192,
-        responseMimeType: 'application/json'
-      }
+      model: GROQ_MODEL,
+      messages: [
+        {role: 'system', content: 'Eres un experto auditor de pliegos de contratacion publica colombiana SECOP II. Respondes UNICAMENTE con JSON valido, sin markdown, sin texto adicional.'},
+        {role: 'user', content: prompt}
+      ],
+      temperature: 0.1,
+      max_tokens: 8192,
+      response_format: {type: 'json_object'}
     })
   });
 
   if(!response.ok){
     const errText = await response.text();
     if(response.status === 429){
-      throw new Error('Cuota agotada (HTTP 429). Espera 60s y reintenta, o crea una nueva API key. Limite Gemini 1.5 Flash: 1500/dia, 15/min.');
+      throw new Error('Cuota agotada (HTTP 429). Espera unos minutos. Limite Groq Llama 3.3 70B: 14400/dia, 30/min.');
     }
-    if(response.status === 400 && errText.indexOf('API_KEY_INVALID') >= 0){
-      throw new Error('API key invalida. Verifica que sea de Google AI Studio y este activa.');
-    }
-    if(response.status === 403){
-      throw new Error('Acceso denegado (HTTP 403). La key puede estar restringida a otro dominio. Restringela a *jjospinagon.github.io* o quitale la restriccion en console.cloud.google.com.');
+    if(response.status === 401){
+      throw new Error('API key invalida (HTTP 401). Verifica que sea de console.groq.com y empiece con gsk_');
     }
     throw new Error('HTTP '+response.status+': '+errText.substring(0,300));
   }
   if(onProgress) onProgress('Parseando respuesta...', 0.9);
   const data = await response.json();
-  const txtResp = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if(!txtResp) throw new Error('Respuesta vacia de Gemini');
+  const txtResp = data?.choices?.[0]?.message?.content || '';
+  if(!txtResp) throw new Error('Respuesta vacia de Groq');
 
   let parsed;
   try {
@@ -1231,11 +1228,11 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
     if(m) parsed = JSON.parse(m[0]);
     else throw new Error('No se pudo parsear JSON: '+txtResp.substring(0,200));
   }
-  return adaptGeminiResponse(parsed);
+  return adaptAIResponse(parsed);
 }
 
-/* Adapta la respuesta de Gemini al formato del renderer existente, agregando campos extra */
-function adaptGeminiResponse(g){
+/* Adapta la respuesta de la IA al formato del renderer existente */
+function adaptAIResponse(g){
   return {
     objeto: g.objeto || null,
     modalidad: g.modalidad || null,
@@ -1558,7 +1555,7 @@ async function ocrPdf(arrayBuffer, onProgress, opts){
 
 
 function renderPdfResults(req, size, sourceType){
-  const label = sourceType==='ai' ? 'Analisis con IA (Gemini)' :
+  const label = sourceType==='ai' ? 'Analisis con IA (Groq Llama 3.3 70B)' :
                 sourceType==='pdf' ? 'Extraido del PDF cargado' :
                 sourceType==='ocr' ? 'Extraido por OCR del PDF escaneado' :
                 sourceType==='cache' ? 'Cache del pliego (carga previa)' :
