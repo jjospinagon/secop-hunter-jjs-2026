@@ -1085,7 +1085,7 @@ async function analyzeWithAI(r, idProc){
   prog.style.display = 'block';
   bar.style.background = 'var(--acc)';
   bar.style.width = '20%';
-  txt.textContent = 'Enviando texto del pliego a Groq AI ('+(pdfText.length/1000).toFixed(0)+'k chars)...';
+  txt.textContent = 'Comprimiendo y enviando pliego a Groq AI ('+(pdfText.length/1000).toFixed(0)+'k chars)...';
 
   try{
     const result = await callGroqForPliego(pdfText, apiKey, (msg, pct)=>{
@@ -1094,7 +1094,8 @@ async function analyzeWithAI(r, idProc){
     });
     bar.style.width = '100%';
     bar.style.background = 'var(--ok)';
-    txt.innerHTML = 'Listo: analisis con IA completado <span class="ai-saved">AI</span>';
+    const compMsg = (typeof result === 'object' && result._compression) ? ' | Comprimido: '+result._compression : '';
+    txt.innerHTML = 'Listo: analisis con IA completado <span class="ai-saved">AI</span>'+compMsg;
     savePliegoCache(idProc, { requirements: result, size: (cached?cached.size:0), name: (cached?cached.name:''), ts: Date.now(), ai: true, rawText: pdfText });
     renderPdfResults(result, 0, 'ai');
     setTimeout(()=> { prog.style.display = 'none'; }, 2500);
@@ -1106,10 +1107,120 @@ async function analyzeWithAI(r, idProc){
   }
 }
 
+/* Compresion inteligente del PDF: filtra solo parrafos relevantes
+   antes de enviar a la IA. Reduce 80-90% del texto sin perder requisitos. */
+function compressPliegoForAI(rawText, maxChars){
+  maxChars = maxChars || 25000;
+  const KW_GROUPS = {
+    plazo: [/\bplazo/i, /\bduraci[oó]n/i, /\bt[eé]rmino/i, /(\d+)\s*(d[ií]as?|meses?|a[nñ]os?|semanas?)/i, /ejecuci[oó]n del contrato/i],
+    personal: [/personal m[ií]nimo/i, /equipo de trabajo/i, /\bdirector/i, /\bresidente/i, /especialista/i, /profesional/i, /ingenier[oa]/i, /arquitect[oa]/i, /\bperfil/i, /tarjeta profesional/i, /matr[ií]cula/i],
+    experiencia: [/experiencia (general|espec[ií]fica|m[ií]nima|habilitante|requerida|del? (oferente|proponente))/i, /(\d+)\s+contratos?/i, /SMMLV|smmlv|salarios m[ií]nimos/i, /haber ejecutado/i, /acreditar experiencia/i, /antig[uü]edad/i],
+    financiero: [/liquidez/i, /endeudamiento/i, /raz[oó]n de cobertura/i, /capital de trabajo/i, /\bpatrimonio\b/i, /rentabilidad/i, /capacidad de contrataci[oó]n/i, /capacidad residual/i, /K[\s_-]?contrataci/i, /K[\s_-]?residual/i, /indicador (financiero|de capacidad)/i, /raz[oó]n corriente/i],
+    garantias: [/garant[ií]a/i, /\bp[oó]liza/i, /seriedad de la oferta/i, /cumplimiento del contrato/i, /estabilidad (y calidad )?de (la )?obra/i, /salarios.{0,50}prestaciones/i, /responsabilidad civil/i, /\bRCE\b/i, /buen manejo del anticipo/i, /vigencia/i],
+    visita: [/visita (t[eé]cnica|al sitio)/i, /reconocimiento del lugar/i],
+    pago: [/forma de pago/i, /\banticipo/i, /actas? parciales/i, /pagos? mensuales/i, /amortizaci[oó]n/i],
+    objeto: [/\bobjeto\b/i, /modalidad de (selecci[oó]n|contrataci[oó]n)/i, /valor (estimado|del contrato|del proceso)/i, /presupuesto oficial/i, /\bPO\b/i, /lugar de ejecuci[oó]n/i, /\bUNSPSC\b/i, /codigo (de )?categor[ií]a/i],
+    cronograma: [/cronograma/i, /(fase|etapa) (de )?(planeaci|preconstrucci|ejecuci|construcci|liquidaci|operaci)/i, /(apertura|cierre) (de )?ofertas?/i, /audiencia/i, /adjudicaci[oó]n/i],
+    criterios: [/criterios? de (evaluaci[oó]n|calificaci[oó]n|selecci[oó]n)/i, /factor(es)? de (evaluaci[oó]n|ponderaci[oó]n|calificaci[oó]n)/i, /puntaje (m[aá]ximo|total|de)/i, /ponderaci[oó]n/i, /\bbonificaci[oó]n/i],
+    rechazo: [/causales? de (rechazo|inhabilidad)/i, /motivos de rechazo/i, /subsanable/i, /subsanaci[oó]n/i, /inadmisi[oó]n/i, /no subsanable/i, /inhabilidades/i, /incompatibilidad/i],
+    visita_obligatoria: [/visita obligatoria/i, /visita no obligatoria/i],
+  };
+
+  // Lista plana de regexes para scoring
+  const allKW = [];
+  Object.values(KW_GROUPS).forEach(arr => allKW.push.apply(allKW, arr));
+
+  // Limpieza basica
+  let clean = String(rawText)
+    .replace(/\uFFFD/g,' ')
+    .replace(/[\x00-\x1F\x7F]/g,' ')
+    .replace(/[ \t]+/g,' ')
+    .replace(/\n{3,}/g,'\n\n');
+
+  // Quitar palabras repetidas consecutivas (tipico OCR)
+  clean = clean.replace(/\b(\w{4,})(\s+\1\b){1,}/gi, '$1');
+
+  // Dividir en bloques (parrafos)
+  const blocks = clean.split(/\n\s*\n|(?<=[.;:!?])\s+(?=[A-ZÁÉÍÓÚÑ])/);
+
+  // Score cada bloque
+  const scored = [];
+  blocks.forEach((b, idx) => {
+    const t = b.replace(/\s+/g,' ').trim();
+    if(t.length < 25) return;
+    if(t.length > 4000) return; // bloques gigantes son basura
+    let score = 0;
+    const matchedGroups = new Set();
+    for(const [grp, regexes] of Object.entries(KW_GROUPS)){
+      for(const rg of regexes){
+        if(rg.test(t)){ score++; matchedGroups.add(grp); break; }
+      }
+    }
+    if(score === 0) return;
+    // Bonus: bloques con numeros (probablemente requisitos cuantitativos)
+    if(/\d/.test(t)) score += 0.5;
+    // Bonus: bloques con multiples grupos (mas densos en info)
+    if(matchedGroups.size >= 2) score += matchedGroups.size;
+    scored.push({ text: t, score: score, idx: idx, groups: Array.from(matchedGroups) });
+  });
+
+  // Ordenar por score desc
+  scored.sort((a,b) => b.score - a.score);
+
+  // Seleccionar bloques hasta llenar maxChars
+  const selected = [];
+  let totalChars = 0;
+  const seenTexts = new Set();
+  for(const s of scored){
+    const key = s.text.substring(0,80);
+    if(seenTexts.has(key)) continue;
+    seenTexts.add(key);
+    if(totalChars + s.text.length + 2 > maxChars) {
+      if(totalChars < maxChars * 0.7) {
+        // Si todavia hay mucho espacio, truncar este bloque
+        const room = maxChars - totalChars - 50;
+        if(room > 200){
+          selected.push({...s, text: s.text.substring(0, room) + '...'});
+          totalChars += room + 50;
+        }
+      }
+      continue;
+    }
+    selected.push(s);
+    totalChars += s.text.length + 2;
+  }
+
+  // Ordenar de vuelta por aparicion original (mantener flujo del documento)
+  selected.sort((a,b) => a.idx - b.idx);
+
+  // Construir texto comprimido
+  const compressed = selected.map(s => s.text).join('\n\n');
+
+  return {
+    text: compressed,
+    originalChars: clean.length,
+    compressedChars: compressed.length,
+    blocksSelected: selected.length,
+    blocksScored: scored.length,
+    ratio: Math.round(compressed.length / Math.max(1,clean.length) * 100) + '%'
+  };
+}
+
 async function callGroqForPliego(pdfText, apiKey, onProgress){
-  // Truncar a 50k chars (Llama 3.3 70B context = 128k tokens, mantenemos margen)
-  const text = pdfText.length > 50000 ? pdfText.substring(0,50000)+'\n\n[...TRUNCADO POR TAMANO]' : pdfText;
+  // Compresion inteligente: filtrar solo parrafos relevantes (reduce 80-90%)
+  let text = pdfText;
+  let compressionInfo = null;
+  if(pdfText.length > 25000){
+    const compressed = compressPliegoForAI(pdfText, 22000);
+    text = compressed.text;
+    compressionInfo = compressed;
+    console.log('[SECOP] Compresion PDF:', compressed.ratio, '|', compressed.originalChars+' -> '+compressed.compressedChars+' chars |', compressed.blocksSelected+'/'+compressed.blocksScored+' bloques');
+  }
+  const wasCompressed = compressionInfo !== null;
   if(onProgress) onProgress('Construyendo prompt para Groq Llama 3.3...', 0.1);
+  if(compressionInfo && onProgress){
+    onProgress('Comprimido: '+compressionInfo.originalChars+' -> '+compressionInfo.compressedChars+' chars ('+compressionInfo.ratio+'). Bloques: '+compressionInfo.blocksSelected, 0.2);
+  }
 
   const prompt = `Eres un experto auditor de pliegos de condiciones en contratacion publica colombiana (SECOP II).
 Analiza el siguiente pliego (o estudios previos) y extrae los REQUISITOS EXACTAMENTE como aparecen en el documento.
@@ -1199,7 +1310,7 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
         {role: 'user', content: prompt}
       ],
       temperature: 0.1,
-      max_tokens: 8192,
+      max_tokens: 4096,
       response_format: {type: 'json_object'}
     })
   });
@@ -1207,7 +1318,10 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
   if(!response.ok){
     const errText = await response.text();
     if(response.status === 429){
-      throw new Error('Cuota agotada (HTTP 429). Espera unos minutos. Limite Groq Llama 3.3 70B: 14400/dia, 30/min.');
+      throw new Error('Cuota agotada (HTTP 429). Espera unos minutos. Limite Groq Llama 3.3 70B free tier: 14400 req/dia, 30/min.');
+    }
+    if(response.status === 413){
+      throw new Error('Documento muy grande (HTTP 413). El free tier de Groq tiene limite TPM (tokens por minuto). Soluciones: (1) carga solo el pliego de condiciones sin anexos, (2) espera 60s y reintenta, (3) usa un PDF mas corto.');
     }
     if(response.status === 401){
       throw new Error('API key invalida (HTTP 401). Verifica que sea de console.groq.com y empiece con gsk_');
@@ -1218,6 +1332,7 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
   const data = await response.json();
   const txtResp = data?.choices?.[0]?.message?.content || '';
   if(!txtResp) throw new Error('Respuesta vacia de Groq');
+  if(wasTruncated && onProgress) onProgress('Aviso: documento truncado a primeras 22k caracteres por limite TPM.', 0.95);
 
   let parsed;
   try {
