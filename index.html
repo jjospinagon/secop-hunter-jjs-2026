@@ -562,6 +562,20 @@
   .btn-mini-share{background:linear-gradient(135deg,rgba(16,185,129,0.6),rgba(5,150,105,0.4));color:#a7f3d0;padding:4px 9px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(16,185,129,0.4);margin-left:5px;transition:all 0.15s;line-height:1}
   .btn-mini-share:hover{background:linear-gradient(135deg,var(--ok),#059669);color:#fff;transform:translateY(-1px);box-shadow:0 3px 10px rgba(16,185,129,0.4);border-color:transparent}
   html[data-theme="light"] .btn-mini-share{background:linear-gradient(135deg,rgba(167,243,208,0.7),rgba(110,231,183,0.5));color:#047857;border-color:rgba(16,185,129,0.5)}
+
+  /* Toast de notificacion */
+  .toast-stack{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9998;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .toast{background:linear-gradient(135deg,var(--panel-solid),#1e293b);border:1px solid var(--ok);border-radius:10px;padding:12px 18px;color:var(--txt);font-size:13px;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:280px;max-width:480px;animation:toastIn 0.3s ease-out;pointer-events:auto;display:flex;align-items:center;gap:10px}
+  .toast.err{border-color:var(--err)}
+  .toast.info{border-color:var(--acc)}
+  .toast .ti{font-size:18px;flex-shrink:0}
+  .toast .tc{flex:1;line-height:1.45}
+  .toast .tb{display:flex;gap:6px;margin-top:6px}
+  .toast .tb button{font-size:11px;padding:5px 10px;border-radius:5px}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes toastOut{to{opacity:0;transform:translate(-50%,20px)}}
+  .toast.leaving{animation:toastOut 0.25s ease-in forwards}
+  html[data-theme="light"] .toast{background:linear-gradient(135deg,#ffffff,#f8fafc)}
 </style>
 </head>
 <body>
@@ -765,6 +779,7 @@
 </main>
 
 
+<div class="toast-stack" id="toastStack"></div>
 <div class="modal-backdrop" id="modalBack" onclick="if(event.target.id==='modalBack') closeModal()">
   <div class="modal" role="dialog" aria-labelledby="mdTitle">
     <div class="modal-head">
@@ -1106,6 +1121,57 @@ if(selDep){
 
 
 
+
+/* ============ TOAST NOTIFICATIONS ============ */
+function showToast(msg, type, opts){
+  opts = opts || {};
+  const stack = document.getElementById('toastStack');
+  if(!stack) return;
+  type = type || 'info';
+  const icons = {ok:'\u2705', info:'\u2139', err:'\u26A0'};
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type === 'ok' ? '' : type);
+  let inner = '<div class="ti">'+icons[type]+'</div><div class="tc">'+msg;
+  if(opts.actions){
+    inner += '<div class="tb">';
+    opts.actions.forEach((a,i) => {
+      inner += '<button class="btn-' + (a.style || 'secondary') + '" data-act="'+i+'">'+esc(a.label)+'</button>';
+    });
+    inner += '</div>';
+  }
+  inner += '</div>';
+  el.innerHTML = inner;
+  stack.appendChild(el);
+  if(opts.actions){
+    el.querySelectorAll('button[data-act]').forEach(b => {
+      b.onclick = ()=> {
+        const idx = parseInt(b.dataset.act, 10);
+        if(opts.actions[idx].onClick) opts.actions[idx].onClick();
+        removeToast(el);
+      };
+    });
+  }
+  const dur = opts.duration || 5000;
+  if(dur > 0) setTimeout(()=> removeToast(el), dur);
+  return el;
+}
+function removeToast(el){
+  if(!el || el.classList.contains('leaving')) return;
+  el.classList.add('leaving');
+  setTimeout(()=> { if(el.parentNode) el.parentNode.removeChild(el); }, 250);
+}
+
+/* Construir URL de Gmail compose web (siempre funciona, abre nueva pestana) */
+function buildGmailComposeUrl(to, subject, body){
+  const params = new URLSearchParams({
+    view: 'cm', fs: '1',
+    to: to,
+    su: subject,
+    body: body
+  });
+  return 'https://mail.google.com/mail/?' + params.toString();
+}
+
 /* ============ COMPARTIR PROCESO POR EMAIL ============ */
 function shareProcess(idx){
   const r = lastResults[idx - offset];
@@ -1162,21 +1228,41 @@ function shareProcess(idx){
   lines.push('Compartido desde SECOP II Hunter');
   lines.push(window.location.href);
 
-  const body = lines.join('\n');
-  const to = ALLOWED_EMAILS.join(',');
-  const mailto = 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  sendByGmail(subject, lines.join('\n'));
+}
 
-  // Algunos clientes tienen limites: si excede, ofrecer copiar
-  if(mailto.length > 6000){
-    if(confirm('La informacion del proceso es muy larga para abrir en el cliente de correo (limite del navegador). \n\nPulsa Aceptar para copiar al portapapeles, luego pega manualmente en un correo nuevo a:\n\n' + to)){
-      navigator.clipboard.writeText('Para: ' + to + '\nAsunto: ' + subject + '\n\n' + body);
-      alert('Copiado al portapapeles.');
-    }
+/* Envia abriendo Gmail web compose en pestana nueva + toast confirmacion */
+function sendByGmail(subject, body){
+  const to = ALLOWED_EMAILS.join(',');
+  const fullText = 'Para: ' + to + '\nAsunto: ' + subject + '\n\n' + body;
+
+  const gmailUrl = buildGmailComposeUrl(to, subject, body);
+  // Gmail compose URL puede ser muy larga (limite ~8000 chars), si excede usar copiar
+  if(gmailUrl.length > 7500){
+    navigator.clipboard.writeText(fullText).then(()=>{
+      showToast('Resumen copiado al portapapeles (era muy largo para Gmail). Pega en un correo nuevo a: '+to, 'info', {duration: 8000});
+    }).catch(()=>{
+      showToast('No se pudo copiar. Abriendo Gmail en blanco.', 'err');
+      window.open('https://mail.google.com/mail/?view=cm&to='+to+'&su='+encodeURIComponent(subject), '_blank');
+    });
     return;
   }
-
-  // Abrir cliente de correo
-  window.location.href = mailto;
+  const win = window.open(gmailUrl, '_blank', 'noopener');
+  if(!win){
+    // Bloqueado por popup. Ofrecer fallback
+    showToast('El navegador bloqueo la ventana emergente. Permite popups o copia el resumen.', 'err', {
+      duration: 0,
+      actions: [
+        { label: 'Copiar resumen', style: 'primary', onClick: ()=> {
+          navigator.clipboard.writeText(fullText);
+          showToast('Copiado al portapapeles.', 'ok');
+        }},
+        { label: 'Abrir Gmail', style: 'secondary', onClick: ()=> window.open(gmailUrl, '_blank') }
+      ]
+    });
+    return;
+  }
+  showToast('Gmail abierto en nueva pestaña con el correo prellenado para '+to+'. Solo dale clic en Enviar.', 'ok', {duration:6000});
 }
 
 
@@ -1258,18 +1344,7 @@ function shareProcessWithAnalysis(r, req, absIdx){
   }
   lines.push('Plataforma: ' + window.location.href);
 
-  const body = lines.join('\n');
-  const to = ALLOWED_EMAILS.join(',');
-  const mailto = 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-
-  if(mailto.length > 7500){
-    if(confirm('Analisis muy largo para mailto. Pulsa Aceptar para copiar al portapapeles.')){
-      navigator.clipboard.writeText('Para: ' + to + '\nAsunto: ' + subject + '\n\n' + body);
-      alert('Copiado al portapapeles. Pega en un correo nuevo.');
-    }
-    return;
-  }
-  window.location.href = mailto;
+  sendByGmail(subject, lines.join('\n'));
 }
 
 /* ==================== MODAL DETALLES ==================== */
