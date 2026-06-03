@@ -683,6 +683,68 @@
   @media (max-width:768px){
     .chk-group .chk-all-row{padding:12px;font-size:14px}
   }
+
+  /* ===== Favoritos ===== */
+  .fav-star{cursor:pointer;font-size:18px;color:rgba(148,163,184,0.5);transition:all 0.18s;display:inline-block;line-height:1;padding:2px;user-select:none}
+  .fav-star:hover{color:#fbbf24;transform:scale(1.2)}
+  .fav-star.active{color:#f59e0b;text-shadow:0 0 8px rgba(245,158,11,0.5)}
+  /* Filtro favoritos */
+  .filter-favs-wrap{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:#fbbf24;transition:all 0.15s;user-select:none}
+  .filter-favs-wrap:hover{background:rgba(245,158,11,0.2)}
+  .filter-favs-wrap.active{background:#f59e0b;color:#451a03;border-color:#f59e0b;box-shadow:0 2px 8px rgba(245,158,11,0.4)}
+  
+  /* ===== Vista Calendario ===== */
+  .view-switcher{display:inline-flex;background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px}
+  .view-switcher button{background:transparent;color:var(--muted);padding:6px 12px;font-size:11px;border-radius:5px;font-weight:600}
+  .view-switcher button.active{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 2px 6px rgba(14,165,233,0.4)}
+  .calendar-wrap{background:rgba(15,23,42,0.4);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:400px}
+  .cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .cal-nav h3{margin:0;font-size:15px;color:var(--acc-bright);text-transform:capitalize}
+  .cal-nav button{padding:5px 11px;font-size:12px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-head{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);text-align:center;padding:6px;font-weight:700}
+  .cal-cell{min-height:80px;background:rgba(15,23,42,0.5);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:10.5px;overflow:hidden;display:flex;flex-direction:column;gap:3px;transition:background 0.12s}
+  .cal-cell.other-month{opacity:0.35}
+  .cal-cell.today{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+  .cal-cell .d{font-weight:700;color:var(--muted);font-size:12px;margin-bottom:2px}
+  .cal-cell.today .d{color:var(--acc-bright)}
+  .cal-proc{background:linear-gradient(90deg,rgba(56,189,248,0.15),rgba(56,189,248,0.05));border-left:3px solid var(--acc);padding:3px 5px;border-radius:3px;font-size:9.5px;cursor:pointer;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+  .cal-proc:hover{background:rgba(56,189,248,0.3)}
+  .cal-proc.urgent{border-left-color:#ef4444;background:linear-gradient(90deg,rgba(239,68,68,0.15),rgba(239,68,68,0.05))}
+  @media (max-width:768px){
+    .cal-cell{min-height:60px;padding:4px;font-size:10px}
+    .cal-cell .d{font-size:11px}
+    .cal-proc{font-size:9px;padding:2px 4px}
+    .cal-head{font-size:9px;padding:4px}
+  }
+
+  /* ===== Comparador ===== */
+  .compare-bar{position:fixed;bottom:20px;right:20px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;padding:12px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(14,165,233,0.5);cursor:pointer;font-weight:700;font-size:13px;z-index:50;display:none;animation:fadeIn 0.3s}
+  .compare-bar.show{display:flex;align-items:center;gap:10px}
+  .compare-bar:hover{transform:translateY(-2px)}
+  .compare-bar .badge-n{background:rgba(255,255,255,0.25);padding:3px 9px;border-radius:999px;font-size:11px}
+  .compare-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+  .compare-tbl th{background:linear-gradient(180deg,#0c4a6e,#075985);color:#fff;padding:10px;text-align:left;font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--acc2);font-weight:700;letter-spacing:0.04em}
+  .compare-tbl td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+  .compare-tbl tr:hover td{background:rgba(56,189,248,0.04)}
+  .compare-tbl td:first-child{background:rgba(15,23,42,0.6);font-weight:700;color:var(--acc-bright);width:160px;text-transform:uppercase;font-size:10.5px;letter-spacing:0.04em}
+
+  /* ===== Perfil de empresa ===== */
+  .profile-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
+  .profile-btn:hover{background:rgba(255,255,255,0.2)}
+  .profile-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:600px){ .profile-form{grid-template-columns:1fr} }
+  .profile-form .full{grid-column:1/-1}
+  .match-card{margin-top:10px;padding:14px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(135deg,rgba(56,189,248,0.08),transparent)}
+  .match-score{font-size:28px;font-weight:800;letter-spacing:-0.02em}
+  .match-score.high{color:var(--ok-bright)}
+  .match-score.mid{color:var(--warn)}
+  .match-score.low{color:var(--err-bright)}
+  .match-list{margin-top:8px;list-style:none;padding:0;font-size:12px}
+  .match-list li{padding:5px 0;border-bottom:1px dashed var(--border);display:flex;justify-content:space-between;gap:10px}
+  .match-list li:last-child{border-bottom:0}
+  .match-list .ok{color:var(--ok-bright)}
+  .match-list .ko{color:var(--err-bright)}
 </style>
 </head>
 <body>
@@ -707,6 +769,7 @@
     <h1>SECOP II Hunter <small>Plataforma de busqueda y analisis con IA</small></h1>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button id="profileBtn" class="profile-btn" type="button" title="Mi perfil de empresa" onclick="openProfileModal()">&#x1F464; Mi perfil</button>
     <button id="themeToggle" class="theme-toggle" title="Cambiar tema dia/noche" aria-label="Cambiar tema">
       <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -806,25 +869,35 @@
   <section class="panel results-panel">
     <div class="toolbar">
       <h2 style="margin:0">Resultados</h2>
-      <span class="count" id="count">Sin busqueda</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="view-switcher">
+          <button id="viewTable" class="active" type="button">Tabla</button>
+          <button id="viewCal" type="button">Calendario</button>
+        </div>
+        <div class="filter-favs-wrap" id="filterFavs"><span>&#9733;</span><span id="favCount">0</span> Solo favoritos</div>
+        <span class="count" id="count">Sin busqueda</span>
+        <button class="btn-success" id="btnAiSummaries" type="button" title="Generar resumenes con IA">IA Resumir</button>
+      </div>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap" id="tableView">
       <table id="results">
         <thead>
           <tr>
-            <th>#</th><th>N Proceso</th><th>Entidad</th><th>Objeto</th>
+            <th style="width:30px">&#9733;</th>
+            <th>#</th><th>N Proceso</th><th>Entidad</th><th>Resumen IA / Objeto</th>
             <th>Modalidad</th><th>Estado</th><th>Fase</th><th>Tipo</th>
             <th>Depto</th><th>Municipio</th><th>Valor (COP)</th>
-            <th>Publicacion</th><th>Cierre</th><th>Ver</th>
+            <th>Publicacion</th><th>Cierre</th><th>Comp.</th><th>Ver</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="14" class="empty">
+          <tr><td colspan="16" class="empty">
             Define tus criterios y pulsa <b>Buscar</b>. Sin filtros trae los procesos mas recientes.
           </td></tr>
         </tbody>
       </table>
     </div>
+    <div class="calendar-wrap" id="calendarView" style="display:none"></div>
     <div class="pager" id="pager"></div>
   </section>
 </main>
@@ -1080,7 +1153,7 @@ async function runSearch(off){
 
 function render(rows, off){
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="14" class="empty">Sin resultados para esos criterios.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="16" class="empty">Sin resultados para esos criterios.</td></tr>';
     $('count').textContent = '0 procesos';
     return;
   }
@@ -2968,7 +3041,7 @@ const _btnClear = $('btnClear'); if(_btnClear) _btnClear.onclick = ()=> {
   // Desmarcar todos los checkboxes y quitar clase checked de las labels
   document.querySelectorAll('.chk-group input[type="checkbox"]').forEach(c => { c.checked = false; });
   document.querySelectorAll('.chk-group label.checked').forEach(l => l.classList.remove('checked'));
-  tbody.innerHTML = '<tr><td colspan="14" class="empty">Sin busquedas aun.</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="16" class="empty">Sin busquedas aun.</td></tr>';
   $('count').textContent='Sin busqueda'; $('pager').innerHTML=''; lastResults=[];
 };
 const _btnExport = $('btnExport'); if(_btnExport) _btnExport.onclick = exportXlsx;
@@ -3047,6 +3120,337 @@ const _form = $('form'); if(_form) _form.addEventListener('keydown', (e)=>{
     init();
   }
 })();
+
+
+
+/* ============ FASE 1: FAVORITOS ============ */
+const FAVS_KEY = 'secop_favorites_v1';
+function getFavs(){ try{ return JSON.parse(localStorage.getItem(FAVS_KEY) || '[]'); }catch(e){ return []; } }
+function setFavs(arr){ localStorage.setItem(FAVS_KEY, JSON.stringify(arr.slice(-200))); updateFavCount(); }
+function isFavorite(id){ return getFavs().indexOf(String(id)) >= 0; }
+function updateFavCount(){
+  const el = document.getElementById('favCount');
+  if(el) el.textContent = getFavs().length;
+}
+function toggleFav(starEl){
+  const id = String(starEl.dataset.id);
+  const favs = getFavs();
+  const idx = favs.indexOf(id);
+  if(idx >= 0){ favs.splice(idx,1); starEl.classList.remove('active'); starEl.textContent = '\u2606'; }
+  else { favs.push(id); starEl.classList.add('active'); starEl.textContent = '\u2605'; }
+  setFavs(favs);
+  // Re-render si filtro favoritos activo
+  if(window.__favsOnly) render(window.__lastFilteredResults || lastResults, offset);
+}
+window.toggleFav = toggleFav;
+
+/* Filtro "Solo favoritos" toggle */
+window.__favsOnly = false;
+function setupFavsFilter(){
+  const btn = document.getElementById('filterFavs');
+  if(!btn) return;
+  btn.onclick = ()=>{
+    window.__favsOnly = !window.__favsOnly;
+    btn.classList.toggle('active', window.__favsOnly);
+    if(window.__favsOnly){
+      const favs = new Set(getFavs());
+      const filtered = lastResults.filter(r => favs.has(String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso)));
+      window.__lastFilteredResults = filtered;
+      render(filtered, 0);
+    } else {
+      window.__lastFilteredResults = null;
+      render(lastResults, offset);
+    }
+  };
+}
+setTimeout(()=>{ updateFavCount(); setupFavsFilter(); }, 100);
+
+/* ============ FASE 1: VISTA CALENDARIO ============ */
+let _calMonth = new Date();
+_calMonth.setDate(1);
+
+function setupViewSwitcher(){
+  const bT = document.getElementById('viewTable');
+  const bC = document.getElementById('viewCal');
+  if(!bT || !bC) return;
+  bT.onclick = ()=>{ bT.classList.add('active'); bC.classList.remove('active'); document.getElementById('tableView').style.display = ''; document.getElementById('calendarView').style.display = 'none'; };
+  bC.onclick = ()=>{ bC.classList.add('active'); bT.classList.remove('active'); document.getElementById('tableView').style.display = 'none'; document.getElementById('calendarView').style.display = ''; renderCalendar(); };
+}
+setTimeout(setupViewSwitcher, 100);
+
+function renderCalendar(){
+  const cont = document.getElementById('calendarView');
+  if(!cont) return;
+  const year = _calMonth.getFullYear();
+  const month = _calMonth.getMonth();
+  const monthName = _calMonth.toLocaleDateString('es-CO',{month:'long',year:'numeric'});
+  // Procesos con fecha de cierre en el mes
+  const procs = (window.__favsOnly ? (window.__lastFilteredResults||lastResults) : lastResults) || [];
+  const byDay = {};
+  procs.forEach(r => {
+    const f = r.fecha_de_recepcion_de;
+    if(!f) return;
+    const d = new Date(f);
+    if(d.getFullYear() !== year || d.getMonth() !== month) return;
+    const day = d.getDate();
+    if(!byDay[day]) byDay[day] = [];
+    byDay[day].push(r);
+  });
+  // Construir grid
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date();
+  const isCurrent = (d) => today.getFullYear()===year && today.getMonth()===month && today.getDate()===d;
+  let html = '<div class="cal-nav">'+
+    '<button class="btn-secondary" onclick="_calMonth.setMonth(_calMonth.getMonth()-1);renderCalendar();">&lt; Anterior</button>'+
+    '<h3>'+monthName+'</h3>'+
+    '<button class="btn-secondary" onclick="_calMonth.setMonth(_calMonth.getMonth()+1);renderCalendar();">Siguiente &gt;</button>'+
+  '</div><div class="cal-grid">';
+  ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'].forEach(d => html += '<div class="cal-head">'+d+'</div>');
+  for(let i=0;i<firstDay;i++) html += '<div class="cal-cell other-month"></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const procsDay = byDay[d] || [];
+    const isUrgent = procsDay.length > 0 && (new Date(year,month,d) - today) < 3*24*60*60*1000 && (new Date(year,month,d) >= today);
+    html += '<div class="cal-cell'+(isCurrent(d)?' today':'')+'"><div class="d">'+d+'</div>';
+    procsDay.slice(0,3).forEach(r => {
+      const idx = lastResults.indexOf(r);
+      const obj = r.descripci_n_del_procedimiento || r.referencia_del_proceso || '';
+      html += '<div class="cal-proc'+(isUrgent?' urgent':'')+'" onclick="showDetails('+(offset+idx)+')" title="'+esc(obj)+'">'+esc(obj.substring(0,38))+(obj.length>38?'...':'')+'</div>';
+    });
+    if(procsDay.length > 3) html += '<div style="font-size:9px;color:var(--muted);text-align:center">+'+(procsDay.length-3)+' mas</div>';
+    html += '</div>';
+  }
+  cont.innerHTML = html;
+}
+
+/* ============ FASE 1: RESUMEN IA 1-LINEA ============ */
+window.__aiSummaries = window.__aiSummaries || {};
+async function generateAiSummaries(){
+  if(!EMBEDDED_GROQ_KEY){ showToast('IA Groq no configurada', 'err'); return; }
+  if(!lastResults || lastResults.length === 0){ showToast('Primero haz una busqueda', 'info'); return; }
+  const procs = lastResults.slice(0, 50); // top 50
+  const cacheKey = 'ai_sum_v1';
+  let cache = {};
+  try { cache = JSON.parse(localStorage.getItem(cacheKey) || '{}'); } catch(e){}
+  // Filtrar los que no están en cache
+  const pending = procs.filter(r => {
+    const id = String(r.id_del_proceso || r.referencia_del_proceso);
+    return !cache[id];
+  });
+  if(pending.length === 0){
+    // Todo cacheado
+    procs.forEach(r => {
+      const id = String(r.id_del_proceso || r.referencia_del_proceso);
+      if(cache[id]) window.__aiSummaries[id] = cache[id];
+    });
+    render(lastResults, offset);
+    showToast('Resumenes cargados desde cache.', 'ok');
+    return;
+  }
+  showToast('Generando resumenes IA para '+pending.length+' procesos...', 'info', {duration: 0});
+  // Construir prompt batched (10 procesos por llamada)
+  const BATCH = 10;
+  for(let b=0; b<pending.length; b+=BATCH){
+    const slice = pending.slice(b, b+BATCH);
+    const listText = slice.map((r,i)=> (i+1)+'. '+(r.descripci_n_del_procedimiento || '').substring(0,300)).join('\n');
+    const prompt = 'Genera un resumen MUY CORTO (max 80 caracteres) en una sola linea para cada objeto contractual. Responde con JSON array de strings, en orden, sin texto adicional.\n\nObjetos:\n'+listText+'\n\nResponde solo el JSON: ["resumen1", "resumen2", ...]';
+    try {
+      const r = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + EMBEDDED_GROQ_KEY },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [{role:'user', content: prompt}],
+          temperature: 0.2,
+          max_tokens: 2048,
+          response_format: {type:'json_object'}
+        })
+      });
+      const data = await r.json();
+      const txt = data?.choices?.[0]?.message?.content || '[]';
+      let arr = [];
+      try { 
+        const parsed = JSON.parse(txt); 
+        arr = Array.isArray(parsed) ? parsed : (parsed.resumenes || parsed.resumen || parsed.summaries || []);
+        if(!Array.isArray(arr)) arr = Object.values(parsed);
+      } catch(e){ 
+        const m = txt.match(/\[([\s\S]*?)\]/);
+        if(m){ try{ arr = JSON.parse('['+m[1]+']'); }catch(e){} }
+      }
+      slice.forEach((r,i) => {
+        const id = String(r.id_del_proceso || r.referencia_del_proceso);
+        if(arr[i] && typeof arr[i] === 'string'){
+          cache[id] = arr[i].substring(0,120);
+          window.__aiSummaries[id] = cache[id];
+        }
+      });
+    } catch(e){
+      console.warn('Error batch AI summary:', e);
+    }
+  }
+  // Tambien copiar desde cache los que ya estaban
+  procs.forEach(r => {
+    const id = String(r.id_del_proceso || r.referencia_del_proceso);
+    if(cache[id]) window.__aiSummaries[id] = cache[id];
+  });
+  localStorage.setItem(cacheKey, JSON.stringify(cache));
+  document.querySelectorAll('.toast').forEach(t => removeToast(t));
+  showToast('Resumenes IA generados.', 'ok');
+  render(lastResults, offset);
+}
+window.generateAiSummaries = generateAiSummaries;
+setTimeout(()=>{
+  const b = document.getElementById('btnAiSummaries');
+  if(b) b.onclick = generateAiSummaries;
+}, 100);
+
+/* ============ FASE 1: COMPARADOR ============ */
+window.__compareSet = new Set();
+function toggleCompare(id, idx){
+  if(window.__compareSet.has(id)){ window.__compareSet.delete(id); }
+  else {
+    if(window.__compareSet.size >= 4){ showToast('Maximo 4 procesos para comparar', 'warn'); return; }
+    window.__compareSet.add(id);
+  }
+  updateCompareBar();
+}
+window.toggleCompare = toggleCompare;
+function updateCompareBar(){
+  let bar = document.getElementById('compareBar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'compareBar';
+    bar.className = 'compare-bar';
+    bar.onclick = openCompareModal;
+    document.body.appendChild(bar);
+  }
+  const n = window.__compareSet.size;
+  if(n >= 2){
+    bar.classList.add('show');
+    bar.innerHTML = 'Comparar <span class="badge-n">'+n+'</span> procesos &rarr;';
+  } else {
+    bar.classList.remove('show');
+  }
+}
+function openCompareModal(){
+  const ids = Array.from(window.__compareSet);
+  const procs = lastResults.filter(r => ids.indexOf(String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso)) >= 0);
+  if(procs.length < 2){ showToast('Selecciona al menos 2 procesos', 'warn'); return; }
+  // Reutilizar modal estructure
+  document.getElementById('mdTitle').textContent = 'Comparacion de '+procs.length+' procesos';
+  document.getElementById('mdSub').textContent = 'Lado a lado';
+  // Construir HTML con tabla comparativa
+  const fields = [
+    ['N Proceso', r => r.referencia_del_proceso || r.proceso_de_compra],
+    ['Entidad', r => r.nombre_entidad || r.entidad],
+    ['Objeto', r => (r.descripci_n_del_procedimiento||'').substring(0,200)],
+    ['Modalidad', r => r.modalidad_de_contratacion],
+    ['Estado / Fase', r => [r.estado_del_procedimiento, r.fase].filter(Boolean).join(' / ')],
+    ['Tipo', r => r.tipo_de_contrato],
+    ['Departamento', r => r.departamento_entidad],
+    ['Municipio', r => r.ciudad_entidad],
+    ['Valor estimado', r => fmtMoney(r.precio_base)],
+    ['Duracion', r => [r.duracion, r.unidad_de_duracion].filter(Boolean).join(' ')],
+    ['Publicacion', r => fmtDate(r.fecha_de_publicacion_del)],
+    ['Cierre ofertas', r => fmtDate(r.fecha_de_recepcion_de)],
+    ['UNSPSC', r => r.categorias],
+    ['URL', r => (r.urlproceso && r.urlproceso.url) ? '<a href="'+esc(r.urlproceso.url)+'" target="_blank" style="color:var(--acc-bright)">Abrir &#x2197;</a>' : '-'],
+  ];
+  let html = '<table class="compare-tbl"><thead><tr><th>Campo</th>';
+  procs.forEach((p,i)=> html += '<th>'+(i+1)+'. '+esc((p.referencia_del_proceso||'').substring(0,18))+'</th>');
+  html += '</tr></thead><tbody>';
+  fields.forEach(([label,fn]) => {
+    html += '<tr><td>'+esc(label)+'</td>';
+    procs.forEach(p => {
+      let v = fn(p) || '-';
+      html += '<td>'+(v.toString().startsWith('<a')?v:esc(v))+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  // Cargar en tab resumen
+  document.getElementById('mdResumen').innerHTML = html;
+  // Cambiar a tab resumen
+  switchTab('resumen');
+  // Mostrar modal
+  document.getElementById('modalBack').classList.add('show');
+}
+
+/* ============ FASE 1: MI PERFIL + MATCH ============ */
+const PROFILE_KEY = 'secop_profile_v1';
+function getProfile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); }catch(e){ return {}; } }
+function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+function openProfileModal(){
+  const p = getProfile();
+  document.getElementById('mdTitle').textContent = 'Mi Perfil de Empresa';
+  document.getElementById('mdSub').textContent = 'Para calculo automatico de viabilidad';
+  document.getElementById('mdResumen').innerHTML = `
+    <div class="req-card">
+      <div class="ttl">Capacidad financiera (declaracion)</div>
+      <form id="profForm" class="profile-form">
+        <div><label>Liquidez (Razon corriente)</label><input type="number" step="0.01" name="liquidez" value="${p.liquidez||''}" placeholder="2.5" /></div>
+        <div><label>Endeudamiento (%)</label><input type="number" step="0.01" name="endeudamiento" value="${p.endeudamiento||''}" placeholder="40" /></div>
+        <div><label>Razon de cobertura</label><input type="number" step="0.01" name="cobertura" value="${p.cobertura||''}" placeholder="1.5" /></div>
+        <div><label>Patrimonio (COP)</label><input type="number" name="patrimonio" value="${p.patrimonio||''}" placeholder="500000000" /></div>
+        <div><label>Capital de trabajo (COP)</label><input type="number" name="ktrabajo" value="${p.ktrabajo||''}" placeholder="200000000" /></div>
+        <div><label>K-Contratacion (SMMLV)</label><input type="number" name="kcontratacion" value="${p.kcontratacion||''}" placeholder="50000" /></div>
+        <div class="full"><label>Experiencia general (años desde matricula)</label><input type="number" name="expGeneral" value="${p.expGeneral||''}" placeholder="10" /></div>
+        <div class="full"><label>Experiencia especifica (descripcion)</label><textarea name="expEspecifica" rows="3" placeholder="Obras de acueducto y alcantarillado en municipios menores...">${p.expEspecifica||''}</textarea></div>
+        <div class="full"><label>Personal disponible (perfiles)</label><textarea name="personal" rows="3" placeholder="Director de obra: Ingeniero Civil 12 anios. Residente: 6 anios. Especialista hidraulico...">${p.personal||''}</textarea></div>
+        <div class="full" style="display:flex;gap:8px;margin-top:8px">
+          <button type="button" class="btn-success" onclick="saveProfileForm()">Guardar perfil</button>
+          <button type="button" class="btn-secondary" onclick="closeModal(true)">Cerrar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  switchTab('resumen');
+  document.getElementById('modalBack').classList.add('show');
+}
+function saveProfileForm(){
+  const form = document.getElementById('profForm');
+  if(!form) return;
+  const p = {};
+  Array.from(form.elements).forEach(el => { if(el.name) p[el.name] = el.value; });
+  saveProfile(p);
+  showToast('Perfil guardado. Ahora se calculara tu match en cada proceso.', 'ok');
+  closeModal(true);
+}
+window.openProfileModal = openProfileModal;
+window.saveProfileForm = saveProfileForm;
+
+/* Calcular match entre perfil y requisitos del proceso */
+function calculateMatch(procReq){
+  const profile = getProfile();
+  if(!profile || Object.keys(profile).length === 0) return null;
+  const checks = [];
+  // Financiero
+  if(procReq && procReq.financiero){
+    procReq.financiero.forEach(f => {
+      const ind = (f.indicador||'').toLowerCase();
+      const req = String(f.requisito||'');
+      const num = parseFloat(req.replace(/[^\d.,]/g,'').replace(',','.'));
+      let mine = null;
+      if(ind.indexOf('liquidez') >= 0) mine = parseFloat(profile.liquidez);
+      else if(ind.indexOf('endeudamiento') >= 0) mine = parseFloat(profile.endeudamiento);
+      else if(ind.indexOf('cobertura') >= 0) mine = parseFloat(profile.cobertura);
+      else if(ind.indexOf('patrimonio') >= 0) mine = parseFloat(profile.patrimonio);
+      else if(ind.indexOf('capital de trabajo') >= 0) mine = parseFloat(profile.ktrabajo);
+      else if(ind.indexOf('contrataci') >= 0) mine = parseFloat(profile.kcontratacion);
+      if(mine !== null && !isNaN(mine) && !isNaN(num)){
+        const isUpper = req.indexOf('<') >= 0 || ind.indexOf('endeudamiento') >= 0;
+        const ok = isUpper ? mine <= num : mine >= num;
+        checks.push({label: f.indicador, mine, req: f.requisito, ok});
+      }
+    });
+  }
+  if(checks.length === 0) return null;
+  const okCount = checks.filter(c => c.ok).length;
+  const score = Math.round(okCount / checks.length * 100);
+  return { score, checks };
+}
+window.calculateMatch = calculateMatch;
+
 
 </script>
 </body>
