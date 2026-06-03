@@ -870,6 +870,26 @@
   .marker-cluster-medium{background-color:rgba(245,158,11,0.4)}
   .marker-cluster-large{background-color:rgba(239,68,68,0.5)}
   html[data-theme="light"] #leafletMap{background:#e2e8f0}
+
+  /* ===== Alertas guardadas ===== */
+  .alert-list-wrap{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+  .alert-item{background:linear-gradient(180deg,rgba(15,23,42,0.7),rgba(15,23,42,0.4));border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .alert-item.disabled{opacity:0.55}
+  .alert-item .info{flex:1;min-width:200px}
+  .alert-item .name{font-weight:700;font-size:13px;color:var(--acc-bright);margin-bottom:3px}
+  .alert-item .desc{font-size:11px;color:var(--muted);line-height:1.5}
+  .alert-item .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .alert-item .actions button{padding:6px 11px;font-size:11px}
+  .alert-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:600px){ .alert-form-grid{grid-template-columns:1fr} }
+  .alert-form-grid .full{grid-column:1/-1}
+  .alert-form-grid label{font-size:10.5px}
+  .alert-toggle{display:inline-flex;align-items:center;gap:7px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:700;cursor:pointer;user-select:none}
+  .alert-toggle.on{background:rgba(16,185,129,0.18);color:var(--ok-bright);border:1px solid var(--ok)}
+  .alert-toggle.off{background:rgba(148,163,184,0.1);color:var(--muted);border:1px solid var(--border)}
+  .empty-alerts{padding:28px;text-align:center;color:var(--muted);font-size:13px;background:rgba(15,23,42,0.4);border:1px dashed var(--border);border-radius:8px}
+  .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;color:#c4b5fd;margin-bottom:12px}
+  .setup-banner b{color:#ddd6fe}
 </style>
 </head>
 <body>
@@ -895,6 +915,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <button id="profileBtn" class="profile-btn" type="button" title="Mi perfil de empresa" onclick="openProfileModal()">&#x1F464; Mi perfil</button>
+    <button id="alertsBtn" class="profile-btn" type="button" title="Mis alertas" onclick="openAlertsModal()">&#x1F514; Alertas</button>
     <button id="themeToggle" class="theme-toggle" title="Cambiar tema dia/noche" aria-label="Cambiar tema">
       <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -4453,6 +4474,271 @@ window.renderMap = renderMap;
 
 function escMapText(s){
   return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+
+
+
+/* ============ FASE 5: ALERTAS DIARIAS POR EMAIL ============ */
+const ALERTS_KEY = 'secop_alerts_v1';
+
+function getAlerts(){ try{ return JSON.parse(localStorage.getItem(ALERTS_KEY) || '[]'); }catch(e){ return []; } }
+function setAlertsLocal(arr){ localStorage.setItem(ALERTS_KEY, JSON.stringify(arr)); }
+
+function openAlertsModal(){
+  document.getElementById('mdTitle').textContent = 'Mis alertas automaticas';
+  document.getElementById('mdSub').textContent = 'Recibe correos diarios con nuevos procesos que cumplan tus criterios';
+  const alerts = getAlerts();
+  
+  let html = '';
+  html += '<div class="setup-banner"><b>Como funciona:</b> Configura busquedas y la app te envia automaticamente un correo cuando aparecen nuevos procesos que las cumplan. Requiere configurar un trigger diario en tu Apps Script (ver instrucciones abajo).</div>';
+  html += '<div class="alert-list-wrap" id="alertsList">';
+  if(alerts.length === 0){
+    html += '<div class="empty-alerts"><b style="color:var(--txt);font-size:14px">Sin alertas configuradas</b><br>Crea una para empezar a recibir correos automaticos con procesos nuevos.</div>';
+  } else {
+    alerts.forEach((a,i) => {
+      const summary = describeAlertCriteria(a);
+      html += `<div class="alert-item${a.active===false?' disabled':''}">
+        <div class="info">
+          <div class="name">${esc(a.name||'Alerta '+(i+1))}</div>
+          <div class="desc">${esc(summary)}</div>
+          <div class="desc" style="margin-top:3px"><b>Frecuencia:</b> ${esc(a.frequency||'diaria')} &middot; <b>A:</b> ${esc((a.recipients||ALLOWED_EMAILS).join(', '))}</div>
+        </div>
+        <div class="actions">
+          <span class="alert-toggle ${a.active===false?'off':'on'}" onclick="toggleAlertActive(${i})">${a.active===false?'OFF':'ON'}</span>
+          <button class="btn-secondary" onclick="testAlert(${i})">Probar</button>
+          <button class="btn-secondary" onclick="editAlert(${i})">Editar</button>
+          <button class="btn-danger" onclick="deleteAlert(${i})">&times;</button>
+        </div>
+      </div>`;
+    });
+  }
+  html += '</div>';
+  html += '<button class="btn-success" onclick="newAlert()" style="width:100%;padding:13px;font-size:14px">+ Crear nueva alerta</button>';
+  html += '<details style="margin-top:18px"><summary style="color:var(--acc-bright);cursor:pointer;font-weight:700">Instrucciones para activar el cron diario</summary>';
+  html += '<div style="margin-top:10px;padding:12px;background:rgba(15,23,42,0.5);border-radius:8px;font-size:12px;line-height:1.7">';
+  html += '<b>1.</b> Abre tu Apps Script: <a href="https://script.google.com/home/projects/1w42pXoD0U50nlezlhBJazSdIAx8Gk4u7YTGJjnlhjM1g2_O9AU66muiN/edit" target="_blank" style="color:var(--acc-bright)">SECOP Hunter Mailer</a><br>';
+  html += '<b>2.</b> En el editor, click en el reloj &#x23F0; (lateral izq) &rarr; <b>Agregar activador</b><br>';
+  html += '<b>3.</b> Configurar: Funcion=<code>dailyCheck</code>, Origen=<code>Basado en hora</code>, Tipo=<code>Temporizador de dia</code>, Hora=<code>6am-7am</code><br>';
+  html += '<b>4.</b> Guarda. Cada manana correra y enviara correos con los nuevos procesos.<br>';
+  html += '<b>5.</b> El codigo Apps Script actualizado lo te paso aparte: incluye <code>dailyCheck</code> que lee las alertas, consulta datos.gov.co y envia correos.<br>';
+  html += '</div></details>';
+  
+  document.getElementById('mdResumen').innerHTML = html;
+  switchTab('resumen');
+  document.getElementById('modalBack').classList.add('show');
+}
+window.openAlertsModal = openAlertsModal;
+
+function describeAlertCriteria(a){
+  const parts = [];
+  if(a.criteria){
+    const c = a.criteria;
+    if(c.q) parts.push('palabra: "'+c.q+'"');
+    if(c.departamento && c.departamento.length) parts.push('depto: '+c.departamento.join(', '));
+    if(c.modalidad && c.modalidad.length) parts.push('mod: '+c.modalidad.slice(0,2).join(', ')+(c.modalidad.length>2?'...':''));
+    if(c.tipo_contrato && c.tipo_contrato.length) parts.push('tipo: '+c.tipo_contrato.slice(0,2).join(', '));
+    if(c.valor_min) parts.push('min '+fmtMoney(c.valor_min));
+    if(c.valor_max) parts.push('max '+fmtMoney(c.valor_max));
+    if(c.estado && c.estado.length) parts.push('estado: '+c.estado.slice(0,2).join(', '));
+  }
+  return parts.length ? parts.join(' | ') : 'Sin criterios (todos los procesos)';
+}
+
+function newAlert(){
+  showAlertForm({name:'', criteria: getCriteria(), frequency:'diaria', recipients: ALLOWED_EMAILS.slice(), active: true});
+}
+window.newAlert = newAlert;
+function editAlert(idx){
+  const alerts = getAlerts();
+  if(!alerts[idx]) return;
+  showAlertForm(alerts[idx], idx);
+}
+window.editAlert = editAlert;
+
+function showAlertForm(alert, idx){
+  const isEdit = idx != null;
+  const c = alert.criteria || {};
+  document.getElementById('mdTitle').textContent = isEdit ? 'Editar alerta' : 'Nueva alerta';
+  document.getElementById('mdSub').textContent = 'Configura los criterios de busqueda y la app te enviara correos automaticos cuando aparezcan nuevos procesos';
+  let html = `<form id="alertForm" class="alert-form-grid">
+    <div class="full"><label>Nombre de la alerta</label><input type="text" name="name" value="${esc(alert.name||'')}" placeholder="Ej: Alcantarillado Antioquia" required /></div>
+    <div class="full"><label>Palabra clave (objeto)</label><input type="text" name="q" value="${esc(c.q||'')}" placeholder="alcantarillado, acueducto" /></div>
+    <div><label>Entidad</label><input type="text" name="entidad" value="${esc(c.entidad||'')}" placeholder="EPM, Alcaldia..." /></div>
+    <div><label>Municipio</label><input type="text" name="ciudad" value="${esc(c.ciudad||'')}" placeholder="Medellin" /></div>
+    <div><label>Valor minimo (COP)</label><input type="number" name="valor_min" value="${c.valor_min||''}" placeholder="100000000" /></div>
+    <div><label>Valor maximo (COP)</label><input type="number" name="valor_max" value="${c.valor_max||''}" placeholder="5000000000" /></div>
+    <div class="full"><label>Departamentos (separados por coma, vacio=todos)</label><input type="text" name="departamentos" value="${esc((c.departamento||[]).join(', '))}" placeholder="Antioquia, Caldas, Risaralda" /></div>
+    <div class="full"><label>Modalidades (separadas por coma, vacio=todas)</label><input type="text" name="modalidades" value="${esc((c.modalidad||[]).join(', '))}" placeholder="Licitacion Publica, Minima Cuantia" /></div>
+    <div class="full"><label>Tipos contrato (separados por coma)</label><input type="text" name="tipos" value="${esc((c.tipo_contrato||[]).join(', '))}" placeholder="Obra, Interventoria" /></div>
+    <div class="full"><label>Estados (separados por coma)</label><input type="text" name="estados" value="${esc((c.estado||['Convocado']).join(', '))}" placeholder="Convocado, Presentacion de oferta" /></div>
+    <div class="full"><label>Frecuencia</label>
+      <select name="frequency">
+        <option value="diaria" ${alert.frequency==='diaria'?'selected':''}>Diaria (cada manana)</option>
+        <option value="lun_vie" ${alert.frequency==='lun_vie'?'selected':''}>Lunes a viernes</option>
+        <option value="semanal" ${alert.frequency==='semanal'?'selected':''}>Semanal (lunes)</option>
+      </select>
+    </div>
+    <div class="full"><label>Destinatarios (separados por coma)</label><input type="text" name="recipients" value="${esc((alert.recipients||ALLOWED_EMAILS).join(', '))}" /></div>
+    <div class="full" style="display:flex;gap:8px;margin-top:8px">
+      <button type="button" class="btn-success" onclick="saveAlert(${isEdit?idx:-1})">Guardar alerta</button>
+      <button type="button" class="btn-secondary" onclick="openAlertsModal()">Cancelar</button>
+    </div>
+  </form>`;
+  document.getElementById('mdResumen').innerHTML = html;
+}
+window.showAlertForm = showAlertForm;
+
+function saveAlert(idx){
+  const form = document.getElementById('alertForm');
+  if(!form) return;
+  const fd = new FormData(form);
+  const splitList = (s) => (s||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const alert = {
+    name: fd.get('name') || 'Alerta',
+    frequency: fd.get('frequency') || 'diaria',
+    recipients: splitList(fd.get('recipients')),
+    active: true,
+    createdAt: Date.now(),
+    criteria: {
+      q: fd.get('q') || undefined,
+      entidad: fd.get('entidad') || undefined,
+      ciudad: fd.get('ciudad') || undefined,
+      valor_min: parseFloat(fd.get('valor_min')) || undefined,
+      valor_max: parseFloat(fd.get('valor_max')) || undefined,
+      departamento: splitList(fd.get('departamentos')),
+      modalidad: splitList(fd.get('modalidades')),
+      tipo_contrato: splitList(fd.get('tipos')),
+      estado: splitList(fd.get('estados'))
+    }
+  };
+  // Limpiar campos vacios
+  Object.keys(alert.criteria).forEach(k => {
+    const v = alert.criteria[k];
+    if(v == null || v === '' || (Array.isArray(v) && v.length === 0)) delete alert.criteria[k];
+  });
+  if(!alert.recipients.length) alert.recipients = ALLOWED_EMAILS.slice();
+  
+  const alerts = getAlerts();
+  if(idx >= 0) alerts[idx] = alert;
+  else alerts.push(alert);
+  setAlertsLocal(alerts);
+  
+  // Sync con Apps Script (mejor effort)
+  syncAlertsToBackend();
+  
+  showToast('Alerta guardada. Configura el trigger en Apps Script para automatizar.', 'ok', {duration: 6000});
+  openAlertsModal();
+}
+window.saveAlert = saveAlert;
+
+function deleteAlert(idx){
+  if(!confirm('Eliminar esta alerta?')) return;
+  const alerts = getAlerts();
+  alerts.splice(idx,1);
+  setAlertsLocal(alerts);
+  syncAlertsToBackend();
+  openAlertsModal();
+}
+window.deleteAlert = deleteAlert;
+
+function toggleAlertActive(idx){
+  const alerts = getAlerts();
+  if(!alerts[idx]) return;
+  alerts[idx].active = !(alerts[idx].active === false ? false : true);
+  setAlertsLocal(alerts);
+  syncAlertsToBackend();
+  openAlertsModal();
+}
+window.toggleAlertActive = toggleAlertActive;
+
+async function testAlert(idx){
+  const alerts = getAlerts();
+  const a = alerts[idx];
+  if(!a){ showToast('Alerta no encontrada','err'); return; }
+  showToast('Ejecutando alerta...', 'info', {duration: 0});
+  // Consultar datos.gov.co con los criterios + filtro fecha publicacion ultimos 2 dias
+  const c = a.criteria || {};
+  const since = new Date(); since.setDate(since.getDate()-2);
+  const sinceStr = since.toISOString().substring(0,10)+'T00:00:00.000';
+  const where = [];
+  const sq = s => String(s).replace(/'/g,"''");
+  if(c.q){} // q va aparte
+  if(c.entidad){
+    const e = String(c.entidad).trim();
+    if(/^[\d\-\.]+$/.test(e)){
+      where.push("nit_entidad like '%"+sq(e.replace(/[\-\.]/g,''))+"%'");
+    } else {
+      where.push("upper(entidad) like upper('%"+sq(e)+"%')");
+    }
+  }
+  if(c.ciudad) where.push("upper(ciudad_entidad)=upper('"+sq(c.ciudad)+"')");
+  if(c.valor_min) where.push("precio_base >= "+parseFloat(c.valor_min));
+  if(c.valor_max) where.push("precio_base <= "+parseFloat(c.valor_max));
+  if(c.departamento && c.departamento.length){ where.push("upper(departamento_entidad) IN ("+c.departamento.map(v=>"upper('"+sq(v)+"')").join(',')+")"); }
+  if(c.modalidad && c.modalidad.length){ where.push("modalidad_de_contratacion IN ("+c.modalidad.map(v=>"'"+sq(v)+"'").join(',')+")"); }
+  if(c.tipo_contrato && c.tipo_contrato.length){ where.push("tipo_de_contrato IN ("+c.tipo_contrato.map(v=>"'"+sq(v)+"'").join(',')+")"); }
+  if(c.estado && c.estado.length){ where.push("estado_del_procedimiento IN ("+c.estado.map(v=>"'"+sq(v)+"'").join(',')+")"); }
+  where.push("fecha_de_publicacion_del >= '"+sinceStr+"'");
+  const params = new URLSearchParams({'$where': where.join(' AND '), '$order':'fecha_de_publicacion_del DESC', '$limit':'30'});
+  if(c.q) params.set('$q', c.q);
+  try {
+    const r = await fetch(API + '?' + params.toString());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    document.querySelectorAll('.toast').forEach(t => removeToast(t));
+    if(!data || data.length === 0){
+      showToast('Alerta probada: 0 procesos en ultimos 2 dias.', 'info', {duration: 5000});
+      return;
+    }
+    // Construir email
+    const subject = '[SECOP Hunter] Alerta: '+a.name+' &mdash; '+data.length+' nuevo(s) proceso(s)';
+    const lines = [];
+    lines.push('ALERTA AUTOMATICA: ' + a.name);
+    lines.push('Encontrados ' + data.length + ' procesos en ultimos 2 dias con tus criterios.');
+    lines.push('==============================================');
+    lines.push('');
+    data.forEach((p,i) => {
+      lines.push((i+1) + '. ' + (p.referencia_del_proceso || p.proceso_de_compra || 's/n'));
+      lines.push('   ' + (p.nombre_entidad || ''));
+      lines.push('   Objeto: ' + (p.descripci_n_del_procedimiento || '').substring(0,180));
+      lines.push('   Modalidad: ' + (p.modalidad_de_contratacion || ''));
+      lines.push('   Valor: ' + fmtMoney(p.precio_base));
+      lines.push('   Cierre: ' + fmtDate(p.fecha_de_recepcion_de));
+      if(p.urlproceso && p.urlproceso.url) lines.push('   Link: ' + p.urlproceso.url);
+      lines.push('');
+    });
+    lines.push('---');
+    lines.push('Ver plataforma: ' + window.location.href);
+    // Enviar
+    const to = (a.recipients||ALLOWED_EMAILS).join(',');
+    const resp = await fetch(MAILER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({to: to, subject: subject, body: lines.join('\n')})
+    });
+    const respData = await resp.json();
+    if(respData.ok){
+      showToast('Correo enviado a '+to+' con '+data.length+' procesos', 'ok', {duration: 7000});
+    } else {
+      showToast('Error enviando: '+(respData.error||'desconocido'), 'err');
+    }
+  } catch(e){
+    document.querySelectorAll('.toast').forEach(t => removeToast(t));
+    showToast('Error: ' + (e.message||e), 'err');
+  }
+}
+window.testAlert = testAlert;
+
+async function syncAlertsToBackend(){
+  // Enviar alerts al Apps Script para que pueda procesarlas en el trigger diario
+  try {
+    await fetch(MAILER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'saveAlerts', alerts: getAlerts()})
+    });
+  } catch(e){ /* silent */ }
 }
 
 
