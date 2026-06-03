@@ -745,6 +745,52 @@
   .match-list li:last-child{border-bottom:0}
   .match-list .ok{color:var(--ok-bright)}
   .match-list .ko{color:var(--err-bright)}
+
+  /* ===== Kanban ===== */
+  .kanban-wrap{background:rgba(15,23,42,0.4);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:400px;overflow-x:auto}
+  .kanban-board{display:grid;grid-template-columns:repeat(6,minmax(220px,1fr));gap:12px;min-width:1380px}
+  .kanban-col{background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:300px;display:flex;flex-direction:column;gap:8px;transition:background 0.15s}
+  .kanban-col.dragover{background:rgba(56,189,248,0.15);border-color:var(--acc)}
+  .kanban-col-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:2px solid var(--border);margin-bottom:4px}
+  .kanban-col-head .name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--acc-bright)}
+  .kanban-col-head .cnt{background:rgba(56,189,248,0.2);color:var(--acc-bright);padding:2px 9px;border-radius:999px;font-size:10px;font-weight:700}
+  .kanban-col.col-won .kanban-col-head .name{color:var(--ok-bright)}
+  .kanban-col.col-won .kanban-col-head .cnt{background:rgba(16,185,129,0.2);color:var(--ok-bright)}
+  .kanban-col.col-lost .kanban-col-head .name{color:var(--err-bright)}
+  .kanban-col.col-lost .kanban-col-head .cnt{background:rgba(239,68,68,0.2);color:var(--err-bright)}
+  .kanban-card{background:linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.7));border:1px solid var(--border);border-radius:7px;padding:9px 11px;cursor:grab;font-size:11.5px;transition:all 0.15s;line-height:1.4}
+  .kanban-card:hover{border-color:var(--acc);box-shadow:0 4px 12px rgba(56,189,248,0.2);transform:translateY(-1px)}
+  .kanban-card.dragging{opacity:0.5;cursor:grabbing}
+  .kanban-card .kc-proc{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:3px}
+  .kanban-card .kc-obj{color:var(--txt);font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .kanban-card .kc-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:9.5px;color:var(--muted)}
+  .kanban-card .kc-val{color:#a3e635;font-weight:700;font-family:'JetBrains Mono',monospace}
+  .kanban-card .kc-actions{display:flex;gap:4px;margin-top:6px}
+  .kanban-card .kc-actions button{padding:3px 7px;font-size:9.5px;min-height:auto}
+  html[data-theme="light"] .kanban-card{background:linear-gradient(180deg,#ffffff,#f8fafc)}
+  @media (max-width:768px){
+    .kanban-board{grid-template-columns:repeat(6,260px);gap:10px;min-width:1620px}
+    .kanban-col{padding:8px}
+  }
+
+  /* ===== Notas privadas ===== */
+  .note-indicator{display:inline-block;background:#fbbf24;color:#451a03;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;cursor:help}
+  .notes-form textarea{width:100%;background:rgba(15,23,42,0.6);border:1px solid var(--border);color:var(--txt);padding:10px 12px;border-radius:6px;font-size:13px;font-family:inherit;min-height:120px;resize:vertical}
+  .notes-form textarea:focus{outline:none;border-color:var(--acc);box-shadow:var(--shadow-glow)}
+  .notes-form .actions-bar{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  .notes-saved{color:var(--ok-bright);font-size:11px;opacity:0;transition:opacity 0.2s}
+  .notes-saved.show{opacity:1}
+
+  /* ===== Busqueda lenguaje natural ===== */
+  .nl-search{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .nl-search .nl-title{font-size:11px;color:#c4b5fd;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .nl-search .nl-title::before{content:"AI";background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800}
+  .nl-search input{background:rgba(15,23,42,0.7);border:1px solid rgba(168,85,247,0.3)}
+  .nl-search input:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,0.2)}
+  .nl-search .nl-actions{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
+  .nl-search .nl-actions button{padding:7px 12px;font-size:11.5px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:0;border-radius:6px;cursor:pointer;font-weight:600}
+  .nl-search .nl-actions button:hover{box-shadow:0 4px 12px rgba(168,85,247,0.5)}
+  .nl-search .hint{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;font-style:italic}
 </style>
 </head>
 <body>
@@ -782,6 +828,14 @@
 <main>
   <section class="panel">
     <h2>Criterios de busqueda</h2>
+    <div class="nl-search">
+      <div class="nl-title">Busqueda inteligente con IA</div>
+      <input type="text" id="nlSearchInput" placeholder='Ej: obras de alcantarillado en Antioquia mayores a 500 millones que cierren esta semana' />
+      <div class="nl-actions">
+        <button type="button" id="btnNlSearch">Convertir a filtros y buscar</button>
+        <span class="hint">La IA traducira tu frase a filtros estructurados.</span>
+      </div>
+    </div>
     <form id="form" class="form-scroll">
       <div class="row full"><div>
         <label>Palabra clave (objeto / descripcion)</label>
@@ -873,6 +927,7 @@
         <div class="view-switcher">
           <button id="viewTable" class="active" type="button">Tabla</button>
           <button id="viewCal" type="button">Calendario</button>
+          <button id="viewKanban" type="button">Kanban</button>
         </div>
         <div class="filter-favs-wrap" id="filterFavs"><span>&#9733;</span><span id="favCount">0</span> Solo favoritos</div>
         <span class="count" id="count">Sin busqueda</span>
@@ -898,6 +953,7 @@
       </table>
     </div>
     <div class="calendar-wrap" id="calendarView" style="display:none"></div>
+    <div class="kanban-wrap" id="kanbanView" style="display:none"></div>
     <div class="pager" id="pager"></div>
   </section>
 </main>
@@ -918,12 +974,14 @@
       <div class="modal-tab" data-tab="requisitos">Analisis de pliego (PDF)</div>
       <div class="modal-tab" data-tab="todos">Todos los campos</div>
       <div class="modal-tab" data-tab="docs">Documentos</div>
+      <div class="modal-tab" data-tab="notas">Notas privadas</div>
     </div>
     <div class="modal-body">
       <div class="modal-tab-content active" data-tab="resumen" id="mdResumen"></div>
       <div class="modal-tab-content" data-tab="requisitos" id="mdRequisitos"></div>
       <div class="modal-tab-content" data-tab="todos" id="mdTodos"></div>
       <div class="modal-tab-content" data-tab="docs" id="mdDocs"></div>
+      <div class="modal-tab-content" data-tab="notas" id="mdNotas"></div>
     </div>
     <div class="modal-foot">
       <div style="font-size:10px;color:var(--muted)">
@@ -1557,6 +1615,7 @@ function showDetails(idx){
   renderRequisitos(r);
   renderTodos(r);
   renderDocs(r);
+  renderNotas(r);
   document.getElementById('modalBack').classList.add('show');
   // Activar primera tab
   switchTab('resumen');
@@ -3001,6 +3060,35 @@ async function downloadDocDirect(idx, alsoAnalyze){
   }
 }
 
+function renderNotas(r){
+  const idProc = String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso);
+  const note = getNote(idProc);
+  const cont = document.getElementById('mdNotas');
+  if(!cont) return;
+  cont.innerHTML = `
+    <div class="req-card">
+      <div class="ttl">Notas privadas sobre este proceso</div>
+      <div class="notes-form">
+        <textarea id="noteText" placeholder="Anota requisitos especificos, contactos, fechas de seguimiento, observaciones del equipo... Solo tu las ves en este navegador.">${esc(note)}</textarea>
+        <div class="actions-bar">
+          <button type="button" class="btn-success" onclick="saveCurrentNote('${idProc}')">Guardar</button>
+          <button type="button" class="btn-secondary" onclick="document.getElementById('noteText').value='';saveCurrentNote('${idProc}')">Borrar</button>
+          <span class="notes-saved" id="notesSavedHint">Guardado!</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5">Las notas son privadas y se guardan solo en tu navegador local. No se comparten con nadie.</div>
+      </div>
+    </div>
+  `;
+}
+function saveCurrentNote(idProc){
+  const txt = document.getElementById('noteText').value;
+  saveNote(idProc, txt);
+  const hint = document.getElementById('notesSavedHint');
+  if(hint){ hint.classList.add('show'); setTimeout(()=> hint.classList.remove('show'), 1500); }
+}
+window.renderNotas = renderNotas;
+window.saveCurrentNote = saveCurrentNote;
+
 function copiarDetalle(){
   const r = _currentRecord; if(!r) return;
   const req = extractRequirements(r);
@@ -3450,6 +3538,261 @@ function calculateMatch(procReq){
   return { score, checks };
 }
 window.calculateMatch = calculateMatch;
+
+
+
+
+/* ============ FASE 2: PIPELINE KANBAN ============ */
+const KANBAN_KEY = 'secop_kanban_v1';
+const KANBAN_COLS = [
+  {id:'inbox', name:'Por revisar', cssClass:''},
+  {id:'interesa', name:'Interesa', cssClass:''},
+  {id:'evaluando', name:'Evaluando', cssClass:''},
+  {id:'preparando', name:'Preparando propuesta', cssClass:''},
+  {id:'presentado', name:'Presentado', cssClass:''},
+  {id:'adjudicado', name:'Adjudicado / Perdido', cssClass:'col-won'}
+];
+
+function getKanbanState(){
+  try { return JSON.parse(localStorage.getItem(KANBAN_KEY) || '{}'); } catch(e){ return {}; }
+}
+function setKanbanState(s){ localStorage.setItem(KANBAN_KEY, JSON.stringify(s)); }
+function moveCardTo(idProc, colId){
+  const s = getKanbanState();
+  s[idProc] = colId;
+  setKanbanState(s);
+  renderKanban();
+}
+window.moveCardTo = moveCardTo;
+
+function renderKanban(){
+  const cont = document.getElementById('kanbanView');
+  if(!cont) return;
+  const state = getKanbanState();
+  // Los procesos en el kanban son los que estan en state O los favoritos
+  const favs = new Set(getFavs());
+  const idsInBoard = new Set([...Object.keys(state), ...Array.from(favs)]);
+  // Crear mapa de id->proceso desde lastResults
+  const byId = {};
+  (lastResults || []).forEach(r => {
+    const id = String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso);
+    byId[id] = r;
+  });
+  // Agrupar por columna
+  const byCol = {};
+  KANBAN_COLS.forEach(c => byCol[c.id] = []);
+  idsInBoard.forEach(id => {
+    const col = state[id] || 'inbox';
+    if(byCol[col]) byCol[col].push(id);
+  });
+  let html = '<div class="kanban-board">';
+  KANBAN_COLS.forEach(col => {
+    const cards = byCol[col.id] || [];
+    html += '<div class="kanban-col '+col.cssClass+'" data-col="'+col.id+'" ondragover="event.preventDefault();this.classList.add(\'dragover\')" ondragleave="this.classList.remove(\'dragover\')" ondrop="kanbanDrop(event,\''+col.id+'\')">';
+    html += '<div class="kanban-col-head"><span class="name">'+esc(col.name)+'</span><span class="cnt">'+cards.length+'</span></div>';
+    cards.forEach(id => {
+      const r = byId[id];
+      if(!r){
+        // proceso no en lastResults (puede ser de busqueda previa)
+        html += '<div class="kanban-card" draggable="true" data-id="'+esc(id)+'" ondragstart="kanbanDragStart(event)" ondragend="this.classList.remove(\'dragging\')"><div class="kc-proc">'+esc(id)+'</div><div class="kc-obj" style="color:var(--muted);font-style:italic">Buscar para ver detalles</div></div>';
+        return;
+      }
+      const proc = r.referencia_del_proceso || r.proceso_de_compra || '';
+      const obj = r.descripci_n_del_procedimiento || '';
+      const ent = r.nombre_entidad || '';
+      const val = fmtMoney(r.precio_base);
+      const cierre = fmtDate(r.fecha_de_recepcion_de);
+      const idx = lastResults.indexOf(r);
+      html += '<div class="kanban-card" draggable="true" data-id="'+esc(id)+'" ondragstart="kanbanDragStart(event)" ondragend="this.classList.remove(\'dragging\')">';
+      html += '<div class="kc-proc">'+esc(proc)+'</div>';
+      html += '<div class="kc-obj">'+esc(obj.substring(0,90))+'</div>';
+      html += '<div class="kc-meta"><span>'+esc(ent.substring(0,28))+'</span><span class="kc-val">'+val+'</span></div>';
+      if(cierre) html += '<div style="font-size:9.5px;color:var(--muted);margin-top:4px">Cierre: '+cierre+'</div>';
+      html += '<div class="kc-actions">';
+      if(idx >= 0) html += '<button class="btn-mini-det" onclick="showDetails('+(offset+idx)+')">Detalles</button>';
+      html += '<button class="btn-mini-share" onclick="removeFromKanban(\''+id+'\')" style="background:rgba(239,68,68,0.2);border-color:var(--err);color:var(--err-bright)" title="Quitar">&times;</button>';
+      html += '</div>';
+      html += '</div>';
+    });
+    if(cards.length === 0){
+      html += '<div style="color:var(--muted);font-size:11px;text-align:center;padding:18px;opacity:0.6">Arrastra tarjetas aqui</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:14px;padding:10px;background:rgba(15,23,42,0.4);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.5">';
+  html += '<b style="color:var(--acc-bright)">Tip:</b> Las tarjetas aparecen automaticamente cuando marcas un proceso como favorito (estrella). Arrastra entre columnas para mover por tu pipeline. Los datos se guardan en este navegador.';
+  html += '</div>';
+  cont.innerHTML = html;
+}
+window.renderKanban = renderKanban;
+
+function kanbanDragStart(e){
+  const card = e.target.closest('.kanban-card');
+  if(!card) return;
+  e.dataTransfer.setData('text/plain', card.dataset.id);
+  card.classList.add('dragging');
+}
+window.kanbanDragStart = kanbanDragStart;
+function kanbanDrop(e, colId){
+  e.preventDefault();
+  const id = e.dataTransfer.getData('text/plain');
+  document.querySelectorAll('.kanban-col.dragover').forEach(c => c.classList.remove('dragover'));
+  if(!id) return;
+  moveCardTo(id, colId);
+}
+window.kanbanDrop = kanbanDrop;
+function removeFromKanban(id){
+  if(!confirm('Quitar del kanban?')) return;
+  const s = getKanbanState();
+  delete s[id];
+  setKanbanState(s);
+  // Tambien quitarlo de favoritos si estaba
+  const favs = getFavs().filter(f => f !== id);
+  setFavs(favs);
+  renderKanban();
+}
+window.removeFromKanban = removeFromKanban;
+
+// Wire del boton Kanban
+setTimeout(()=>{
+  const bK = document.getElementById('viewKanban');
+  if(bK) bK.onclick = ()=>{
+    document.getElementById('viewTable').classList.remove('active');
+    document.getElementById('viewCal').classList.remove('active');
+    bK.classList.add('active');
+    document.getElementById('tableView').style.display = 'none';
+    document.getElementById('calendarView').style.display = 'none';
+    document.getElementById('kanbanView').style.display = '';
+    renderKanban();
+  };
+  // Modificar Tabla y Calendario para ocultar kanban tambien
+  const bT = document.getElementById('viewTable');
+  const bC = document.getElementById('viewCal');
+  if(bT) bT.addEventListener('click', ()=>{ document.getElementById('kanbanView').style.display = 'none'; });
+  if(bC) bC.addEventListener('click', ()=>{ document.getElementById('kanbanView').style.display = 'none'; });
+}, 200);
+
+/* ============ FASE 2: NOTAS PRIVADAS ============ */
+const NOTES_KEY = 'secop_notes_v1';
+function getNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); }catch(e){ return {}; } }
+function setNotes(n){ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }
+function getNote(id){ return getNotes()[String(id)] || ''; }
+function saveNote(id, text){
+  const all = getNotes();
+  if(text && text.trim()){ all[String(id)] = text; }
+  else { delete all[String(id)]; }
+  setNotes(all);
+}
+window.saveNote = saveNote;
+
+/* ============ FASE 2: BUSQUEDA LENGUAJE NATURAL ============ */
+async function nlSearchExecute(){
+  const input = document.getElementById('nlSearchInput');
+  if(!input) return;
+  const query = (input.value || '').trim();
+  if(!query){ showToast('Escribe tu busqueda en lenguaje natural', 'info'); return; }
+  if(!EMBEDDED_GROQ_KEY){ showToast('IA Groq no configurada', 'err'); return; }
+  showToast('IA interpretando tu busqueda...', 'info', {duration: 0});
+  const prompt = `Eres un experto en SECOP II Colombia. El usuario describe una busqueda en lenguaje natural. Convierte a JSON con estos campos opcionales (solo incluye los que apliquen):
+- "q": palabra clave (objeto)
+- "entidad": nombre/NIT entidad
+- "departamento": array de departamentos
+- "ciudad": municipio
+- "modalidad": array (Licitacion Publica, Seleccion Abreviada de Menor Cuantia, Minima Cuantia, Contratacion Directa, Concurso de Meritos Abierto, Acuerdo Marco, Regimen Especial, Seleccion Abreviada Subasta Inversa)
+- "estado": array (Convocado, Presentacion de oferta, En evaluacion, Adjudicado, Celebrado, Desierto)
+- "fase": array
+- "tipo_contrato": array (Obra, Consultoria, Interventoria, Suministros, Prestacion de servicios, Compraventa, Concesion)
+- "valor_min": numero en COP
+- "valor_max": numero en COP
+- "fecha_pub_desde": YYYY-MM-DD
+- "fecha_pub_hasta": YYYY-MM-DD
+- "fecha_cierre_desde": YYYY-MM-DD
+- "fecha_cierre_hasta": YYYY-MM-DD
+
+Fecha actual: ${new Date().toISOString().substring(0,10)}.
+"esta semana" = lunes a domingo actual. "este mes" = primer al ultimo dia del mes. "proximos N dias" = sumar a hoy. "ultima semana"/"ultimos 30 dias" = restar.
+
+Consulta del usuario: "${query}"
+
+Responde SOLO con JSON valido. Sin markdown.`;
+  try {
+    const r = await fetch(GROQ_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+EMBEDDED_GROQ_KEY},
+      body: JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'user',content:prompt}],
+        temperature: 0.1,
+        max_tokens: 1024,
+        response_format:{type:'json_object'}
+      })
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    const txt = data?.choices?.[0]?.message?.content || '{}';
+    const parsed = JSON.parse(txt);
+    // Aplicar al formulario
+    applyNlCriteria(parsed);
+    document.querySelectorAll('.toast').forEach(t => removeToast(t));
+    showToast('Filtros aplicados desde tu busqueda', 'ok');
+    // Ejecutar busqueda
+    setTimeout(()=> runSearch(0), 200);
+  } catch(e){
+    document.querySelectorAll('.toast').forEach(t => removeToast(t));
+    showToast('Error IA: ' + (e.message||e), 'err');
+  }
+}
+window.nlSearchExecute = nlSearchExecute;
+
+function applyNlCriteria(c){
+  if(!c) return;
+  const setVal = (name, val) => {
+    const el = document.querySelector('[name="'+name+'"]');
+    if(el && val != null) el.value = val;
+  };
+  setVal('q', c.q);
+  setVal('entidad', c.entidad);
+  setVal('ciudad', c.ciudad);
+  setVal('valor_min', c.valor_min);
+  setVal('valor_max', c.valor_max);
+  setVal('fecha_pub_desde', c.fecha_pub_desde);
+  setVal('fecha_pub_hasta', c.fecha_pub_hasta);
+  setVal('fecha_cierre_desde', c.fecha_cierre_desde);
+  setVal('fecha_cierre_hasta', c.fecha_cierre_hasta);
+  // Limpiar checkboxes y volver a marcar segun arrays
+  ['departamento','modalidad','estado','fase','tipo_contrato'].forEach(field => {
+    const grp = document.querySelector('.chk-group[data-field="'+field+'"]');
+    if(!grp) return;
+    grp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.checked = false;
+      const lbl = cb.closest('label');
+      if(lbl) lbl.classList.remove('checked');
+    });
+    const values = c[field];
+    if(Array.isArray(values) && values.length){
+      values.forEach(v => {
+        // match flexible
+        const checkbox = Array.from(grp.querySelectorAll('input[type="checkbox"]:not(.chk-all)')).find(cb => 
+          (cb.value || '').toLowerCase() === String(v).toLowerCase() ||
+          (cb.value || '').toLowerCase().indexOf(String(v).toLowerCase()) >= 0
+        );
+        if(checkbox){
+          checkbox.checked = true;
+          const lbl = checkbox.closest('label');
+          if(lbl) lbl.classList.add('checked');
+        }
+      });
+    }
+  });
+}
+
+setTimeout(()=>{
+  const btn = document.getElementById('btnNlSearch');
+  const inp = document.getElementById('nlSearchInput');
+  if(btn) btn.onclick = nlSearchExecute;
+  if(inp) inp.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); nlSearchExecute(); } });
+}, 100);
 
 
 </script>
