@@ -648,6 +648,16 @@
   main > .panel { min-width: 0 !important; }
   .panel { min-width: 0 !important; }
   .table-wrap { min-width: 0 !important; }
+
+  /* Multi-selects mejorados */
+  select[multiple]{padding:6px;font-size:13px}
+  select[multiple] option{padding:6px 9px;border-radius:4px;margin:1px 0;cursor:pointer;transition:background 0.1s}
+  select[multiple] option:hover{background:rgba(56,189,248,0.1)}
+  select[multiple] option:checked{background:linear-gradient(90deg,var(--acc2),var(--acc));color:#fff;font-weight:600}
+  @media (max-width:768px){
+    select[multiple]{min-height:140px;font-size:14px}
+    select[multiple] option{padding:9px 10px;font-size:14px}
+  }
 </style>
 </head>
 <body>
@@ -695,9 +705,8 @@
       </div>
       <div class="row">
         <div>
-          <label>Departamento (Ctrl/Cmd+clic para varios)</label>
+          <label>Departamento <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(deja vacio = todos)</small></label>
           <select name="departamento" multiple size="6" id="selDep">
-            <option value="__ALL__" selected>-- TODOS LOS DEPARTAMENTOS --</option>
             <option>Amazonas</option><option>Antioquia</option><option>Arauca</option>
             <option>Atlantico</option><option>Bogota D.C.</option><option>Bolivar</option>
             <option>Boyaca</option><option>Caldas</option><option>Caqueta</option>
@@ -714,9 +723,8 @@
         <div><label>Municipio</label><input name="ciudad" placeholder="Medellin" /></div>
       </div>
       <div class="row">
-        <div><label>Modalidad (Ctrl/Cmd+clic varios)</label>
+        <div><label>Modalidad <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todas)</small></label>
           <select name="modalidad" multiple size="5" id="selModalidad">
-            <option value="__ALL__" selected>-- Todas las modalidades --</option>
             <option>Licitacion Publica</option>
             <option>Seleccion Abreviada de Menor Cuantia</option>
             <option>Seleccion Abreviada Subasta Inversa</option>
@@ -728,9 +736,8 @@
             <option>Acuerdo Marco</option>
           </select>
         </div>
-        <div><label>Estado (Ctrl/Cmd+clic varios)</label>
+        <div><label>Estado <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todos)</small></label>
           <select name="estado" multiple size="5" id="selEstado">
-            <option value="__ALL__" selected>-- Todos los estados --</option>
             <option>Convocado</option>
             <option>Presentacion de oferta</option>
             <option>En evaluacion</option>
@@ -743,18 +750,16 @@
         </div>
       </div>
       <div class="row">
-        <div><label>Fase (Ctrl/Cmd+clic varios)</label>
+        <div><label>Fase <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todas)</small></label>
           <select name="fase" multiple size="4" id="selFase">
-            <option value="__ALL__" selected>-- Todas las fases --</option>
             <option>Presentacion de oferta</option>
             <option>Evaluacion</option>
             <option>Adjudicacion</option>
             <option>Manifestacion de interes</option>
           </select>
         </div>
-        <div><label>Tipo contrato (Ctrl/Cmd+clic varios)</label>
+        <div><label>Tipo contrato <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todos)</small></label>
           <select name="tipo_contrato" multiple size="5" id="selTipoContrato">
-            <option value="__ALL__" selected>-- Todos los tipos --</option>
             <option>Obra</option>
             <option>Consultoria</option>
             <option>Interventoria</option>
@@ -1058,11 +1063,9 @@ function getCriteria(){
       p[k] = v;
     }
   }
-  // Normalizar multi: si tiene __ALL__ o vacio -> remover
+  // Si un multi-field esta vacio, no filtrar por el (trae todos)
   MULTI_FIELDS.forEach(k => {
-    if(p[k] && (p[k].indexOf('__ALL__') >= 0 || p[k].length === 0)){
-      delete p[k];
-    }
+    if(p[k] && p[k].length === 0) delete p[k];
   });
   p.limit = parseInt(p.limit||'100',10);
   if(isNaN(p.limit) || p.limit < 1) p.limit = 100;
@@ -1184,19 +1187,7 @@ function exportXlsx(){
 }
 
 /* UX: comportamiento del selector multiple de Departamento */
-/* UX comportamiento para selects multi con opcion ALL */
-function setupMultiSelectAll(id){
-  const sel = document.getElementById(id);
-  if(!sel) return;
-  sel.addEventListener('change', ()=>{
-    const opts = Array.from(sel.options);
-    const allOpt = opts.find(o => o.value === '__ALL__');
-    const anyOther = opts.some(o => o.value !== '__ALL__' && o.selected);
-    if(allOpt && allOpt.selected && anyOther){ allOpt.selected = false; }
-    if(!opts.some(o => o.selected) && allOpt){ allOpt.selected = true; }
-  });
-}
-['selDep','selModalidad','selEstado','selFase','selTipoContrato'].forEach(setupMultiSelectAll);
+/* Multi-select simple: sin seleccionar = trae todos */
 const selDep = document.getElementById('selDep');
 
 
@@ -2970,10 +2961,10 @@ try {
   const _btnSearch = $('btnSearch'); if(_btnSearch) _btnSearch.onclick = ()=> runSearch(0);
 const _btnClear = $('btnClear'); if(_btnClear) _btnClear.onclick = ()=> {
   $('form').reset(); clearStatus();
-  // Restaurar seleccion default TODOS en cada multi-select
+  // Deseleccionar todo en multi-selects
   ['selDep','selModalidad','selEstado','selFase','selTipoContrato'].forEach(id => {
     const sel = document.getElementById(id);
-    if(sel) Array.from(sel.options).forEach(o => o.selected = (o.value === '__ALL__'));
+    if(sel) Array.from(sel.options).forEach(o => o.selected = false);
   });
   tbody.innerHTML = '<tr><td colspan="14" class="empty">Sin busquedas aun.</td></tr>';
   $('count').textContent='Sin busqueda'; $('pager').innerHTML=''; lastResults=[];
