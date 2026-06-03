@@ -714,8 +714,9 @@
         <div><label>Municipio</label><input name="ciudad" placeholder="Medellin" /></div>
       </div>
       <div class="row">
-        <div><label>Modalidad</label>
-          <select name="modalidad"><option value="">-- Todas --</option>
+        <div><label>Modalidad (Ctrl/Cmd+clic varios)</label>
+          <select name="modalidad" multiple size="5" id="selModalidad">
+            <option value="__ALL__" selected>-- Todas las modalidades --</option>
             <option>Licitacion Publica</option>
             <option>Seleccion Abreviada de Menor Cuantia</option>
             <option>Seleccion Abreviada Subasta Inversa</option>
@@ -727,8 +728,9 @@
             <option>Acuerdo Marco</option>
           </select>
         </div>
-        <div><label>Estado</label>
-          <select name="estado"><option value="">-- Todos --</option>
+        <div><label>Estado (Ctrl/Cmd+clic varios)</label>
+          <select name="estado" multiple size="5" id="selEstado">
+            <option value="__ALL__" selected>-- Todos los estados --</option>
             <option>Convocado</option>
             <option>Presentacion de oferta</option>
             <option>En evaluacion</option>
@@ -741,16 +743,18 @@
         </div>
       </div>
       <div class="row">
-        <div><label>Fase</label>
-          <select name="fase"><option value="">-- Todas --</option>
+        <div><label>Fase (Ctrl/Cmd+clic varios)</label>
+          <select name="fase" multiple size="4" id="selFase">
+            <option value="__ALL__" selected>-- Todas las fases --</option>
             <option>Presentacion de oferta</option>
             <option>Evaluacion</option>
             <option>Adjudicacion</option>
             <option>Manifestacion de interes</option>
           </select>
         </div>
-        <div><label>Tipo de contrato</label>
-          <select name="tipo_contrato"><option value="">-- Todos --</option>
+        <div><label>Tipo contrato (Ctrl/Cmd+clic varios)</label>
+          <select name="tipo_contrato" multiple size="5" id="selTipoContrato">
+            <option value="__ALL__" selected>-- Todos los tipos --</option>
             <option>Obra</option>
             <option>Consultoria</option>
             <option>Interventoria</option>
@@ -1015,10 +1019,12 @@ function buildQuery(p, off, limit){
   if(p.proceso) where.push("upper(referencia_del_proceso) like upper('%"+sq(p.proceso)+"%')");
   if(p.departamento && p.departamento.length){ const ins = p.departamento.map(d=>"upper('"+sq(d)+"')").join(','); where.push("upper(departamento_entidad) IN ("+ins+")"); }
   if(p.ciudad) where.push("upper(ciudad_entidad)=upper('"+sq(p.ciudad)+"')");
-  if(p.modalidad) where.push("modalidad_de_contratacion='"+sq(p.modalidad)+"'");
-  if(p.estado) where.push("estado_del_procedimiento='"+sq(p.estado)+"'");
-  if(p.fase) where.push("fase='"+sq(p.fase)+"'");
-  if(p.tipo_contrato) where.push("tipo_de_contrato='"+sq(p.tipo_contrato)+"'");
+  // Helper: filtro IN para multi-select
+  const inFilter = (col, arr) => { if(!arr||!arr.length) return; const ins = arr.map(v=>"'"+sq(v)+"'").join(','); where.push(col+" IN ("+ins+")"); };
+  inFilter('modalidad_de_contratacion', p.modalidad);
+  inFilter('estado_del_procedimiento', p.estado);
+  inFilter('fase', p.fase);
+  inFilter('tipo_de_contrato', p.tipo_contrato);
   if(p.unspsc) where.push("categorias like '%"+sq(p.unspsc)+"%'");
   if(p.valor_min) where.push("precio_base >= "+parseFloat(p.valor_min));
   if(p.valor_max) where.push("precio_base <= "+parseFloat(p.valor_max));
@@ -1041,19 +1047,23 @@ function getCriteria(){
   if(!form){ throw new Error('Formulario no encontrado en el DOM'); }
   const fd = new FormData(form);
   const p = {};
+  const MULTI_FIELDS = ['departamento','modalidad','estado','fase','tipo_contrato'];
   for(const [k,v] of fd.entries()){
     if(v===null || v===undefined || v==='') continue;
-    if(k === 'departamento'){
-      if(!p.departamento) p.departamento = [];
-      if(String(v).trim()) p.departamento.push(String(v).trim());
+    if(MULTI_FIELDS.indexOf(k) >= 0){
+      if(!p[k]) p[k] = [];
+      const trimmed = String(v).trim();
+      if(trimmed) p[k].push(trimmed);
     } else {
       p[k] = v;
     }
   }
-  // Si entre los departamentos seleccionados esta __ALL__ o nada, no filtramos
-  if(p.departamento && (p.departamento.indexOf('__ALL__') >= 0 || p.departamento.length === 0)){
-    delete p.departamento;
-  }
+  // Normalizar multi: si tiene __ALL__ o vacio -> remover
+  MULTI_FIELDS.forEach(k => {
+    if(p[k] && (p[k].indexOf('__ALL__') >= 0 || p[k].length === 0)){
+      delete p[k];
+    }
+  });
   p.limit = parseInt(p.limit||'100',10);
   if(isNaN(p.limit) || p.limit < 1) p.limit = 100;
   p.orden = p.orden || 'fecha_de_publicacion_del DESC';
@@ -1174,22 +1184,20 @@ function exportXlsx(){
 }
 
 /* UX: comportamiento del selector multiple de Departamento */
-const selDep = document.getElementById('selDep');
-if(selDep){
-  selDep.addEventListener('change', ()=>{
-    const opts = Array.from(selDep.options);
+/* UX comportamiento para selects multi con opcion ALL */
+function setupMultiSelectAll(id){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  sel.addEventListener('change', ()=>{
+    const opts = Array.from(sel.options);
     const allOpt = opts.find(o => o.value === '__ALL__');
     const anyOther = opts.some(o => o.value !== '__ALL__' && o.selected);
-    if(allOpt && allOpt.selected && anyOther){
-      // Si TODOS esta marcado junto con otros, desmarcar TODOS
-      allOpt.selected = false;
-    }
-    // Si no hay ninguno seleccionado, volver a TODOS
-    if(!opts.some(o => o.selected) && allOpt){
-      allOpt.selected = true;
-    }
+    if(allOpt && allOpt.selected && anyOther){ allOpt.selected = false; }
+    if(!opts.some(o => o.selected) && allOpt){ allOpt.selected = true; }
   });
 }
+['selDep','selModalidad','selEstado','selFase','selTipoContrato'].forEach(setupMultiSelectAll);
+const selDep = document.getElementById('selDep');
 
 
 
@@ -2962,8 +2970,11 @@ try {
   const _btnSearch = $('btnSearch'); if(_btnSearch) _btnSearch.onclick = ()=> runSearch(0);
 const _btnClear = $('btnClear'); if(_btnClear) _btnClear.onclick = ()=> {
   $('form').reset(); clearStatus();
-  // Restaurar seleccion default del departamento (TODOS)
-  if(selDep){ Array.from(selDep.options).forEach(o => o.selected = (o.value === '__ALL__')); }
+  // Restaurar seleccion default TODOS en cada multi-select
+  ['selDep','selModalidad','selEstado','selFase','selTipoContrato'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(sel) Array.from(sel.options).forEach(o => o.selected = (o.value === '__ALL__'));
+  });
   tbody.innerHTML = '<tr><td colspan="14" class="empty">Sin busquedas aun.</td></tr>';
   $('count').textContent='Sin busqueda'; $('pager').innerHTML=''; lastResults=[];
 };
