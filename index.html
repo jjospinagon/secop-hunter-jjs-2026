@@ -658,6 +658,22 @@
     select[multiple]{min-height:140px;font-size:14px}
     select[multiple] option{padding:9px 10px;font-size:14px}
   }
+
+  /* Checkbox groups (sustituyen multi-selects) */
+  .chk-group{background:rgba(15,23,42,0.4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px;max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+  .chk-group label{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:5px;cursor:pointer;font-size:12.5px;color:var(--txt);font-weight:500;text-transform:none;letter-spacing:0;margin:0;transition:background 0.12s;user-select:none;line-height:1.3}
+  .chk-group label:hover{background:rgba(56,189,248,0.08)}
+  .chk-group label.checked{background:linear-gradient(90deg,rgba(14,165,233,0.2),rgba(14,165,233,0.05));color:var(--acc-bright)}
+  .chk-group input[type="checkbox"]{margin:0;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+  .chk-group label.checked input{font-weight:bold}
+  html[data-theme="light"] .chk-group{background:rgba(255,255,255,0.7);border-color:rgba(203,213,225,0.6)}
+  html[data-theme="light"] .chk-group label{color:#1e293b}
+  html[data-theme="light"] .chk-group label.checked{background:linear-gradient(90deg,rgba(14,165,233,0.12),rgba(14,165,233,0.04));color:#0369a1}
+  @media (max-width:768px){
+    .chk-group{max-height:200px;padding:8px}
+    .chk-group label{padding:11px 12px;font-size:14px;gap:10px;min-height:44px}
+    .chk-group input[type="checkbox"]{width:20px;height:20px}
+  }
 </style>
 </head>
 <body>
@@ -705,72 +721,17 @@
       </div>
       <div class="row">
         <div>
-          <label>Departamento <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(deja vacio = todos)</small></label>
-          <select name="departamento" multiple size="6" id="selDep">
-            <option>Amazonas</option><option>Antioquia</option><option>Arauca</option>
-            <option>Atlantico</option><option>Bogota D.C.</option><option>Bolivar</option>
-            <option>Boyaca</option><option>Caldas</option><option>Caqueta</option>
-            <option>Casanare</option><option>Cauca</option><option>Cesar</option>
-            <option>Choco</option><option>Cordoba</option><option>Cundinamarca</option>
-            <option>Guainia</option><option>Guaviare</option><option>Huila</option>
-            <option>La Guajira</option><option>Magdalena</option><option>Meta</option>
-            <option>Narino</option><option>Norte de Santander</option><option>Putumayo</option>
-            <option>Quindio</option><option>Risaralda</option><option>San Andres y Providencia</option>
-            <option>Santander</option><option>Sucre</option><option>Tolima</option>
-            <option>Valle del Cauca</option><option>Vaupes</option><option>Vichada</option>
-          </select>
+          <label>Departamento <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(deja vacio = todos)</small></label><div class="chk-group" data-field="departamento"><label><input type="checkbox" name="departamento_chk" value="Amazonas" /> Amazonas</label><label><input type="checkbox" name="departamento_chk" value="Antioquia" /> Antioquia</label><label><input type="checkbox" name="departamento_chk" value="Arauca" /> Arauca</label><label><input type="checkbox" name="departamento_chk" value="Atlantico" /> Atlantico</label><label><input type="checkbox" name="departamento_chk" value="Bogota D.C." /> Bogota D.C.</label><label><input type="checkbox" name="departamento_chk" value="Bolivar" /> Bolivar</label><label><input type="checkbox" name="departamento_chk" value="Boyaca" /> Boyaca</label><label><input type="checkbox" name="departamento_chk" value="Caldas" /> Caldas</label><label><input type="checkbox" name="departamento_chk" value="Caqueta" /> Caqueta</label><label><input type="checkbox" name="departamento_chk" value="Casanare" /> Casanare</label><label><input type="checkbox" name="departamento_chk" value="Cauca" /> Cauca</label><label><input type="checkbox" name="departamento_chk" value="Cesar" /> Cesar</label><label><input type="checkbox" name="departamento_chk" value="Choco" /> Choco</label><label><input type="checkbox" name="departamento_chk" value="Cordoba" /> Cordoba</label><label><input type="checkbox" name="departamento_chk" value="Cundinamarca" /> Cundinamarca</label><label><input type="checkbox" name="departamento_chk" value="Guainia" /> Guainia</label><label><input type="checkbox" name="departamento_chk" value="Guaviare" /> Guaviare</label><label><input type="checkbox" name="departamento_chk" value="Huila" /> Huila</label><label><input type="checkbox" name="departamento_chk" value="La Guajira" /> La Guajira</label><label><input type="checkbox" name="departamento_chk" value="Magdalena" /> Magdalena</label><label><input type="checkbox" name="departamento_chk" value="Meta" /> Meta</label><label><input type="checkbox" name="departamento_chk" value="Narino" /> Narino</label><label><input type="checkbox" name="departamento_chk" value="Norte de Santander" /> Norte de Santander</label><label><input type="checkbox" name="departamento_chk" value="Putumayo" /> Putumayo</label><label><input type="checkbox" name="departamento_chk" value="Quindio" /> Quindio</label><label><input type="checkbox" name="departamento_chk" value="Risaralda" /> Risaralda</label><label><input type="checkbox" name="departamento_chk" value="San Andres y Providencia" /> San Andres y Providencia</label><label><input type="checkbox" name="departamento_chk" value="Santander" /> Santander</label><label><input type="checkbox" name="departamento_chk" value="Sucre" /> Sucre</label><label><input type="checkbox" name="departamento_chk" value="Tolima" /> Tolima</label><label><input type="checkbox" name="departamento_chk" value="Valle del Cauca" /> Valle del Cauca</label><label><input type="checkbox" name="departamento_chk" value="Vaupes" /> Vaupes</label><label><input type="checkbox" name="departamento_chk" value="Vichada" /> Vichada</label></div>
         </div>
         <div><label>Municipio</label><input name="ciudad" placeholder="Medellin" /></div>
       </div>
       <div class="row">
-        <div><label>Modalidad <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todas)</small></label>
-          <select name="modalidad" multiple size="5" id="selModalidad">
-            <option>Licitacion Publica</option>
-            <option>Seleccion Abreviada de Menor Cuantia</option>
-            <option>Seleccion Abreviada Subasta Inversa</option>
-            <option>Concurso de Meritos Abierto</option>
-            <option>Concurso de Meritos con Lista Corta</option>
-            <option>Contratacion Directa</option>
-            <option>Minima Cuantia</option>
-            <option>Regimen Especial</option>
-            <option>Acuerdo Marco</option>
-          </select>
-        </div>
-        <div><label>Estado <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todos)</small></label>
-          <select name="estado" multiple size="5" id="selEstado">
-            <option>Convocado</option>
-            <option>Presentacion de oferta</option>
-            <option>En evaluacion</option>
-            <option>Adjudicado</option>
-            <option>Celebrado</option>
-            <option>Desierto</option>
-            <option>Suspendido</option>
-            <option>Terminado anormalmente</option>
-          </select>
-        </div>
+        <div><label>Modalidad <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todas)</small></label><div class="chk-group" data-field="modalidad"><label><input type="checkbox" name="modalidad_chk" value="Licitacion Publica" /> Licitacion Publica</label><label><input type="checkbox" name="modalidad_chk" value="Seleccion Abreviada de Menor Cuantia" /> Seleccion Abreviada de Menor Cuantia</label><label><input type="checkbox" name="modalidad_chk" value="Seleccion Abreviada Subasta Inversa" /> Seleccion Abreviada Subasta Inversa</label><label><input type="checkbox" name="modalidad_chk" value="Concurso de Meritos Abierto" /> Concurso de Meritos Abierto</label><label><input type="checkbox" name="modalidad_chk" value="Concurso de Meritos con Lista Corta" /> Concurso de Meritos con Lista Corta</label><label><input type="checkbox" name="modalidad_chk" value="Contratacion Directa" /> Contratacion Directa</label><label><input type="checkbox" name="modalidad_chk" value="Minima Cuantia" /> Minima Cuantia</label><label><input type="checkbox" name="modalidad_chk" value="Regimen Especial" /> Regimen Especial</label><label><input type="checkbox" name="modalidad_chk" value="Acuerdo Marco" /> Acuerdo Marco</label></div></div>
+        <div><label>Estado <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todos)</small></label><div class="chk-group" data-field="estado"><label><input type="checkbox" name="estado_chk" value="Convocado" /> Convocado</label><label><input type="checkbox" name="estado_chk" value="Presentacion de oferta" /> Presentacion de oferta</label><label><input type="checkbox" name="estado_chk" value="En evaluacion" /> En evaluacion</label><label><input type="checkbox" name="estado_chk" value="Adjudicado" /> Adjudicado</label><label><input type="checkbox" name="estado_chk" value="Celebrado" /> Celebrado</label><label><input type="checkbox" name="estado_chk" value="Desierto" /> Desierto</label><label><input type="checkbox" name="estado_chk" value="Suspendido" /> Suspendido</label><label><input type="checkbox" name="estado_chk" value="Terminado anormalmente" /> Terminado anormalmente</label></div></div>
       </div>
       <div class="row">
-        <div><label>Fase <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todas)</small></label>
-          <select name="fase" multiple size="4" id="selFase">
-            <option>Presentacion de oferta</option>
-            <option>Evaluacion</option>
-            <option>Adjudicacion</option>
-            <option>Manifestacion de interes</option>
-          </select>
-        </div>
-        <div><label>Tipo contrato <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todos)</small></label>
-          <select name="tipo_contrato" multiple size="5" id="selTipoContrato">
-            <option>Obra</option>
-            <option>Consultoria</option>
-            <option>Interventoria</option>
-            <option>Suministros</option>
-            <option>Prestacion de servicios</option>
-            <option>Compraventa</option>
-            <option>Concesion</option>
-            <option>Arrendamiento</option>
-            <option>Otros</option>
-          </select>
-        </div>
+        <div><label>Fase <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todas)</small></label><div class="chk-group" data-field="fase"><label><input type="checkbox" name="fase_chk" value="Presentacion de oferta" /> Presentacion de oferta</label><label><input type="checkbox" name="fase_chk" value="Evaluacion" /> Evaluacion</label><label><input type="checkbox" name="fase_chk" value="Adjudicacion" /> Adjudicacion</label><label><input type="checkbox" name="fase_chk" value="Manifestacion de interes" /> Manifestacion de interes</label></div></div>
+        <div><label>Tipo contrato <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(vacio = todos)</small></label><div class="chk-group" data-field="tipo_contrato"><label><input type="checkbox" name="tipo_contrato_chk" value="Obra" /> Obra</label><label><input type="checkbox" name="tipo_contrato_chk" value="Consultoria" /> Consultoria</label><label><input type="checkbox" name="tipo_contrato_chk" value="Interventoria" /> Interventoria</label><label><input type="checkbox" name="tipo_contrato_chk" value="Suministros" /> Suministros</label><label><input type="checkbox" name="tipo_contrato_chk" value="Prestacion de servicios" /> Prestacion de servicios</label><label><input type="checkbox" name="tipo_contrato_chk" value="Compraventa" /> Compraventa</label><label><input type="checkbox" name="tipo_contrato_chk" value="Concesion" /> Concesion</label><label><input type="checkbox" name="tipo_contrato_chk" value="Arrendamiento" /> Arrendamiento</label><label><input type="checkbox" name="tipo_contrato_chk" value="Otros" /> Otros</label></div></div>
       </div>
       <div class="row">
         <div><label>Categoria UNSPSC</label><input name="unspsc" placeholder="72101500" /></div>
@@ -1053,19 +1014,19 @@ function getCriteria(){
   const fd = new FormData(form);
   const p = {};
   const MULTI_FIELDS = ['departamento','modalidad','estado','fase','tipo_contrato'];
+  // Recoger inputs normales
   for(const [k,v] of fd.entries()){
     if(v===null || v===undefined || v==='') continue;
-    if(MULTI_FIELDS.indexOf(k) >= 0){
-      if(!p[k]) p[k] = [];
-      const trimmed = String(v).trim();
-      if(trimmed) p[k].push(trimmed);
-    } else {
-      p[k] = v;
-    }
+    // Skip los checkboxes que terminan en _chk; los recolectamos despues
+    if(/_chk$/.test(k)) continue;
+    p[k] = v;
   }
-  // Si un multi-field esta vacio, no filtrar por el (trae todos)
-  MULTI_FIELDS.forEach(k => {
-    if(p[k] && p[k].length === 0) delete p[k];
+  // Recoger checkboxes seleccionados por data-field
+  MULTI_FIELDS.forEach(field => {
+    const checked = document.querySelectorAll('.chk-group[data-field="'+field+'"] input[type="checkbox"]:checked');
+    if(checked.length > 0){
+      p[field] = Array.from(checked).map(c => c.value);
+    }
   });
   p.limit = parseInt(p.limit||'100',10);
   if(isNaN(p.limit) || p.limit < 1) p.limit = 100;
@@ -1187,6 +1148,13 @@ function exportXlsx(){
 }
 
 /* UX: comportamiento del selector multiple de Departamento */
+/* Listener: marcar labels.checked cuando se chequea checkbox para estilo visual */
+document.addEventListener('change', (e)=>{
+  if(e.target && e.target.matches && e.target.matches('.chk-group input[type="checkbox"]')){
+    const lbl = e.target.closest('label');
+    if(lbl) lbl.classList.toggle('checked', e.target.checked);
+  }
+});
 /* Multi-select simple: sin seleccionar = trae todos */
 const selDep = document.getElementById('selDep');
 
@@ -2961,11 +2929,9 @@ try {
   const _btnSearch = $('btnSearch'); if(_btnSearch) _btnSearch.onclick = ()=> runSearch(0);
 const _btnClear = $('btnClear'); if(_btnClear) _btnClear.onclick = ()=> {
   $('form').reset(); clearStatus();
-  // Deseleccionar todo en multi-selects
-  ['selDep','selModalidad','selEstado','selFase','selTipoContrato'].forEach(id => {
-    const sel = document.getElementById(id);
-    if(sel) Array.from(sel.options).forEach(o => o.selected = false);
-  });
+  // Desmarcar todos los checkboxes y quitar clase checked de las labels
+  document.querySelectorAll('.chk-group input[type="checkbox"]').forEach(c => { c.checked = false; });
+  document.querySelectorAll('.chk-group label.checked').forEach(l => l.classList.remove('checked'));
   tbody.innerHTML = '<tr><td colspan="14" class="empty">Sin busquedas aun.</td></tr>';
   $('count').textContent='Sin busqueda'; $('pager').innerHTML=''; lastResults=[];
 };
