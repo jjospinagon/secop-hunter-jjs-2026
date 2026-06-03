@@ -4,7 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SECOP II Hunter - App standalone</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
 <style>
@@ -839,6 +844,32 @@
   .hist-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;font-weight:600}
   .hist-stat .val{font-size:17px;font-weight:800;color:var(--acc-bright);font-family:'JetBrains Mono',monospace}
   .hist-stat .sub{font-size:10px;color:var(--muted);margin-top:3px}
+
+  /* ===== Mapa geografico ===== */
+  .map-wrap{background:rgba(15,23,42,0.4);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:560px;display:flex;flex-direction:column;gap:12px}
+  #leafletMap{height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:#0a0e1a}
+  .map-legend{background:rgba(15,23,42,0.85);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.6}
+  .map-legend h4{margin:0 0 8px;font-size:11px;color:var(--acc-bright);text-transform:uppercase;letter-spacing:0.05em}
+  .map-legend .row{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .map-legend .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;display:inline-block}
+  .map-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .map-stats .stat{background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:11px}
+  .map-stats .stat b{color:var(--acc-bright);font-size:14px;display:block;font-family:'JetBrains Mono',monospace}
+  /* Popup customization */
+  .leaflet-popup-content-wrapper{background:var(--panel-solid) !important;color:var(--txt) !important;border-radius:8px !important;box-shadow:0 8px 24px rgba(0,0,0,0.5) !important;font-family:'Inter', sans-serif}
+  .leaflet-popup-content{margin:10px 14px !important;font-size:12px;line-height:1.5}
+  .leaflet-popup-tip{background:var(--panel-solid) !important}
+  .map-popup .ttl{font-weight:700;color:var(--acc-bright);font-size:12.5px;margin-bottom:4px;display:block}
+  .map-popup .ent{font-size:11px;color:var(--muted);margin-bottom:6px}
+  .map-popup .val{color:#a3e635;font-weight:700;font-family:'JetBrains Mono',monospace;font-size:13px}
+  .map-popup .actions{margin-top:8px;display:flex;gap:5px}
+  .map-popup .actions button, .map-popup .actions a{font-size:10.5px;padding:4px 9px;border-radius:4px;cursor:pointer;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:0;text-decoration:none;display:inline-block;font-weight:600}
+  /* Cluster customization */
+  .marker-cluster div{background:rgba(56,189,248,0.85) !important;color:#fff !important;font-weight:700}
+  .marker-cluster-small{background-color:rgba(56,189,248,0.3)}
+  .marker-cluster-medium{background-color:rgba(245,158,11,0.4)}
+  .marker-cluster-large{background-color:rgba(239,68,68,0.5)}
+  html[data-theme="light"] #leafletMap{background:#e2e8f0}
 </style>
 </head>
 <body>
@@ -976,6 +1007,7 @@
           <button id="viewTable" class="active" type="button">Tabla</button>
           <button id="viewCal" type="button">Calendario</button>
           <button id="viewKanban" type="button">Kanban</button>
+          <button id="viewMap" type="button">Mapa</button>
         </div>
         <div class="filter-favs-wrap" id="filterFavs"><span>&#9733;</span><span id="favCount">0</span> Solo favoritos</div>
         <span class="count" id="count">Sin busqueda</span>
@@ -1002,6 +1034,7 @@
     </div>
     <div class="calendar-wrap" id="calendarView" style="display:none"></div>
     <div class="kanban-wrap" id="kanbanView" style="display:none"></div>
+    <div class="map-wrap" id="mapView" style="display:none"><div id="mapStats"></div><div id="leafletMap"></div><div class="map-legend" id="mapLegend"></div></div>
     <div class="pager" id="pager"></div>
   </section>
 </main>
@@ -4255,6 +4288,172 @@ async function loadHistoricoEntidad(r){
   }
 }
 window.loadHistoricoEntidad = loadHistoricoEntidad;
+
+
+
+
+/* ============ FASE 4: MAPA GEOGRAFICO ============ */
+const DEPT_COORDS = {
+  'Amazonas':[-1.4429,-71.5724], 'Antioquia':[6.7,-75.5], 'Arauca':[7.0902,-70.7617], 'Atlantico':[10.6966,-74.873],
+  'Bogota D.C.':[4.7110,-74.0721], 'Bolivar':[8.6704,-74.0300], 'Boyaca':[5.4545,-73.3620], 'Caldas':[5.298,-75.2479],
+  'Caqueta':[1.6144,-75.6062], 'Casanare':[5.7589,-71.5723], 'Cauca':[2.7050,-76.8260], 'Cesar':[9.3372,-73.6536],
+  'Choco':[5.6919,-76.6584], 'Cordoba':[8.7479,-75.8814], 'Cundinamarca':[5.0260,-74.0300], 'Guainia':[2.5854,-68.5247],
+  'Guaviare':[2.0436,-72.3311], 'Huila':[2.5359,-75.5277], 'La Guajira':[11.5444,-72.9072], 'Magdalena':[10.4113,-74.4057],
+  'Meta':[3.3225,-73.0875], 'Narino':[1.2136,-77.2811], 'Norte de Santander':[7.9463,-72.8988], 'Putumayo':[0.4356,-76.5276],
+  'Quindio':[4.4615,-75.6674], 'Risaralda':[5.3127,-75.9928], 'San Andres y Providencia':[12.5847,-81.7006],
+  'Santander':[6.7050,-73.1257], 'Sucre':[9.3047,-75.3978], 'Tolima':[4.4389,-75.2322], 'Valle del Cauca':[3.8008,-76.6413],
+  'Vaupes':[0.8554,-70.8120], 'Vichada':[4.4234,-69.2878]
+};
+
+let _mapInstance = null;
+let _markerCluster = null;
+
+function setupMapView(){
+  const bM = document.getElementById('viewMap');
+  if(!bM) return;
+  bM.onclick = ()=>{
+    document.getElementById('viewTable').classList.remove('active');
+    document.getElementById('viewCal').classList.remove('active');
+    document.getElementById('viewKanban').classList.remove('active');
+    bM.classList.add('active');
+    document.getElementById('tableView').style.display = 'none';
+    document.getElementById('calendarView').style.display = 'none';
+    document.getElementById('kanbanView').style.display = 'none';
+    document.getElementById('mapView').style.display = '';
+    renderMap();
+  };
+  // Ocultar el mapa al cambiar a otras vistas
+  ['viewTable','viewCal','viewKanban'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.addEventListener('click', ()=>{ document.getElementById('mapView').style.display = 'none'; });
+  });
+}
+setTimeout(setupMapView, 200);
+
+function renderMap(){
+  if(!window.L){ 
+    showToast('Leaflet no cargado todavia. Reintentando en 1s...', 'warn');
+    setTimeout(renderMap, 1000);
+    return;
+  }
+  const container = document.getElementById('leafletMap');
+  if(!container) return;
+  // Crear mapa si no existe
+  if(!_mapInstance){
+    _mapInstance = L.map('leafletMap').setView([4.6, -74.0], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 18,
+      minZoom: 4
+    }).addTo(_mapInstance);
+  }
+  // Limpiar markers anteriores
+  if(_markerCluster){ _mapInstance.removeLayer(_markerCluster); }
+  _markerCluster = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    chunkedLoading: true,
+    maxClusterRadius: 50
+  });
+
+  // Filtrar lastResults a los que tienen departamento conocido
+  const procs = (window.__favsOnly ? (window.__lastFilteredResults||lastResults) : lastResults) || [];
+  let validCount = 0;
+  let totalVal = 0;
+  const byDept = {};
+  const usedKeys = new Set();
+  
+  procs.forEach((r,idx) => {
+    const dep = (r.departamento_entidad || '').trim();
+    let coords = DEPT_COORDS[dep];
+    // Buscar match case-insensitive
+    if(!coords){
+      const key = Object.keys(DEPT_COORDS).find(k => k.toLowerCase() === dep.toLowerCase());
+      if(key) coords = DEPT_COORDS[key];
+    }
+    if(!coords) return;
+    // Pequeno offset random para no superponer
+    const offset = 0.05 + Math.random() * 0.4;
+    const angle = Math.random() * 2 * Math.PI;
+    const lat = coords[0] + Math.cos(angle) * offset;
+    const lng = coords[1] + Math.sin(angle) * offset;
+    
+    const val = parseFloat(r.precio_base) || 0;
+    totalVal += val;
+    byDept[dep] = (byDept[dep]||0) + 1;
+    validCount++;
+    
+    // Color y tamano segun valor
+    let color = '#38bdf8', radius = 8;
+    if(val >= 5e9){ color = '#ef4444'; radius = 18; }
+    else if(val >= 1e9){ color = '#f59e0b'; radius = 14; }
+    else if(val >= 1e8){ color = '#10b981'; radius = 10; }
+    else if(val > 0){ color = '#38bdf8'; radius = 8; }
+    else { color = '#94a3b8'; radius = 6; }
+    
+    const marker = L.circleMarker([lat,lng], {
+      radius: radius,
+      fillColor: color,
+      color: '#fff',
+      weight: 1.5,
+      opacity: 1,
+      fillOpacity: 0.7
+    });
+    
+    const proc = r.referencia_del_proceso || r.proceso_de_compra || 's/n';
+    const ent = r.nombre_entidad || '';
+    const obj = (r.descripci_n_del_procedimiento || '').substring(0,120);
+    const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+    
+    const popupHtml = '<div class="map-popup">'+
+      '<span class="ttl">'+escMapText(proc)+'</span>'+
+      '<div class="ent">'+escMapText(ent)+' &mdash; '+escMapText(r.ciudad_entidad||'')+', '+escMapText(dep)+'</div>'+
+      '<div style="font-size:11px;color:var(--txt);margin-bottom:6px">'+escMapText(obj)+(obj.length>=120?'...':'')+'</div>'+
+      '<div class="val">'+fmtMoney(r.precio_base)+'</div>'+
+      '<div style="font-size:10px;color:var(--muted);margin-top:3px">Cierre: '+fmtDate(r.fecha_de_recepcion_de)+'</div>'+
+      '<div class="actions">'+
+        '<button onclick="showDetails('+(offset+idx)+');document.querySelectorAll(\'.leaflet-popup-close-button\').forEach(b=>b.click());">Detalles</button>'+
+        (url ? '<a href="'+escMapText(url)+'" target="_blank">SECOP II</a>' : '')+
+      '</div>'+
+    '</div>';
+    marker.bindPopup(popupHtml);
+    _markerCluster.addLayer(marker);
+  });
+  
+  _mapInstance.addLayer(_markerCluster);
+  
+  // Renderizar stats
+  const stats = document.getElementById('mapStats');
+  if(stats){
+    const topDept = Object.entries(byDept).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    stats.className = 'map-stats';
+    stats.innerHTML = 
+      '<div class="stat"><b>'+validCount+'</b>procesos en el mapa</div>'+
+      '<div class="stat"><b>'+fmtMoney(totalVal)+'</b>valor total</div>'+
+      (topDept[0]?'<div class="stat"><b>'+escMapText(topDept[0][0])+'</b>top: '+topDept[0][1]+' procesos</div>':'')+
+      (topDept[1]?'<div class="stat"><b>'+escMapText(topDept[1][0])+'</b>'+topDept[1][1]+' procesos</div>':'')+
+      (topDept[2]?'<div class="stat"><b>'+escMapText(topDept[2][0])+'</b>'+topDept[2][1]+' procesos</div>':'');
+  }
+  
+  // Leyenda
+  const legend = document.getElementById('mapLegend');
+  if(legend){
+    legend.innerHTML = '<h4>Tamano del marcador = valor del proceso</h4>'+
+      '<div class="row"><span class="dot" style="background:#ef4444;width:18px;height:18px"></span> &ge; $5.000 M (rojo)</div>'+
+      '<div class="row"><span class="dot" style="background:#f59e0b;width:14px;height:14px"></span> &ge; $1.000 M (naranja)</div>'+
+      '<div class="row"><span class="dot" style="background:#10b981;width:10px;height:10px"></span> &ge; $100 M (verde)</div>'+
+      '<div class="row"><span class="dot" style="background:#38bdf8;width:8px;height:8px"></span> &lt; $100 M (azul)</div>'+
+      '<div class="row"><span class="dot" style="background:#94a3b8;width:6px;height:6px"></span> Sin valor (gris)</div>';
+  }
+  
+  // Forzar resize despues de mostrar
+  setTimeout(()=>{ if(_mapInstance) _mapInstance.invalidateSize(); }, 100);
+}
+window.renderMap = renderMap;
+
+function escMapText(s){
+  return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
 
 
 </script>
