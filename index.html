@@ -4315,16 +4315,39 @@ window.loadHistoricoEntidad = loadHistoricoEntidad;
 
 /* ============ FASE 4: MAPA GEOGRAFICO ============ */
 const DEPT_COORDS = {
-  'Amazonas':[-1.4429,-71.5724], 'Antioquia':[6.7,-75.5], 'Arauca':[7.0902,-70.7617], 'Atlantico':[10.6966,-74.873],
-  'Bogota D.C.':[4.7110,-74.0721], 'Bolivar':[8.6704,-74.0300], 'Boyaca':[5.4545,-73.3620], 'Caldas':[5.298,-75.2479],
-  'Caqueta':[1.6144,-75.6062], 'Casanare':[5.7589,-71.5723], 'Cauca':[2.7050,-76.8260], 'Cesar':[9.3372,-73.6536],
-  'Choco':[5.6919,-76.6584], 'Cordoba':[8.7479,-75.8814], 'Cundinamarca':[5.0260,-74.0300], 'Guainia':[2.5854,-68.5247],
-  'Guaviare':[2.0436,-72.3311], 'Huila':[2.5359,-75.5277], 'La Guajira':[11.5444,-72.9072], 'Magdalena':[10.4113,-74.4057],
-  'Meta':[3.3225,-73.0875], 'Narino':[1.2136,-77.2811], 'Norte de Santander':[7.9463,-72.8988], 'Putumayo':[0.4356,-76.5276],
-  'Quindio':[4.4615,-75.6674], 'Risaralda':[5.3127,-75.9928], 'San Andres y Providencia':[12.5847,-81.7006],
-  'Santander':[6.7050,-73.1257], 'Sucre':[9.3047,-75.3978], 'Tolima':[4.4389,-75.2322], 'Valle del Cauca':[3.8008,-76.6413],
-  'Vaupes':[0.8554,-70.8120], 'Vichada':[4.4234,-69.2878]
+  // Claves normalizadas (lowercase, sin tildes, sin variaciones)
+  'amazonas':[-1.4429,-71.5724], 'antioquia':[6.7,-75.5], 'arauca':[7.0902,-70.7617], 'atlantico':[10.6966,-74.873],
+  'bogota dc':[4.7110,-74.0721], 'bogota':[4.7110,-74.0721], 'distrito capital de bogota':[4.7110,-74.0721],
+  'bolivar':[8.6704,-74.0300], 'boyaca':[5.4545,-73.3620], 'caldas':[5.298,-75.2479],
+  'caqueta':[1.6144,-75.6062], 'casanare':[5.7589,-71.5723], 'cauca':[2.7050,-76.8260], 'cesar':[9.3372,-73.6536],
+  'choco':[5.6919,-76.6584], 'cordoba':[8.7479,-75.8814], 'cundinamarca':[5.0260,-74.0300], 'guainia':[2.5854,-68.5247],
+  'guaviare':[2.0436,-72.3311], 'huila':[2.5359,-75.5277], 'la guajira':[11.5444,-72.9072], 'guajira':[11.5444,-72.9072],
+  'magdalena':[10.4113,-74.4057], 'meta':[3.3225,-73.0875], 'narino':[1.2136,-77.2811],
+  'norte de santander':[7.9463,-72.8988], 'putumayo':[0.4356,-76.5276],
+  'quindio':[4.4615,-75.6674], 'risaralda':[5.3127,-75.9928],
+  'san andres y providencia':[12.5847,-81.7006], 'san andres':[12.5847,-81.7006],
+  'santander':[6.7050,-73.1257], 'sucre':[9.3047,-75.3978], 'tolima':[4.4389,-75.2322],
+  'valle del cauca':[3.8008,-76.6413], 'valle':[3.8008,-76.6413],
+  'vaupes':[0.8554,-70.8120], 'vichada':[4.4234,-69.2878]
 };
+// Helper: normaliza un nombre de depto (lowercase + sin tildes + sin puntos)
+function normalizeDept(s){
+  if(!s) return '';
+  return String(s).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
+    .replace(/[\.\,]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function lookupCoords(dept){
+  const n = normalizeDept(dept);
+  if(DEPT_COORDS[n]) return DEPT_COORDS[n];
+  // Buscar match parcial
+  for(const k of Object.keys(DEPT_COORDS)){
+    if(n.indexOf(k) >= 0 || k.indexOf(n) >= 0) return DEPT_COORDS[k];
+  }
+  return null;
+}
 
 let _mapInstance = null;
 let _markerCluster = null;
@@ -4386,12 +4409,7 @@ function renderMap(){
   
   procs.forEach((r,idx) => {
     const dep = (r.departamento_entidad || '').trim();
-    let coords = DEPT_COORDS[dep];
-    // Buscar match case-insensitive
-    if(!coords){
-      const key = Object.keys(DEPT_COORDS).find(k => k.toLowerCase() === dep.toLowerCase());
-      if(key) coords = DEPT_COORDS[key];
-    }
+    const coords = lookupCoords(dep);
     if(!coords) return;
     // Pequeno offset random para no superponer
     const offset = 0.05 + Math.random() * 0.4;
