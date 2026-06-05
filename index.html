@@ -666,7 +666,7 @@
 
   /* Checkbox groups (sustituyen multi-selects) */
   .chk-group{background:rgba(15,23,42,0.4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px;max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-  .chk-group label{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:5px;cursor:pointer;font-size:12.5px;color:var(--txt);font-weight:500;text-transform:none;letter-spacing:0;margin:0;transition:background 0.12s;user-select:none;line-height:1.3}
+  .chk-group label{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-radius:5px;cursor:pointer;font-size:12.5px;color:var(--txt);font-weight:500;text-transform:none;letter-spacing:0;margin:0;transition:background 0.12s;user-select:none;line-height:1.35;white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
   .chk-group label:hover{background:rgba(56,189,248,0.08)}
   .chk-group label.checked{background:linear-gradient(90deg,rgba(14,165,233,0.2),rgba(14,165,233,0.05));color:var(--acc-bright)}
   .chk-group input[type="checkbox"]{margin:0;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
@@ -675,9 +675,32 @@
   html[data-theme="light"] .chk-group label{color:#1e293b}
   html[data-theme="light"] .chk-group label.checked{background:linear-gradient(90deg,rgba(14,165,233,0.12),rgba(14,165,233,0.04));color:#0369a1}
   @media (max-width:768px){
-    .chk-group{max-height:200px;padding:8px}
-    .chk-group label{padding:11px 12px;font-size:14px;gap:10px;min-height:44px}
-    .chk-group input[type="checkbox"]{width:20px;height:20px}
+    .chk-group{max-height:240px;padding:8px;width:100%;box-sizing:border-box}
+    .chk-group label{
+      padding:11px 12px;
+      font-size:14px;
+      gap:10px;
+      min-height:44px;
+      display:flex;
+      align-items:flex-start;
+      white-space:normal !important;
+      word-wrap:break-word !important;
+      overflow-wrap:break-word !important;
+      hyphens:auto;
+      line-height:1.35;
+    }
+    .chk-group input[type="checkbox"]{
+      width:22px;
+      height:22px;
+      min-width:22px;
+      flex-shrink:0;
+      margin-top:1px;
+    }
+    .chk-group label > *:not(input){
+      flex:1;
+      min-width:0;
+      word-break:break-word;
+    }
   }
 
   /* Fila "Seleccionar todos" en chk-group */
@@ -890,6 +913,10 @@
   .empty-alerts{padding:28px;text-align:center;color:var(--muted);font-size:13px;background:rgba(15,23,42,0.4);border:1px dashed var(--border);border-radius:8px}
   .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;color:#c4b5fd;margin-bottom:12px}
   .setup-banner b{color:#ddd6fe}
+
+  /* Asegurar que checkboxes nunca se desborden horizontalmente */
+  .chk-group{width:100% !important;box-sizing:border-box;overflow-x:hidden;overflow-y:auto}
+  .chk-group label{width:100%;box-sizing:border-box;max-width:100%}
 </style>
 </head>
 <body>
@@ -2202,7 +2229,7 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
       throw new Error('Documento muy grande (HTTP 413). El free tier de Groq tiene limite TPM (tokens por minuto). Soluciones: (1) carga solo el pliego de condiciones sin anexos, (2) espera 60s y reintenta, (3) usa un PDF mas corto.');
     }
     if(response.status === 401){
-      throw new Error('API key invalida (HTTP 401). Verifica que sea de console.groq.com y empiece con gsk_');
+      throw new Error('IA temporalmente no disponible (HTTP 401). La API key Groq caducó o se agotó. Para reactivar: 1) Abrir console.groq.com/keys 2) Crear nueva key 3) Compartirla al admin para actualizar. Mientras tanto puedes usar todas las demás funciones.');
     }
     throw new Error('HTTP '+response.status+': '+errText.substring(0,300));
   }
@@ -3848,7 +3875,12 @@ Responde SOLO con JSON valido. Sin markdown.`;
     setTimeout(()=> runSearch(0), 200);
   } catch(e){
     document.querySelectorAll('.toast').forEach(t => removeToast(t));
-    showToast('Error IA: ' + (e.message||e), 'err');
+    const msg = String(e.message||e);
+    if(msg.indexOf('401') >= 0 || msg.indexOf('Unauthorized') >= 0){
+      showToast('IA no disponible: la API key Groq esta caducada/agotada. Usa los filtros normales mientras se actualiza.', 'err', {duration: 10000});
+    } else {
+      showToast('Error IA: ' + msg, 'err');
+    }
   }
 }
 window.nlSearchExecute = nlSearchExecute;
