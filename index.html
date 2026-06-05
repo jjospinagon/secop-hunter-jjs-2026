@@ -1946,17 +1946,30 @@ function getUsageToday(){
 
 /* API key embebida de Groq. Free tier: 14400 req/dia.
    Las keys empiezan con gsk_*. Para crear: console.groq.com/keys */
-const EMBEDDED_GROQ_KEY = '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';
+const EMBEDDED_GROQ_KEY = '__PROXY__';  // IA via Apps Script proxy (key oculta en server)
+// Wrapper: todas las llamadas IA pasan por el Apps Script proxy
+async function callAi(payload){
+  // payload = {model, messages, temperature, max_tokens, response_format}
+  const body = Object.assign({action:'aiProxy'}, payload);
+  const r = await fetch(MAILER_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(body),
+    redirect: 'follow'
+  });
+  return r;
+}
+
 const GROQ_MODELS = [
   {id:'llama-3.3-70b-versatile', tpm:12000, label:'Llama 3.3 70B (alta calidad)'},
   {id:'llama-3.1-8b-instant',    tpm:30000, label:'Llama 3.1 8B (mas cuota, fallback)'},
   {id:'gemma2-9b-it',            tpm:15000, label:'Gemma 2 9B (fallback secundario)'}
 ];
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_URL = '__USE_MAILER_PROXY__';  // Las llamadas IA pasan por MAILER_URL
 
 async function analyzeWithAI(r, idProc){
   const apiKey = EMBEDDED_GROQ_KEY || localStorage.getItem('groq_api_key');
-  if(!apiKey){ alert('Configura tu API key de Groq primero (o pidele al admin que la embeba en el codigo). Obten una gratis en console.groq.com/keys'); return; }
+  // Con proxy, no hacemos check de key local (la valida el Apps Script)
 
   // Obtener texto del PDF: si hay cache de texto, usarlo; si no, pedir cargar PDF
   let pdfText = '';
@@ -2191,22 +2204,15 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
     const m = GROQ_MODELS[i];
     if(onProgress) onProgress('Llamando a Groq ('+m.label+')...', 0.3 + i*0.05);
     try{
-      response = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey
-        },
-        body: JSON.stringify({
-          model: m.id,
-          messages: [
-            {role: 'system', content: 'Eres un experto auditor de pliegos de contratacion publica colombiana SECOP II. Respondes UNICAMENTE con JSON valido, sin markdown, sin texto adicional.'},
-            {role: 'user', content: prompt}
-          ],
-          temperature: 0.1,
-          max_tokens: 4096,
-          response_format: {type: 'json_object'}
-        })
+      response = await callAi({
+        model: m.id,
+        messages: [
+          {role: 'system', content: 'Eres un experto auditor de pliegos de contratacion publica colombiana SECOP II. Respondes UNICAMENTE con JSON valido, sin markdown, sin texto adicional.'},
+          {role: 'user', content: prompt}
+        ],
+        temperature: 0.1,
+        max_tokens: 4096,
+        response_format: {type: 'json_object'}
       });
       // Si OK -> usar este. Si 413 o 429 -> probar siguiente modelo
       if(response.ok){ modelUsed = m.label; window._lastModelUsed = m.label; bumpUsageCounter(); break; }
@@ -3478,16 +3484,12 @@ async function generateAiSummaries(){
     const listText = slice.map((r,i)=> (i+1)+'. '+(r.descripci_n_del_procedimiento || '').substring(0,300)).join('\n');
     const prompt = 'Genera un resumen MUY CORTO (max 80 caracteres) en una sola linea para cada objeto contractual. Responde con JSON array de strings, en orden, sin texto adicional.\n\nObjetos:\n'+listText+'\n\nResponde solo el JSON: ["resumen1", "resumen2", ...]';
     try {
-      const r = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + EMBEDDED_GROQ_KEY },
-        body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
-          messages: [{role:'user', content: prompt}],
-          temperature: 0.2,
-          max_tokens: 2048,
-          response_format: {type:'json_object'}
-        })
+      const r = await callAi({
+        model: 'llama-3.1-8b-instant',
+        messages: [{role:'user', content: prompt}],
+        temperature: 0.2,
+        max_tokens: 2048,
+        response_format: {type:'json_object'}
       });
       const data = await r.json();
       const txt = data?.choices?.[0]?.message?.content || '[]';
@@ -3852,16 +3854,12 @@ Consulta del usuario: "${query}"
 
 Responde SOLO con JSON valido. Sin markdown.`;
   try {
-    const r = await fetch(GROQ_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+EMBEDDED_GROQ_KEY},
-      body: JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        messages:[{role:'user',content:prompt}],
-        temperature: 0.1,
-        max_tokens: 1024,
-        response_format:{type:'json_object'}
-      })
+    const r = await callAi({
+      model:'llama-3.3-70b-versatile',
+      messages:[{role:'user',content:prompt}],
+      temperature: 0.1,
+      max_tokens: 1024,
+      response_format:{type:'json_object'}
     });
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data = await r.json();
@@ -4061,15 +4059,11 @@ async function sendChatMessage(){
   cont.scrollTop = cont.scrollHeight;
 
   try {
-    const resp = await fetch(GROQ_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+EMBEDDED_GROQ_KEY},
-      body: JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        messages: messages,
-        temperature: 0.2,
-        max_tokens: 800
-      })
+    const resp = await callAi({
+      model:'llama-3.3-70b-versatile',
+      messages: messages,
+      temperature: 0.2,
+      max_tokens: 800
     });
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     const data = await resp.json();
@@ -4162,16 +4156,12 @@ ${comp.text}
 """`;
 
   try {
-    const resp = await fetch(GROQ_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+EMBEDDED_GROQ_KEY},
-      body: JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        messages:[{role:'user',content:prompt}],
-        temperature: 0.1,
-        max_tokens: 2048,
-        response_format:{type:'json_object'}
-      })
+    const resp = await callAi({
+      model:'llama-3.3-70b-versatile',
+      messages:[{role:'user',content:prompt}],
+      temperature: 0.1,
+      max_tokens: 2048,
+      response_format:{type:'json_object'}
     });
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     const data = await resp.json();
