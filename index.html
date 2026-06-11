@@ -3138,18 +3138,84 @@ async function renderDocs(r){
   btn.onclick = ()=> discoverAndListDocs(r, idProc, inlineDocs);
 }
 
+// Clasifica un nombre+url en tipo de documento (compartido por scraping y open data)
+function classifyDocType(name, url){
+  const lower = ((name||'')+' '+(url||'')).toLowerCase();
+  if(/adenda|adicion/.test(lower)) return 'ADENDA';
+  if(/estudios?\s*previos?|estudio\s*previo/.test(lower)) return 'ESTUDIOS PREVIOS';
+  if(/an[aá]lisis\s*(del)?\s*sector|estudio\s*del?\s*sector/.test(lower)) return 'ANALISIS SECTOR';
+  if(/matriz|riesgo/.test(lower)) return 'MATRIZ RIESGOS';
+  if(/anexo\s*t[eé]cnic|documento\s*t[eé]cnic|especificaci[oó]n|fichas?\s*t[eé]cnic/.test(lower)) return 'ANEXO TECNICO';
+  if(/presupuesto|apu|cantidades|item|valor\s*oficial/.test(lower)) return 'PRESUPUESTO';
+  if(/pliego|condici|t[eé]rminos?\s*de\s*referencia|tdr/.test(lower)) return 'PLIEGO';
+  if(/anexo/.test(lower)) return 'ANEXO';
+  if(/respuesta|observac/.test(lower)) return 'OBSERVACIONES';
+  if(/formulario|formato/.test(lower)) return 'FORMATO';
+  if(/cronograma|programaci[oó]n/.test(lower)) return 'CRONOGRAMA';
+  return 'OTRO';
+}
+
+// Segunda fuente: datasets datos.gov.co (dmgg-8hin = 2025+, 3skv-9na7 = 2023)
+// El campo `proceso` en esos datasets coincide con `id_del_proceso` (formato CO1.BDOS.XXXXX)
+async function fetchDocsFromOpenData(idProc){
+  if(!idProc) return [];
+  const DATASETS = ['dmgg-8hin', '3skv-9na7']; // 2025+ y 2023
+  const docs = [];
+  const queries = DATASETS.map(ds => {
+    const u = 'https://www.datos.gov.co/resource/'+ds+'.json?proceso='+encodeURIComponent(idProc)+'&$limit=200';
+    return fetch(u, {cache:'no-store'})
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => []);
+  });
+  const results = await Promise.all(queries);
+  results.forEach(arr => {
+    if(!Array.isArray(arr)) return;
+    arr.forEach(row => {
+      const urlObj = row.url_descarga_documento;
+      const url = (urlObj && urlObj.url) ? urlObj.url : (typeof urlObj === 'string' ? urlObj : null);
+      if(!url) return;
+      const name = row.nombre_archivo || row.descripci_n || 'documento.'+(row.extensi_n||'pdf');
+      docs.push({
+        nombre: name,
+        url: url,
+        source: 'OpenData',
+        tipo: classifyDocType(name, ''),
+        fecha: row.fecha_carga ? row.fecha_carga.substring(0,10) : '',
+        size: row.tamanno_archivo ? parseInt(row.tamanno_archivo) : 0
+      });
+    });
+  });
+  return docs;
+}
+
 async function discoverAndListDocs(r, idProc, inlineDocs){
   setProcessing(true, 'discover');
   const result = document.getElementById('docsResult');
   const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
-  if(!url){
-    result.innerHTML = '<div style="color:var(--err);font-size:12px">No hay URL del proceso. No es posible buscar pliegos automaticamente.</div>';
-    return;
-  }
-  result.innerHTML = '<div style="color:var(--muted);font-size:12px"><span class="spinner"></span>Rastreando pagina del proceso en SECOP II...</div>';
+  // id real del proceso para datos.gov.co (CO1.BDOS.XXXXX)
+  const idDelProceso = r.id_del_proceso || r.id_del_portafolio || idProc || '';
+
+  result.innerHTML = '<div style="color:var(--muted);font-size:12px"><span class="spinner"></span>Consultando datos.gov.co + rastreando expediente SECOP II...</div>';
 
   let allDocs = [...inlineDocs];
+
+  // FUENTE 1 (siempre): datos.gov.co (rapido, confiable, sin proxy CORS)
   try{
+    const openDataDocs = await fetchDocsFromOpenData(idDelProceso);
+    allDocs.push(...openDataDocs);
+  }catch(e){ console.warn('OpenData fallo:', e); }
+
+  // FUENTE 2: scraping HTML del expediente (mas exhaustivo pero depende de proxy)
+  if(!url){
+    if(!allDocs.length){
+      result.innerHTML = '<div style="color:var(--err);font-size:12px">No hay URL del proceso ni resultados en datos.gov.co.</div>';
+      setProcessing(false);
+      return;
+    }
+    // OK: continuamos solo con OpenData
+  }
+  try{
+    if(url){
     const setMsg = (m)=>{ result.innerHTML = '<div style="color:var(--muted);font-size:12px"><span class="spinner"></span>'+esc(m)+'</div>'; };
     const pageHtml = await corsGetText(url, setMsg);
 
@@ -3169,31 +3235,25 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
         const parts = cleanUrl.split('/');
         name = decodeURIComponent(parts[parts.length-1] || 'documento');
       }catch(e){ name = 'documento'; }
-      // Clasificar (orden importa: mas especifico primero)
-      const lower = (name+' '+u).toLowerCase();
-      let tipo = 'OTRO';
-      if(/adenda|adicion/.test(lower)) tipo = 'ADENDA';
-      else if(/estudios?\s*previos?|estudio\s*previo/.test(lower)) tipo = 'ESTUDIOS PREVIOS';
-      else if(/an[aá]lisis\s*(del)?\s*sector|estudio\s*del?\s*sector/.test(lower)) tipo = 'ANALISIS SECTOR';
-      else if(/matriz|riesgo/.test(lower)) tipo = 'MATRIZ RIESGOS';
-      else if(/anexo\s*t[eé]cnic|documento\s*t[eé]cnic|especificaci[oó]n|fichas?\s*t[eé]cnic/.test(lower)) tipo = 'ANEXO TECNICO';
-      else if(/presupuesto|apu|cantidades|item|valor\s*oficial/.test(lower)) tipo = 'PRESUPUESTO';
-      else if(/pliego|condici|t[eé]rminos?\s*de\s*referencia|tdr/.test(lower)) tipo = 'PLIEGO';
-      else if(/anexo/.test(lower)) tipo = 'ANEXO';
-      else if(/respuesta|observac/.test(lower)) tipo = 'OBSERVACIONES';
-      else if(/formulario|formato/.test(lower)) tipo = 'FORMATO';
-      else if(/cronograma|programaci[oó]n/.test(lower)) tipo = 'CRONOGRAMA';
+      const tipo = classifyDocType(name, u);
       allDocs.push({nombre: name, url: u, source:'SECOP', tipo});
     });
+    } // fin if(url) scraping
+  }catch(scrapErr){
+    console.warn('Scraping SECOP fallo, usando solo OpenData:', scrapErr);
+  }
 
-    // Dedupe
+  try{
+    // Dedupe por URL
     const seen = new Set();
     allDocs = allDocs.filter(d => { if(seen.has(d.url)) return false; seen.add(d.url); return true; });
 
     if(!allDocs.length){
-      result.innerHTML = '<div style="color:var(--warn);font-size:12px">No se encontraron PDFs en la pagina del proceso. '+
-        'Puede que sea un proceso muy reciente o que SECOP II los proteja con sesion. '+
-        '<br>Abre el <a href="'+esc(url)+'" target="_blank" style="color:var(--acc)">expediente completo</a> y descarga manualmente.</div>';
+      result.innerHTML = '<div style="color:var(--warn);font-size:12px">No se encontraron PDFs en datos.gov.co ni en el expediente. '+
+        'Puede que sea un proceso muy reciente o sin documentos publicos. '+
+        (url ? '<br>Abre el <a href="'+esc(url)+'" target="_blank" style="color:var(--acc)">expediente completo</a> y descarga manualmente.' : '')+
+        '</div>';
+      setProcessing(false);
       return;
     }
 
