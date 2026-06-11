@@ -3215,27 +3215,29 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
     };
 
     // Render
-    const headerAnaliza = idxsRelevantes.length>1
+    const headerAnaliza = idxsRelevantes.length>=1
       ? '<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">'+
         '<button class="btn-success" style="padding:9px 14px;font-size:12px;font-weight:700" onclick="analyzeAllRelevantDocs()" title="Descarga y procesa pliego + estudios previos + anexos tecnicos + presupuesto y los combina para el analisis IA">Analizar TODOS los relevantes ('+idxsRelevantes.length+')</button>'+
         '<span style="font-size:10.5px;color:var(--muted);flex:1;min-width:180px">Combina pliego, estudios previos, anexos tecnicos, presupuesto y matriz de riesgos en un solo contexto IA.</span>'+
         '</div>'
-      : '';
+      : '<div style="font-size:11px;color:var(--warn);margin-bottom:10px;padding:8px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.3);border-radius:6px">No se identificaron documentos clasificados como relevantes (pliego, estudios previos, anexos tecnicos, presupuesto, matriz riesgos). Puedes analizarlos manualmente uno por uno con el boton <b>Analizar</b>, o usar el enlace de descarga directa para verlos en tu PC.</div>';
 
     result.innerHTML = headerAnaliza +
       '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+
-      allDocs.length+' documento(s) detectado(s). Pulsa <b>Descargar</b> para guardar el PDF o <b>Analizar</b> para agregarlo al contexto IA del proceso (acumulativo, no sobrescribe).</div>'+
+      allDocs.length+' documento(s) detectado(s). Clic en el <b>nombre</b> abre el archivo directo en SECOP II. <b>Descargar</b> guarda local via proxy. <b>Analizar</b> agrega al contexto IA (acumulativo).</div>'+
       '<ul class="doc-list">' +
       allDocs.map((d,i)=>{
         const safeName = d.nombre.length > 60 ? d.nombre.substring(0,57)+'...' : d.nombre;
         const tipoBadge = '<span class="tag" style="background:'+colorTipo(d.tipo)+';color:#fff">'+esc(d.tipo)+'</span>';
         return '<li>'+
           '<div style="flex:1;min-width:0">'+
-            '<div style="font-weight:600;font-size:12px;color:var(--txt);word-break:break-all" title="'+esc(d.nombre)+'">'+esc(safeName)+'</div>'+
-            '<div class="meta">'+tipoBadge+' <span style="margin-left:6px">'+esc(d.source)+'</span></div>'+
+            '<div style="font-weight:600;font-size:12px;word-break:break-all">'+
+              '<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--acc-bright);text-decoration:none" title="Abrir/descargar directamente desde SECOP II ('+esc(d.nombre)+')" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">'+esc(safeName)+' &#8599;</a>'+
+            '</div>'+
+            '<div class="meta">'+tipoBadge+' <span style="margin-left:6px">'+esc(d.source)+'</span> <a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="margin-left:8px;color:var(--muted);font-size:10px">Enlace directo</a></div>'+
           '</div>'+
           '<div style="display:flex;gap:4px;flex-shrink:0">'+
-            '<button class="btn-mini-det" onclick="downloadDocDirect('+i+', false)" title="Descargar PDF a tu PC">Descargar</button>'+
+            '<button class="btn-mini-det" onclick="downloadDocDirect('+i+', false)" title="Descargar PDF a tu PC via proxy CORS">Descargar</button>'+
             '<button class="btn-mini-det" style="background:#15803d;border-color:#22c55e" onclick="downloadDocDirect('+i+', true)" title="Procesar y agregar al contexto IA (acumulativo)">Analizar</button>'+
           '</div>'+
         '</li>';
