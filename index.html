@@ -2216,11 +2216,19 @@ async function callGroqForPliego(pdfText, apiKey, onProgress){
     onProgress('Comprimido: '+compressionInfo.originalChars+' -> '+compressionInfo.compressedChars+' chars ('+compressionInfo.ratio+'). Bloques: '+compressionInfo.blocksSelected, 0.2);
   }
 
-  const prompt = `Eres un experto auditor de pliegos de condiciones en contratacion publica colombiana (SECOP II).
-Analiza el siguiente pliego (o estudios previos) y extrae los REQUISITOS EXACTAMENTE como aparecen en el documento.
-Si un campo no esta en el documento, devuelve null o un array vacio. NO inventes informacion.
+  const prompt = `Eres un experto auditor de procesos de contratacion publica colombiana (SECOP II).
+Analiza los siguientes DOCUMENTOS DEL PROCESO (puede incluir varios concatenados: pliego de condiciones, estudios previos, anexos tecnicos, presupuesto oficial, matriz de riesgos, analisis del sector) y extrae los REQUISITOS EXACTAMENTE como aparecen.
 
-DOCUMENTO:
+Cuando el contexto incluye varios documentos, cada uno viene marcado con un encabezado del tipo "========== [TIPO] nombre.pdf ==========". Considera la informacion de TODOS y cita en "contexto" el tipo del documento del cual extrajiste el dato.
+
+Reglas:
+- Si un campo no aparece en NINGUN documento del contexto, devuelve null o un array vacio. NO inventes.
+- Si hay datos en varios documentos (ej. presupuesto en estudios previos y en pliego), prioriza el del pliego de condiciones por ser el documento contractualmente vinculante.
+- Los estudios previos suelen tener mejor detalle de presupuesto oficial, analisis del sector y justificacion tecnica.
+- Los anexos tecnicos / documentos tecnicos contienen especificaciones, cantidades y APUs.
+- La matriz de riesgos lista los riesgos contractuales tipificados.
+
+DOCUMENTOS DEL PROCESO:
 """
 ${text}
 """
@@ -2297,7 +2305,7 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
       response = await callAi({
         model: m.id,
         messages: [
-          {role: 'system', content: 'Eres un experto auditor de pliegos de contratacion publica colombiana SECOP II. Respondes UNICAMENTE con JSON valido, sin markdown, sin texto adicional.'},
+          {role: 'system', content: 'Eres un experto auditor de procesos SECOP II en contratacion publica colombiana. Analizas pliegos, estudios previos, anexos tecnicos, presupuestos y matrices de riesgo. Respondes UNICAMENTE con JSON valido, sin markdown, sin texto adicional.'},
           {role: 'user', content: prompt}
         ],
         temperature: 0.1,
@@ -3161,17 +3169,20 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
         const parts = cleanUrl.split('/');
         name = decodeURIComponent(parts[parts.length-1] || 'documento');
       }catch(e){ name = 'documento'; }
-      // Clasificar
+      // Clasificar (orden importa: mas especifico primero)
       const lower = (name+' '+u).toLowerCase();
       let tipo = 'OTRO';
-      if(/pliego|condici/.test(lower)) tipo = 'PLIEGO';
+      if(/adenda|adicion/.test(lower)) tipo = 'ADENDA';
+      else if(/estudios?\s*previos?|estudio\s*previo/.test(lower)) tipo = 'ESTUDIOS PREVIOS';
+      else if(/an[aá]lisis\s*(del)?\s*sector|estudio\s*del?\s*sector/.test(lower)) tipo = 'ANALISIS SECTOR';
+      else if(/matriz|riesgo/.test(lower)) tipo = 'MATRIZ RIESGOS';
+      else if(/anexo\s*t[eé]cnic|documento\s*t[eé]cnic|especificaci[oó]n|fichas?\s*t[eé]cnic/.test(lower)) tipo = 'ANEXO TECNICO';
+      else if(/presupuesto|apu|cantidades|item|valor\s*oficial/.test(lower)) tipo = 'PRESUPUESTO';
+      else if(/pliego|condici|t[eé]rminos?\s*de\s*referencia|tdr/.test(lower)) tipo = 'PLIEGO';
       else if(/anexo/.test(lower)) tipo = 'ANEXO';
-      else if(/adenda/.test(lower)) tipo = 'ADENDA';
-      else if(/estudios?\s*previos?/.test(lower)) tipo = 'ESTUDIOS PREVIOS';
       else if(/respuesta|observac/.test(lower)) tipo = 'OBSERVACIONES';
       else if(/formulario|formato/.test(lower)) tipo = 'FORMATO';
-      else if(/cronograma/.test(lower)) tipo = 'CRONOGRAMA';
-      else if(/matriz|riesgo/.test(lower)) tipo = 'MATRIZ RIESGOS';
+      else if(/cronograma|programaci[oó]n/.test(lower)) tipo = 'CRONOGRAMA';
       allDocs.push({nombre: name, url: u, source:'SECOP', tipo});
     });
 
@@ -3186,17 +3197,38 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
       return;
     }
 
-    // Ordenar: pliego primero, anexos, adendas, etc.
-    const order = {'PLIEGO':1,'ANEXO':2,'ADENDA':3,'ESTUDIOS PREVIOS':4,'CRONOGRAMA':5,'MATRIZ RIESGOS':6,'FORMATO':7,'OBSERVACIONES':8,'OTRO':9};
-    allDocs.sort((a,b)=> (order[a.tipo]||9) - (order[b.tipo]||9));
+    // Ordenar: pliego primero, estudios previos, anexos tecnicos, presupuesto, etc.
+    const order = {'PLIEGO':1,'ESTUDIOS PREVIOS':2,'ANEXO TECNICO':3,'PRESUPUESTO':4,'MATRIZ RIESGOS':5,'ANALISIS SECTOR':6,'ANEXO':7,'ADENDA':8,'CRONOGRAMA':9,'FORMATO':10,'OBSERVACIONES':11,'OTRO':12};
+    allDocs.sort((a,b)=> (order[a.tipo]||99) - (order[b.tipo]||99));
+
+    // Identificar indices relevantes para analisis IA combinado
+    const tiposRelevantes = ['PLIEGO','ESTUDIOS PREVIOS','ANEXO TECNICO','PRESUPUESTO','MATRIZ RIESGOS','ANALISIS SECTOR'];
+    const idxsRelevantes = allDocs.map((d,i)=> tiposRelevantes.includes(d.tipo) ? i : -1).filter(i=>i>=0);
+    const colorTipo = (t)=>{
+      if(t==='PLIEGO') return '#16a34a';
+      if(t==='ESTUDIOS PREVIOS') return '#7c3aed';
+      if(t==='ANEXO TECNICO') return '#0891b2';
+      if(t==='PRESUPUESTO') return '#d97706';
+      if(t==='MATRIZ RIESGOS') return '#dc2626';
+      if(t==='ANALISIS SECTOR') return '#0369a1';
+      return '#1e3a5f';
+    };
 
     // Render
-    result.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+
-      allDocs.length+' documento(s) detectado(s). Pulsa <b>Descargar</b> para guardar el PDF o <b>Analizar</b> para extraer requisitos directamente.</div>'+
+    const headerAnaliza = idxsRelevantes.length>1
+      ? '<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">'+
+        '<button class="btn-success" style="padding:9px 14px;font-size:12px;font-weight:700" onclick="analyzeAllRelevantDocs()" title="Descarga y procesa pliego + estudios previos + anexos tecnicos + presupuesto y los combina para el analisis IA">Analizar TODOS los relevantes ('+idxsRelevantes.length+')</button>'+
+        '<span style="font-size:10.5px;color:var(--muted);flex:1;min-width:180px">Combina pliego, estudios previos, anexos tecnicos, presupuesto y matriz de riesgos en un solo contexto IA.</span>'+
+        '</div>'
+      : '';
+
+    result.innerHTML = headerAnaliza +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+
+      allDocs.length+' documento(s) detectado(s). Pulsa <b>Descargar</b> para guardar el PDF o <b>Analizar</b> para agregarlo al contexto IA del proceso (acumulativo, no sobrescribe).</div>'+
       '<ul class="doc-list">' +
       allDocs.map((d,i)=>{
         const safeName = d.nombre.length > 60 ? d.nombre.substring(0,57)+'...' : d.nombre;
-        const tipoBadge = '<span class="tag" style="background:'+(d.tipo==='PLIEGO'?'#16a34a':'#1e3a5f')+';color:#fff">'+esc(d.tipo)+'</span>';
+        const tipoBadge = '<span class="tag" style="background:'+colorTipo(d.tipo)+';color:#fff">'+esc(d.tipo)+'</span>';
         return '<li>'+
           '<div style="flex:1;min-width:0">'+
             '<div style="font-weight:600;font-size:12px;color:var(--txt);word-break:break-all" title="'+esc(d.nombre)+'">'+esc(safeName)+'</div>'+
@@ -3204,7 +3236,7 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
           '</div>'+
           '<div style="display:flex;gap:4px;flex-shrink:0">'+
             '<button class="btn-mini-det" onclick="downloadDocDirect('+i+', false)" title="Descargar PDF a tu PC">Descargar</button>'+
-            '<button class="btn-mini-det" style="background:#15803d;border-color:#22c55e" onclick="downloadDocDirect('+i+', true)" title="Descargar y analizar requisitos">Analizar</button>'+
+            '<button class="btn-mini-det" style="background:#15803d;border-color:#22c55e" onclick="downloadDocDirect('+i+', true)" title="Procesar y agregar al contexto IA (acumulativo)">Analizar</button>'+
           '</div>'+
         '</li>';
       }).join('') + '</ul>';
@@ -3278,9 +3310,16 @@ async function downloadDocDirect(idx, alsoAnalyze){
       if(bar){ bar.style.width = '100%'; bar.style.background = 'var(--ok)'; }
       if(txt) txt.innerHTML = 'Listo. '+text.length+' chars '+(usedOcr?'(OCR)':'(texto nativo)');
       window._lastPdfText = text;
-      savePliegoCache(idProc, { requirements: req, size: blob.size, name: doc.nombre, ts: Date.now(), auto: true, ocr: usedOcr, rawText: text });
+      // Acumular en cache (no sobrescribir): si ya hay docs cargados, concatenar
+      const prev = loadPliegoCache(idProc);
+      const docHeader = '\n\n========== ['+doc.tipo+'] '+doc.nombre+' ==========\n\n';
+      const combinedText = (prev && prev.rawText ? prev.rawText : '') + docHeader + text;
+      const docsList = (prev && prev.docs) ? prev.docs.slice() : [];
+      docsList.push({tipo: doc.tipo, nombre: doc.nombre, chars: text.length, ocr: usedOcr});
+      savePliegoCache(idProc, { requirements: req, size: blob.size, name: docsList.map(d=>d.tipo).join(' + '), ts: Date.now(), auto: true, ocr: usedOcr, rawText: combinedText, docs: docsList });
       renderPdfResults(req, blob.size, usedOcr ? 'ocr' : 'pdf');
       setTimeout(()=> { if(prog) prog.style.display = 'none'; }, 2000);
+      showToast('Documento agregado al contexto IA ('+docsList.length+' doc'+(docsList.length>1?'s':'')+', '+(combinedText.length/1000).toFixed(0)+'k chars).', 'success');
     }
   }catch(e){
     status.innerHTML = '<span style="color:var(--err)">✗</span> Error: '+esc(e.message||String(e))+
@@ -3290,6 +3329,101 @@ async function downloadDocDirect(idx, alsoAnalyze){
     setProcessing(false);
   }
 }
+
+// Analizar TODOS los documentos relevantes y combinarlos en un solo contexto IA
+async function analyzeAllRelevantDocs(){
+  const docs = window._currentDocs || [];
+  const idProc = window._currentIdProc || '_';
+  if(!docs.length){ alert('Primero pulsa "Buscar pliegos" para listar los documentos del proceso.'); return; }
+
+  const tiposRelevantes = ['PLIEGO','ESTUDIOS PREVIOS','ANEXO TECNICO','PRESUPUESTO','MATRIZ RIESGOS','ANALISIS SECTOR'];
+  // Tomar el primer doc de cada tipo relevante (evitar duplicados que serian de la misma categoria)
+  const seleccionados = [];
+  const tiposVistos = new Set();
+  docs.forEach((d,i)=>{
+    if(tiposRelevantes.includes(d.tipo) && !tiposVistos.has(d.tipo)){
+      tiposVistos.add(d.tipo);
+      seleccionados.push({...d, idx:i});
+    }
+  });
+
+  if(!seleccionados.length){ alert('No hay documentos clasificados como relevantes (pliego, estudios previos, anexos tecnicos, presupuesto, matriz de riesgos).'); return; }
+
+  if(!confirm('Se descargaran y procesaran '+seleccionados.length+' documento(s):\n\n'+seleccionados.map(s=>'- ['+s.tipo+'] '+s.nombre).join('\n')+'\n\nEsto puede tardar varios minutos. Continuar?')) return;
+
+  setProcessing(true, 'analyze');
+
+  // Limpiar cache previo del proceso para empezar de cero
+  try{ localStorage.removeItem('pliego_' + idProc); }catch(e){}
+
+  const result = document.getElementById('docsResult');
+  const status = document.createElement('div');
+  status.style.cssText = 'margin-top:8px;padding:10px;background:#0f172a;border:1px solid var(--acc);border-radius:6px;font-size:12px';
+  result.appendChild(status);
+
+  let combinedText = '';
+  const docsProcesados = [];
+  let totalSize = 0;
+  let okCount = 0, errCount = 0;
+
+  for(let k=0; k<seleccionados.length; k++){
+    const s = seleccionados[k];
+    status.innerHTML = '<span class="spinner"></span>['+(k+1)+'/'+seleccionados.length+'] Descargando ['+s.tipo+'] '+esc(s.nombre)+'...';
+    try{
+      const setMsg = (m)=>{ status.innerHTML = '<span class="spinner"></span>['+(k+1)+'/'+seleccionados.length+'] '+esc(m); };
+      const blob = await corsGetBlob(s.url, setMsg);
+      totalSize += blob.size;
+      status.innerHTML = '<span class="spinner"></span>['+(k+1)+'/'+seleccionados.length+'] Extrayendo texto de ['+s.tipo+']...';
+      const buf = (await blob.arrayBuffer()).slice(0);
+      let text = await extractTextFromPdf(buf);
+      let usedOcr = false;
+      if(text.trim().length < OCR_TEXT_THRESHOLD){
+        usedOcr = true;
+        status.innerHTML = '<span class="spinner"></span>['+(k+1)+'/'+seleccionados.length+'] OCR (espanol) sobre ['+s.tipo+']...';
+        text = await ocrPdf(buf, (msg)=>{ status.innerHTML = '<span class="spinner"></span>['+(k+1)+'/'+seleccionados.length+'] '+esc(msg); });
+      }
+      combinedText += '\n\n========== ['+s.tipo+'] '+s.nombre+' ==========\n\n' + text;
+      docsProcesados.push({tipo: s.tipo, nombre: s.nombre, chars: text.length, ocr: usedOcr});
+      okCount++;
+    }catch(e){
+      errCount++;
+      combinedText += '\n\n========== ['+s.tipo+'] '+s.nombre+' (ERROR DESCARGA) ==========\n\n';
+      console.warn('Error en', s.tipo, s.nombre, e);
+    }
+  }
+
+  if(!combinedText.trim()){
+    status.innerHTML = '<span style="color:var(--err)">✗</span> No fue posible descargar ninguno de los documentos. SECOP II puede estar protegiendo los archivos con sesion. Descarga manual y arrastra al panel de analisis.';
+    status.style.borderColor = 'var(--err)';
+    setProcessing(false);
+    return;
+  }
+
+  status.innerHTML = '<span class="spinner"></span>Extrayendo requisitos del contexto combinado ('+(combinedText.length/1000).toFixed(0)+'k chars)...';
+  const req = extractRequirementsFromText(combinedText);
+
+  savePliegoCache(idProc, {
+    requirements: req,
+    size: totalSize,
+    name: docsProcesados.map(d=>d.tipo).join(' + '),
+    ts: Date.now(),
+    auto: true,
+    multi: true,
+    rawText: combinedText,
+    docs: docsProcesados
+  });
+
+  window._lastPdfText = combinedText;
+  switchTab('requisitos');
+  renderPdfResults(req, totalSize, 'pdf');
+
+  status.innerHTML = '<span style="color:var(--ok)">✓</span> Contexto combinado listo: '+okCount+' OK / '+errCount+' fallidos. '+(combinedText.length/1000).toFixed(0)+'k chars. La IA ahora analiza pliego + estudios previos + anexos tecnicos juntos.';
+  status.style.borderColor = 'var(--ok)';
+  showToast('Analisis combinado listo. La IA tiene contexto de '+okCount+' documento(s).', 'success');
+
+  setProcessing(false);
+}
+window.analyzeAllRelevantDocs = analyzeAllRelevantDocs;
 
 function renderNotas(r){
   const idProc = String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso);
@@ -4060,7 +4194,7 @@ function renderChat(r){
   cont.innerHTML = `
     <div class="chat-container">
       <div style="margin-bottom:10px;font-size:11px;color:var(--muted);line-height:1.5">
-        ${hasPdf ? '<b style="color:var(--ok-bright)">PDF del pliego cargado.</b> Pregunta lo que quieras y la IA respondera con base en el documento.' : '<b style="color:var(--warn)">Sin PDF cargado.</b> Las respuestas se basan solo en metadata de SECOP. Carga el PDF (pestaña Analisis) para mejores respuestas.'}
+        ${hasPdf ? '<b style="color:var(--ok-bright)">Documentos del proceso cargados</b>'+(cached && cached.docs && cached.docs.length>1 ? ' ('+cached.docs.length+' docs: '+cached.docs.map(d=>d.tipo).join(', ')+')' : '')+'. Pregunta lo que quieras y la IA respondera con base en ellos.' : '<b style="color:var(--warn)">Sin documentos cargados.</b> Las respuestas se basan solo en metadata de SECOP. Carga los PDFs (pestaña Documentos &gt; Analizar TODOS los relevantes) para mejores respuestas.'}
       </div>
       <div class="chat-suggestions" id="chatSuggs"></div>
       <div class="chat-messages" id="chatMessages"></div>
@@ -4138,7 +4272,7 @@ async function sendChatMessage(){
   }
 
   const messages = [
-    {role:'system', content: 'Eres un asistente experto en contratacion publica colombiana SECOP II. Responde preguntas del usuario citando el documento. Si la informacion no esta en el documento, dilo claramente. Respuestas concisas, en espanol, maximo 200 palabras.'},
+    {role:'system', content: 'Eres un asistente experto en contratacion publica colombiana SECOP II. El contexto puede contener varios documentos del proceso (pliego, estudios previos, anexos tecnicos, presupuesto, matriz de riesgos), cada uno marcado con un encabezado "========== [TIPO] nombre ==========". Responde preguntas del usuario citando el TIPO de documento del cual sacas el dato. Si la informacion no esta en ningun documento del contexto, dilo claramente. Respuestas concisas, en espanol, maximo 200 palabras.'},
     {role:'system', content: context},
     ...window.__chatHistory[idProc].slice(-10) // ultimo 10 mensajes
   ];
