@@ -3155,17 +3155,27 @@ function classifyDocType(name, url){
   return 'OTRO';
 }
 
-// Segunda fuente: datasets datos.gov.co (dmgg-8hin = 2025+, 3skv-9na7 = 2023)
-// El campo `proceso` en esos datasets coincide con `id_del_proceso` (formato CO1.BDOS.XXXXX)
-async function fetchDocsFromOpenData(idProc){
-  if(!idProc) return [];
+// Segunda fuente: datasets datos.gov.co
+//   dmgg-8hin = SECOP II - Archivos Descarga Desde 2025
+//   3skv-9na7 = SECOP II - Archivos Descarga Historico 2023
+// El campo `proceso` en esos datasets coincide con id_del_portafolio (formato CO1.BDOS.XXXXX),
+// NO con id_del_proceso (que puede ser CO1.REQ.XXXXX). Por eso probamos ambos.
+async function fetchDocsFromOpenData(processIds){
+  // processIds: array de posibles ids del proceso (id_del_portafolio, id_del_proceso, etc.)
+  const ids = (Array.isArray(processIds) ? processIds : [processIds]).filter(x => x && typeof x === 'string');
+  if(!ids.length) return [];
   const DATASETS = ['dmgg-8hin', '3skv-9na7']; // 2025+ y 2023
   const docs = [];
-  const queries = DATASETS.map(ds => {
-    const u = 'https://www.datos.gov.co/resource/'+ds+'.json?proceso='+encodeURIComponent(idProc)+'&$limit=200';
-    return fetch(u, {cache:'no-store'})
-      .then(r => r.ok ? r.json() : [])
-      .catch(() => []);
+  // Producto cartesiano: cada dataset x cada id candidato
+  const queries = [];
+  DATASETS.forEach(ds => {
+    ids.forEach(id => {
+      const u = 'https://www.datos.gov.co/resource/'+ds+'.json?proceso='+encodeURIComponent(id)+'&$limit=200';
+      queries.push(fetch(u, {cache:'no-store'})
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => [])
+      );
+    });
   });
   const results = await Promise.all(queries);
   results.forEach(arr => {
@@ -3181,7 +3191,8 @@ async function fetchDocsFromOpenData(idProc){
         source: 'OpenData',
         tipo: classifyDocType(name, ''),
         fecha: row.fecha_carga ? row.fecha_carga.substring(0,10) : '',
-        size: row.tamanno_archivo ? parseInt(row.tamanno_archivo) : 0
+        size: row.tamanno_archivo ? parseInt(row.tamanno_archivo) : 0,
+        extension: row.extensi_n || ''
       });
     });
   });
@@ -3192,8 +3203,15 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
   setProcessing(true, 'discover');
   const result = document.getElementById('docsResult');
   const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
-  // id real del proceso para datos.gov.co (CO1.BDOS.XXXXX)
-  const idDelProceso = r.id_del_proceso || r.id_del_portafolio || idProc || '';
+  // ids candidatos del proceso para datos.gov.co. El campo `proceso` en dmgg-8hin
+  // suele ser id_del_portafolio (CO1.BDOS.*), pero probamos todos los conocidos.
+  const idCandidates = [
+    r.id_del_portafolio,
+    r.id_del_proceso,
+    r.id_del_portafolio_de_compra,
+    r.id_del_procedimiento,
+    idProc
+  ].filter(Boolean);
 
   result.innerHTML = '<div style="color:var(--muted);font-size:12px"><span class="spinner"></span>Consultando datos.gov.co + rastreando expediente SECOP II...</div>';
 
@@ -3201,7 +3219,7 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
 
   // FUENTE 1 (siempre): datos.gov.co (rapido, confiable, sin proxy CORS)
   try{
-    const openDataDocs = await fetchDocsFromOpenData(idDelProceso);
+    const openDataDocs = await fetchDocsFromOpenData(idCandidates);
     allDocs.push(...openDataDocs);
   }catch(e){ console.warn('OpenData fallo:', e); }
 
@@ -3289,12 +3307,15 @@ async function discoverAndListDocs(r, idProc, inlineDocs){
       allDocs.map((d,i)=>{
         const safeName = d.nombre.length > 60 ? d.nombre.substring(0,57)+'...' : d.nombre;
         const tipoBadge = '<span class="tag" style="background:'+colorTipo(d.tipo)+';color:#fff">'+esc(d.tipo)+'</span>';
+        const extBadge = d.extension ? '<span style="margin-left:6px;padding:1px 6px;background:rgba(148,163,184,0.18);border-radius:3px;font-size:9.5px;text-transform:uppercase;font-weight:700">'+esc(d.extension)+'</span>' : '';
+        const sizeBadge = d.size ? '<span style="margin-left:6px;font-size:10px;color:var(--muted)">'+(d.size>1048576 ? (d.size/1048576).toFixed(1)+' MB' : (d.size/1024).toFixed(0)+' KB')+'</span>' : '';
+        const fechaBadge = d.fecha ? '<span style="margin-left:6px;font-size:10px;color:var(--muted)">'+esc(d.fecha)+'</span>' : '';
         return '<li>'+
           '<div style="flex:1;min-width:0">'+
             '<div style="font-weight:600;font-size:12px;word-break:break-all">'+
               '<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--acc-bright);text-decoration:none" title="Abrir/descargar directamente desde SECOP II ('+esc(d.nombre)+')" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">'+esc(safeName)+' &#8599;</a>'+
             '</div>'+
-            '<div class="meta">'+tipoBadge+' <span style="margin-left:6px">'+esc(d.source)+'</span> <a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="margin-left:8px;color:var(--muted);font-size:10px">Enlace directo</a></div>'+
+            '<div class="meta">'+tipoBadge+extBadge+sizeBadge+fechaBadge+' <span style="margin-left:8px;font-size:10px;color:var(--muted)">'+esc(d.source)+'</span> <a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="margin-left:8px;color:var(--muted);font-size:10px">Descarga directa &#8599;</a></div>'+
           '</div>'+
           '<div style="display:flex;gap:4px;flex-shrink:0">'+
             '<button class="btn-mini-det" onclick="downloadDocDirect('+i+', false)" title="Descargar PDF a tu PC via proxy CORS">Descargar</button>'+
