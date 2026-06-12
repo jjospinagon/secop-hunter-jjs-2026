@@ -1095,6 +1095,12 @@
         <div><label>Cierre hasta</label><input type="date" name="fecha_cierre_hasta" /></div>
       </div>
       <div class="row full"><div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;text-transform:none;font-size:12px;color:var(--txt);font-weight:600;letter-spacing:0">
+          <input type="checkbox" name="solo_abiertos" id="solo_abiertos" style="margin:0" />
+          <span>Solo procesos abiertos hoy (recibiendo ofertas — descarta procesos viejos sin cerrar)</span>
+        </label>
+      </div></div>
+      <div class="row full"><div>
         <label>Orden</label>
         <select name="orden">
           <option value="fecha_de_publicacion_del DESC">Fecha publicacion (mas reciente)</option>
@@ -1361,6 +1367,11 @@ function buildQuery(p, off, limit){
   if(p.fecha_pub_hasta) where.push("fecha_de_publicacion_del <= '"+p.fecha_pub_hasta+"T23:59:59.999'");
   if(p.fecha_cierre_desde) where.push("fecha_de_recepcion_de >= '"+p.fecha_cierre_desde+"T00:00:00.000'");
   if(p.fecha_cierre_hasta) where.push("fecha_de_recepcion_de <= '"+p.fecha_cierre_hasta+"T23:59:59.999'");
+  // Toggle: solo procesos abiertos hoy (cierre futuro)
+  if(p.solo_abiertos){
+    const hoy = new Date().toISOString().substring(0,10);
+    where.push("fecha_de_recepcion_de >= '"+hoy+"T00:00:00.000'");
+  }
 
   const params = new URLSearchParams();
   if(where.length) params.set('$where', where.join(' AND '));
@@ -1411,6 +1422,8 @@ async function runSearch(off){
     console.error('[SECOP] Error en getCriteria/buildQuery:', e);
     return;
   }
+  // Limpiar mensaje de error previo y mostrar info
+  clearStatus();
   setStatus('info', 'Consultando datos.gov.co... <a href="'+url+'" target="_blank" style="color:var(--acc);font-size:10px">(ver query)</a>', true);
   try{
     const r = await fetch(url, { headers:{'Accept':'application/json'} });
@@ -1440,7 +1453,11 @@ function render(rows, off){
   }
   tbody.innerHTML = rows.map((r,i)=>{
     const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+    const idProc = String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso || '');
+    const fav = isFavorite(idProc);
+    const cmpChecked = (window.__compareSet && window.__compareSet.has(idProc)) ? 'checked' : '';
     return '<tr>'+
+      '<td style="text-align:center"><span class="fav-star '+(fav?'active':'')+'" data-id="'+esc(idProc)+'" onclick="toggleFav(this)" title="Marcar como favorito">'+(fav?'★':'☆')+'</span></td>'+
       '<td>'+(off+i+1)+'</td>'+
       '<td>'+esc(r.referencia_del_proceso || r.proceso_de_compra || '')+'</td>'+
       '<td class="truncate" title="'+esc(r.entidad)+'">'+esc(r.entidad)+'</td>'+
@@ -1454,6 +1471,7 @@ function render(rows, off){
       '<td class="money">'+fmtMoney(r.precio_base)+'</td>'+
       '<td>'+fmtDate(r.fecha_de_publicacion_del)+'</td>'+
       '<td>'+fmtDate(r.fecha_de_recepcion_de)+'</td>'+
+      '<td style="text-align:center"><input type="checkbox" '+cmpChecked+' onclick="toggleCompare(\''+idProc+'\', '+(off+i)+')" title="Agregar al comparador" /></td>'+
       '<td class="url">'+(url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir</a>' : '')+'<button class="btn-mini-det" onclick="showDetails('+(off+i)+')">Detalles</button><button class="btn-mini-share" onclick="shareProcess('+(off+i)+')" title="Enviar por correo">&#x2709;</button></td>'+
     '</tr>';
   }).join('');
@@ -1871,6 +1889,25 @@ if(_mdTabs){
 } else { console.warn('[SECOP] mdTabs no encontrado (modal no presente)'); }
 
 function renderResumen(r){
+  // Calcular oferentes/participantes (varios campos posibles segun version del dataset)
+  const num = (v)=> { const n = parseInt(v); return isNaN(n) ? null : n; };
+  const presentados = num(r.respuestas_al_procedimiento);
+  const manifestaron = num(r.proveedores_que_manifestaron);
+  const externos = num(r.respuestas_externas);
+  const invitados = num(r.proveedores_invitados);
+  const conInvit = num(r.proveedores_con_invitacion);
+  const unicos = num(r.proveedores_unicos_con);
+  const conteoOfertas = num(r.conteo_de_respuestas_a_ofertas);
+  const visualiz = num(r.visualizaciones_del);
+
+  // Construir string de participacion
+  const partsArr = [];
+  if(presentados !== null) partsArr.push('<b>'+presentados+'</b> ofertas presentadas');
+  if(unicos !== null && unicos !== presentados) partsArr.push('<b>'+unicos+'</b> proveedores unicos');
+  if(manifestaron !== null) partsArr.push('<b>'+manifestaron+'</b> manifestaciones de interes');
+  if(invitados !== null && invitados > 0) partsArr.push('<b>'+invitados+'</b> invitados');
+  const participacion = partsArr.length ? partsArr.join(' &middot; ') : null;
+
   const pairs = [
     ['Numero de proceso', r.referencia_del_proceso || r.proceso_de_compra],
     ['Entidad', r.entidad],
@@ -1885,13 +1922,22 @@ function renderResumen(r){
     ['Fecha de publicacion', fmtDate(r.fecha_de_publicacion_del)],
     ['Fecha apertura ofertas', fmtDate(r.fecha_de_apertura_de_respuesta) || fmtDate(r.fecha_de_apertura_efectiva)],
     ['Fecha cierre ofertas', fmtDate(r.fecha_de_recepcion_de)],
+    ['Participacion / Ofertantes', participacion],
+    ['Ofertas presentadas', presentados !== null ? presentados : null],
+    ['Proveedores que manifestaron interes', manifestaron],
+    ['Proveedores unicos con oferta', unicos],
+    ['Visualizaciones del proceso', visualiz],
     ['Adjudicado', r.adjudicado],
     ['Valor de adjudicacion', fmtMoney(r.valor_total_adjudicacion)],
     ['Categorias UNSPSC', r.categorias],
   ];
+  // Render: filter nulls, permitir HTML para participacion concatenada
   document.getElementById('mdResumen').innerHTML =
     '<dl class="kv-grid">' +
-    pairs.filter(p => p[1]).map(p => '<dt>'+esc(p[0])+'</dt><dd>'+esc(p[1])+'</dd>').join('') +
+    pairs.filter(p => p[1] !== null && p[1] !== undefined && p[1] !== '').map(p => {
+      const isParticipacion = p[0] === 'Participacion / Ofertantes';
+      return '<dt>'+esc(p[0])+'</dt><dd>'+(isParticipacion ? p[1] : esc(p[1]))+'</dd>';
+    }).join('') +
     '</dl>';
 }
 
