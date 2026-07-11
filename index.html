@@ -44,9 +44,6 @@
     --radius:10px;
     --radius-lg:14px;
     --radius-sm:6px;
-    --inline-box:#0f172a;
-    --inline-box-soft:rgba(15,23,42,0.4);
-    --inline-box-soft2:rgba(15,23,42,0.5);
   }
   /* ===== TEMA CLARO ===== */
   html[data-theme="light"]{
@@ -74,9 +71,6 @@
     --shadow-sm:0 2px 4px rgba(15,23,42,0.06);
     --shadow:0 4px 16px rgba(15,23,42,0.1);
     --shadow-lg:0 12px 40px rgba(15,23,42,0.15);
-    --inline-box:#f1f5f9;
-    --inline-box-soft:rgba(241,245,249,0.85);
-    --inline-box-soft2:rgba(241,245,249,0.92);
   }
   html[data-theme="light"] body::before{
     background:radial-gradient(circle at 20% 0%,rgba(14,165,233,0.06) 0%,transparent 50%),radial-gradient(circle at 80% 100%,rgba(16,185,129,0.05) 0%,transparent 50%);
@@ -1013,103 +1007,6 @@
       height:10px;
     }
   }
-
-  /* v4: correcciones integrales de tema claro (modo dia) */
-  html[data-theme="light"] .btn-secondary{background:rgba(255,255,255,.9);color:#334155;border-color:rgba(148,163,184,.55)}
-  html[data-theme="light"] .btn-secondary:hover:not(:disabled){background:#f1f5f9;border-color:#94a3b8;color:#0f172a}
-
-  html[data-theme="light"] .nl-search{background:linear-gradient(135deg,rgba(168,85,247,.10),rgba(139,92,246,.04));border-color:rgba(139,92,246,.45)}
-  html[data-theme="light"] .nl-search .nl-title{color:#6d28d9}
-  html[data-theme="light"] .nl-search input{background:rgba(255,255,255,.92);border-color:rgba(139,92,246,.35);color:#1e293b}
-  html[data-theme="light"] .nl-search .hint{color:#64748b}
-  html[data-theme="light"] .calendar-wrap{background:rgba(255,255,255,.65)}
-  html[data-theme="light"] .cal-cell{background:#ffffff;border-color:rgba(203,213,225,.9)}
-  html[data-theme="light"] .cal-cell .d{color:#64748b}
-  html[data-theme="light"] .cal-proc{color:#0f172a;background:linear-gradient(90deg,rgba(2,132,199,.12),rgba(2,132,199,.04))}
-  html[data-theme="light"] .cal-proc.urgent{background:linear-gradient(90deg,rgba(220,38,38,.12),rgba(220,38,38,.04))}
-  html[data-theme="light"] .kanban-wrap{background:rgba(255,255,255,.65)}
-  html[data-theme="light"] .kanban-col{background:rgba(241,245,249,.85)}
-  html[data-theme="light"] .map-wrap{background:rgba(255,255,255,.65)}
-  html[data-theme="light"] .map-legend{background:rgba(255,255,255,.92);color:#1e293b}
-  html[data-theme="light"] .map-stats .stat{background:rgba(255,255,255,.9);color:#334155}
-  html[data-theme="light"] .hist-stat{background:rgba(255,255,255,.9)}
-  html[data-theme="light"] .alert-item{background:linear-gradient(180deg,#ffffff,#f8fafc)}
-  html[data-theme="light"] .empty-alerts{background:rgba(255,255,255,.65)}
-  html[data-theme="light"] .notes-form textarea{background:#ffffff;color:#1e293b}
-  html[data-theme="light"] .chat-messages{background:rgba(241,245,249,.7)}
-  html[data-theme="light"] .chat-msg.assistant{background:#ffffff;border-color:rgba(203,213,225,.9);color:#1e293b}
-  html[data-theme="light"] .chat-msg.assistant b{color:#0369a1}
-  html[data-theme="light"] .chat-msg.system{color:#6d28d9;background:rgba(168,85,247,.08)}
-  html[data-theme="light"] .chat-suggestions button{background:rgba(2,132,199,.08);color:#0369a1}
-  html[data-theme="light"] .compare-tbl td:first-child{background:rgba(241,245,249,.9);color:#0369a1}
-  html[data-theme="light"] details{background:#ffffff}
-  html[data-theme="light"] .legend code{background:#e2e8f0;color:#0369a1}
-  html[data-theme="light"] .progress{background:#e2e8f0}
-  html[data-theme="light"] .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(139,92,246,.03));color:#5b21b6}
-  html[data-theme="light"] .setup-banner b{color:#4c1d95}
-  html[data-theme="light"] .match-list .ok{color:#047857}
-  html[data-theme="light"] .match-list .ko{color:#b91c1c}
-  html[data-theme="light"] td.money{color:#15803d}
-  html[data-theme="light"] .kanban-card .kc-val{color:#4d7c0f}
-  html[data-theme="light"] .req-table .val-num{color:#4d7c0f}
-  html[data-theme="light"] .map-popup .val{color:#4d7c0f}
-  /* v4: legibilidad tema claro para switcher y contador */
-  html[data-theme="light"] .view-switcher{background:rgba(255,255,255,.85);border-color:rgba(203,213,225,.9)}
-  html[data-theme="light"] .view-switcher button{color:#64748b}
-  html[data-theme="light"] .view-switcher button.active{color:#fff}
-  html[data-theme="light"] .toolbar .count{background:rgba(255,255,255,.8);color:#475569;border-color:rgba(203,213,225,.9)}
-  /* ============ v4 PREMIUM UPGRADE ============ */
-  @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-  @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-  @keyframes rowIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  header .logo{background:linear-gradient(135deg,#38bdf8,#0ea5e9,#6366f1,#38bdf8);background-size:300% 300%;animation:gradShift 7s ease infinite}
-  .btn-primary{background:linear-gradient(135deg,#0ea5e9,#0284c7,#2563eb,#0ea5e9);background-size:250% 250%;animation:gradShift 6s ease infinite}
-  /* KPI strip */
-  .kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;animation:fadeIn .35s ease-out}
-  .kpi-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(56,189,248,.10),rgba(15,23,42,.55));border:1px solid rgba(56,189,248,.35);border-radius:12px;padding:12px 14px;position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s}
-  .kpi-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--acc),transparent)}
-  .kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(14,165,233,.22)}
-  .kpi-card .kpi-ico{font-size:19px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(56,189,248,.12);border-radius:10px;flex-shrink:0}
-  .kpi-card .kpi-val{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:17px;color:var(--acc-bright);letter-spacing:-.02em;line-height:1.1;white-space:nowrap}
-  .kpi-card .kpi-lbl{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px}
-  .kpi-card.k-green{border-color:rgba(16,185,129,.4);background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(15,23,42,.55))}
-  .kpi-card.k-green .kpi-val{color:var(--ok-bright)}.kpi-card.k-green .kpi-ico{background:rgba(16,185,129,.12)}
-  .kpi-card.k-green::before{background:linear-gradient(90deg,transparent,var(--ok),transparent)}
-  .kpi-card.k-amber{border-color:rgba(245,158,11,.4);background:linear-gradient(135deg,rgba(245,158,11,.10),rgba(15,23,42,.55))}
-  .kpi-card.k-amber .kpi-val{color:#fbbf24}.kpi-card.k-amber .kpi-ico{background:rgba(245,158,11,.12)}
-  .kpi-card.k-amber::before{background:linear-gradient(90deg,transparent,var(--warn),transparent)}
-  .kpi-card.k-purple{border-color:rgba(168,85,247,.4);background:linear-gradient(135deg,rgba(168,85,247,.10),rgba(15,23,42,.55))}
-  .kpi-card.k-purple .kpi-val{color:#c4b5fd}.kpi-card.k-purple .kpi-ico{background:rgba(168,85,247,.12)}
-  .kpi-card.k-purple::before{background:linear-gradient(90deg,transparent,#a855f7,transparent)}
-  html[data-theme="light"] .kpi-card{background:linear-gradient(135deg,rgba(14,165,233,.07),rgba(255,255,255,.85))}
-  html[data-theme="light"] .kpi-card .kpi-val{color:#0369a1}
-  html[data-theme="light"] .kpi-card.k-green{background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(255,255,255,.85))}
-  html[data-theme="light"] .kpi-card.k-green .kpi-val{color:#047857}
-  html[data-theme="light"] .kpi-card.k-amber{background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(255,255,255,.85))}
-  html[data-theme="light"] .kpi-card.k-amber .kpi-val{color:#b45309}
-  html[data-theme="light"] .kpi-card.k-purple{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(255,255,255,.85))}
-  html[data-theme="light"] .kpi-card.k-purple .kpi-val{color:#7c3aed}
-  /* Chips de filtros activos */
-  .chips-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;animation:fadeIn .3s}
-  .chips-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-right:2px}
-  .chip{display:inline-flex;align-items:center;gap:6px;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.35);color:var(--acc-bright);padding:4px 11px;border-radius:999px;font-size:11px;font-weight:600;transition:all .15s}
-  .chip:hover{background:rgba(56,189,248,.2)}
-  .chip .chip-x{cursor:pointer;font-style:normal;font-weight:800;opacity:.65;padding:0 2px;transition:all .12s;line-height:1}
-  .chip .chip-x:hover{opacity:1;color:var(--err-bright);transform:scale(1.25)}
-  .chip-clear{cursor:pointer;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.35);color:var(--err-bright)}
-  .chip-clear:hover{background:rgba(239,68,68,.22)}
-  html[data-theme="light"] .chip{background:rgba(14,165,233,.1);color:#0369a1}
-  html[data-theme="light"] .chip-clear{background:rgba(220,38,38,.08);color:#b91c1c}
-  /* Skeleton loader */
-  .sk-row td{padding:11px 14px;border-bottom:1px solid rgba(51,65,85,.3)}
-  .sk-line{height:15px;border-radius:6px;background:linear-gradient(90deg,rgba(148,163,184,.08) 25%,rgba(148,163,184,.25) 50%,rgba(148,163,184,.08) 75%);background-size:400px 100%;animation:shimmer 1.15s linear infinite}
-  html[data-theme="light"] .sk-line{background:linear-gradient(90deg,rgba(100,116,139,.1) 25%,rgba(100,116,139,.28) 50%,rgba(100,116,139,.1) 75%);background-size:400px 100%}
-  /* Entrada escalonada de filas */
-  tbody tr{animation:rowIn .28s ease-out both}
-  tbody tr:nth-child(1){animation-delay:.02s}tbody tr:nth-child(2){animation-delay:.05s}tbody tr:nth-child(3){animation-delay:.08s}tbody tr:nth-child(4){animation-delay:.11s}tbody tr:nth-child(5){animation-delay:.14s}tbody tr:nth-child(6){animation-delay:.17s}tbody tr:nth-child(7){animation-delay:.2s}tbody tr:nth-child(8){animation-delay:.23s}tbody tr:nth-child(9){animation-delay:.26s}tbody tr:nth-child(10){animation-delay:.29s}
-  tbody tr:nth-child(n+11){animation-delay:.3s}
-  @media (prefers-reduced-motion:reduce){tbody tr,.sk-line,header .logo,.btn-primary{animation:none !important}}
-  @media (max-width:768px){.kpi-strip{grid-template-columns:1fr 1fr;gap:8px}.kpi-card{padding:10px 12px}.kpi-card .kpi-val{font-size:15px}}
 </style>
 </head>
 <body>
@@ -1141,7 +1038,7 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
     </button>
-    <span class="badge">v4.0 &middot; Motor optimizado &middot; Groq AI</span>
+    <span class="badge">v3.2 &middot; Powered by Groq AI</span>
   </div>
 </header>
 
@@ -1261,14 +1158,7 @@
         <button class="btn-success" id="btnAiSummaries" type="button" title="Generar resumenes con IA">IA Resumir</button>
       </div>
     </div>
-    <div class="kpi-strip" id="kpiStrip" style="display:none">
-  <div class="kpi-card"><div class="kpi-ico">&#128203;</div><div><div class="kpi-val" id="kpiCount">0</div><div class="kpi-lbl">Procesos</div></div></div>
-  <div class="kpi-card k-green"><div class="kpi-ico">&#128176;</div><div><div class="kpi-val" id="kpiValor">$0</div><div class="kpi-lbl">Valor total</div></div></div>
-  <div class="kpi-card k-amber"><div class="kpi-ico">&#9203;</div><div><div class="kpi-val" id="kpiCierra">0</div><div class="kpi-lbl">Cierran &le; 7 dias</div></div></div>
-  <div class="kpi-card k-purple"><div class="kpi-ico">&#127963;</div><div><div class="kpi-val" id="kpiEnt">0</div><div class="kpi-lbl">Entidades</div></div></div>
-</div>
-<div class="chips-bar" id="chipsBar" style="display:none"></div>
-<div class="table-wrap" id="tableView">
+    <div class="table-wrap" id="tableView">
       <table id="results">
         <thead>
           <tr>
@@ -1463,9 +1353,9 @@ function buildQuery(p, off, limit){
   }
   if(p.proceso) where.push("upper(referencia_del_proceso) like upper('%"+sq(p.proceso)+"%')");
   if(p.departamento && p.departamento.length){ const ins = p.departamento.map(d=>"upper('"+sq(d)+"')").join(','); where.push("upper(departamento_entidad) IN ("+ins+")"); }
-  if(p.ciudad) where.push("upper(ciudad_entidad) like '%"+__foldPat(p.ciudad)+"%'");
+  if(p.ciudad) where.push("upper(ciudad_entidad)=upper('"+sq(p.ciudad)+"')");
   // Helper: filtro IN para multi-select
-  const inFilter = (col, arr) => { if(!arr||!arr.length) return; const ins = arr.map(v=>"upper('"+sq(v)+"')").join(','); where.push("upper("+col+") IN ("+ins+")"); };
+  const inFilter = (col, arr) => { if(!arr||!arr.length) return; const ins = arr.map(v=>"'"+sq(v)+"'").join(','); where.push(col+" IN ("+ins+")"); };
   inFilter('modalidad_de_contratacion', p.modalidad);
   inFilter('estado_del_procedimiento', p.estado);
   inFilter('fase', p.fase);
@@ -1483,18 +1373,9 @@ function buildQuery(p, off, limit){
     where.push("fecha_de_recepcion_de >= '"+hoy+"T00:00:00.000'");
   }
 
-  // === v4: Palabra clave inteligente (insensible a tildes/mayusculas, multi-termino, multi-campo) ===
-  if(p.q && !p._broad && window.__foldPat){
-    var _terms = String(p.q).trim().split(/\s+/).filter(function(t){return t.length>1}).slice(0,6);
-    var _QF = ['descripci_n_del_procedimiento','nombre_del_procedimiento','entidad','referencia_del_proceso'];
-    _terms.forEach(function(t){
-      var pt = "'%"+__foldPat(t)+"%'";
-      where.push('('+_QF.map(function(f){return 'upper('+f+') like '+pt}).join(' OR ')+')');
-    });
-  }
   const params = new URLSearchParams();
   if(where.length) params.set('$where', where.join(' AND '));
-  if(p.q && (p._broad || !window.__foldPat)) params.set('$q', p.q);
+  if(p.q) params.set('$q', p.q);
   if(p.orden) params.set('$order', p.orden);
   params.set('$limit', String(limit));
   params.set('$offset', String(off));
@@ -1543,7 +1424,6 @@ async function runSearch(off){
   }
   // Limpiar mensaje de error previo y mostrar info
   clearStatus();
-  if(window.showSkeleton) showSkeleton();
   setStatus('info', 'Consultando datos.gov.co... <a href="'+url+'" target="_blank" style="color:var(--acc);font-size:10px">(ver query)</a>', true);
   try{
     const r = await fetch(url, { headers:{'Accept':'application/json'} });
@@ -1555,32 +1435,8 @@ async function runSearch(off){
     if(!Array.isArray(data)){
       throw new Error("Respuesta inesperada: " + JSON.stringify(data).substring(0,200));
     }
-    if(data.length===0 && p.q && !p._broad){
-      // v4: si el modo preciso no encontro nada, reintenta con busqueda amplia full-text ($q)
-      try{
-        p._broad = true;
-        const url2 = buildQuery(p, off, p.limit);
-        console.log('[SECOP] Fallback amplio:', url2);
-        const r2 = await fetch(url2, { headers:{'Accept':'application/json'} });
-        if(r2.ok){
-          const d2 = await r2.json();
-          if(Array.isArray(d2) && d2.length){
-            lastResults = d2;
-            render(d2, off);
-            if(window.updateKpis) updateKpis(d2);
-            if(window.renderActiveChips) renderActiveChips(p);
-            setStatus('ok', d2.length+" proceso(s) encontrados con busqueda amplia. "+(d2.length === p.limit ? 'Hay mas, usa Siguiente.' : ''));
-            renderPager(p, off, d2.length);
-            return;
-          }
-        }
-      }catch(_e){ console.warn('[SECOP] fallback amplio fallo:', _e); }
-      p._broad = false;
-    }
     lastResults = data;
     render(data, off);
-    if(window.updateKpis) updateKpis(data);
-    if(window.renderActiveChips) renderActiveChips(p);
     setStatus('ok', data.length+" proceso(s) cargado(s). "+(data.length === p.limit ? 'Hay mas, usa Siguiente.' : ''));
     renderPager(p, off, data.length);
   }catch(e){
@@ -1616,7 +1472,7 @@ function render(rows, off){
       '<td>'+fmtDate(r.fecha_de_publicacion_del)+'</td>'+
       '<td>'+fmtDate(r.fecha_de_recepcion_de)+'</td>'+
       '<td style="text-align:center"><input type="checkbox" '+cmpChecked+' onclick="toggleCompare(\''+idProc+'\', '+(off+i)+')" title="Agregar al comparador" /></td>'+
-      '<td class="url">'+(url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir</a>' : '')+'<button class="btn-mini-det" onclick="showDetails('+(off+i)+')">Detalles</button><button class="btn-mini-share" onclick="shareProcess('+(off+i)+')" title="Enviar por correo">&#x2709;</button></td>'+
+      '<td class="url">'+(url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir</a>' : '')+'<button class="btn-mini-det" onclick="showDetails('+(off+i)+')">Detalles</button><button class="btn-mini-share" onclick="shareProcess('+(off+i)+')" title="Enviar por correo">&#x2709;</button>'+(url ? '<button class="btn-mini-det" style="background:rgba(148,163,184,0.15);border-color:rgba(148,163,184,0.4)" onclick="copyProcessLink('+(off+i)+', this)" title="Copiar enlace del proceso al portapapeles">&#128203; Copiar</button>' : '')+'</td>'+
     '</tr>';
   }).join('');
   $('count').textContent = 'Mostrando '+(off+1)+'-'+(off+rows.length);
@@ -1765,6 +1621,70 @@ function buildGmailComposeUrl(to, subject, body){
 
 /* ============ COMPARTIR PROCESO POR EMAIL (Apps Script Mailer) ============ */
 const MAILER_URL = 'https://script.google.com/macros/s/AKfycbwfBiWhi9zr3q9jSS2flFmJFOSrRYANpaF5DZN-iDeO3MOa7pdBTo0iT3_7Hy7S_aZFmw/exec';
+
+/* Copiar enlace del proceso al portapapeles - con fallback para navegadores viejos */
+function copyProcessLink(idx, btnEl){
+  const r = lastResults[idx - offset];
+  if(!r){ showToast('Proceso no encontrado.', 'warn'); return; }
+  const url = (r.urlproceso && r.urlproceso.url) ? r.urlproceso.url : '';
+  if(!url){ showToast('Este proceso no tiene URL SECOP disponible.', 'warn'); return; }
+
+  const feedback = (ok)=>{
+    if(!btnEl) return;
+    const orig = btnEl.innerHTML;
+    if(ok){
+      btnEl.innerHTML = '&#10004; Copiado';
+      btnEl.style.background = 'rgba(16,185,129,0.25)';
+      btnEl.style.borderColor = 'rgba(16,185,129,0.6)';
+      btnEl.style.color = 'var(--ok-bright)';
+    } else {
+      btnEl.innerHTML = '&#10007; Error';
+      btnEl.style.background = 'rgba(239,68,68,0.2)';
+    }
+    setTimeout(()=>{
+      btnEl.innerHTML = orig;
+      btnEl.style.background = 'rgba(148,163,184,0.15)';
+      btnEl.style.borderColor = 'rgba(148,163,184,0.4)';
+      btnEl.style.color = '';
+    }, 1800);
+  };
+
+  // Metodo moderno (async clipboard API - requiere HTTPS o localhost)
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(()=>{
+      feedback(true);
+      showToast('Enlace copiado al portapapeles.', 'success');
+    }).catch(()=>{
+      // Fallback si el permiso falla
+      fallbackCopy(url, feedback);
+    });
+  } else {
+    fallbackCopy(url, feedback);
+  }
+}
+function fallbackCopy(text, feedback){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(ok){
+      feedback(true);
+      showToast('Enlace copiado al portapapeles.', 'success');
+    } else {
+      feedback(false);
+      showToast('No fue posible copiar automaticamente. Usa el boton Abrir y copia manualmente.', 'warn');
+    }
+  }catch(e){
+    feedback(false);
+    showToast('Error al copiar: '+e.message, 'err');
+  }
+}
+window.copyProcessLink = copyProcessLink;
 
 function shareProcess(idx){
   const r = lastResults[idx - offset];
@@ -3537,7 +3457,7 @@ async function downloadDocDirect(idx, alsoAnalyze){
 
   const result = document.getElementById('docsResult');
   const status = document.createElement('div');
-  status.style.cssText = 'margin-top:8px;padding:8px;background:var(--inline-box);border:1px solid var(--acc);border-radius:5px;font-size:11px';
+  status.style.cssText = 'margin-top:8px;padding:8px;background:#0f172a;border:1px solid var(--acc);border-radius:5px;font-size:11px';
   status.innerHTML = '<span class="spinner"></span>Descargando: '+esc(doc.nombre)+'...';
   result.appendChild(status);
 
@@ -3631,7 +3551,7 @@ async function analyzeAllRelevantDocs(){
 
   const result = document.getElementById('docsResult');
   const status = document.createElement('div');
-  status.style.cssText = 'margin-top:8px;padding:10px;background:var(--inline-box);border:1px solid var(--acc);border-radius:6px;font-size:12px';
+  status.style.cssText = 'margin-top:8px;padding:10px;background:#0f172a;border:1px solid var(--acc);border-radius:6px;font-size:12px';
   result.appendChild(status);
 
   let combinedText = '';
@@ -3775,7 +3695,7 @@ const _btnDiag = $('btnDiag'); if(_btnDiag) _btnDiag.onclick = ()=>{
   try{
     const p = getCriteria();
     const url = buildQuery(p, 0, p.limit);
-    const html = 'CRITERIOS:<br><pre style="font-size:10px;max-height:140px;overflow:auto;background:var(--inline-box);padding:6px;border-radius:4px">'+
+    const html = 'CRITERIOS:<br><pre style="font-size:10px;max-height:140px;overflow:auto;background:#0f172a;padding:6px;border-radius:4px">'+
       JSON.stringify(p, null, 2)+'</pre>'+
       'URL:<br><a href="'+url+'" target="_blank" style="color:var(--acc);word-break:break-all;font-size:10px">'+url+'</a>';
     setStatus('info', html);
@@ -4254,7 +4174,7 @@ function renderKanban(){
     html += '</div>';
   });
   html += '</div>';
-  html += '<div style="margin-top:14px;padding:10px;background:var(--inline-box-soft);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.5">';
+  html += '<div style="margin-top:14px;padding:10px;background:rgba(15,23,42,0.4);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.5">';
   html += '<b style="color:var(--acc-bright)">Tip:</b> Las tarjetas aparecen automaticamente cuando marcas un proceso como favorito (estrella). Arrastra entre columnas para mover por tu pipeline. Los datos se guardan en este navegador.';
   html += '</div>';
   cont.innerHTML = html;
@@ -4682,7 +4602,7 @@ ${comp.text}
         html += '</ul>';
       }
       if(parsed.recomendacion){
-        html += '<div style="margin-top:10px;padding:9px 11px;background:var(--inline-box-soft);border-radius:6px;font-size:12px"><b>Recomendacion:</b> '+esc(parsed.recomendacion)+'</div>';
+        html += '<div style="margin-top:10px;padding:9px 11px;background:rgba(15,23,42,0.4);border-radius:6px;font-size:12px"><b>Recomendacion:</b> '+esc(parsed.recomendacion)+'</div>';
       }
       html += '</div>';
       const div = document.createElement('div');
@@ -5053,7 +4973,7 @@ function openAlertsModal(){
   html += '</div>';
   html += '<button class="btn-success" onclick="newAlert()" style="width:100%;padding:13px;font-size:14px">+ Crear nueva alerta</button>';
   html += '<details style="margin-top:18px"><summary style="color:var(--acc-bright);cursor:pointer;font-weight:700">Instrucciones para activar el cron diario</summary>';
-  html += '<div style="margin-top:10px;padding:12px;background:var(--inline-box-soft2);border-radius:8px;font-size:12px;line-height:1.7">';
+  html += '<div style="margin-top:10px;padding:12px;background:rgba(15,23,42,0.5);border-radius:8px;font-size:12px;line-height:1.7">';
   html += '<b>1.</b> Abre tu Apps Script: <a href="https://script.google.com/home/projects/1w42pXoD0U50nlezlhBJazSdIAx8Gk4u7YTGJjnlhjM1g2_O9AU66muiN/edit" target="_blank" style="color:var(--acc-bright)">SECOP Hunter Mailer</a><br>';
   html += '<b>2.</b> En el editor, click en el reloj &#x23F0; (lateral izq) &rarr; <b>Agregar activador</b><br>';
   html += '<b>3.</b> Configurar: Funcion=<code>dailyCheck</code>, Origen=<code>Basado en hora</code>, Tipo=<code>Temporizador de dia</code>, Hora=<code>6am-7am</code><br>';
@@ -5279,101 +5199,6 @@ async function syncAlertsToBackend(){
 }
 
 
-</script>
-<script>
-/* ===== v4: utilidades de busqueda inteligente + UI premium ===== */
-window.__foldPat = function(s){
-  var u = String(s).toUpperCase()
-    .replace(/[\u00C1\u00C0\u00C2\u00C4]/g,"A").replace(/[\u00C9\u00C8\u00CA\u00CB]/g,"E")
-    .replace(/[\u00CD\u00CC\u00CE\u00CF]/g,"I").replace(/[\u00D3\u00D2\u00D4\u00D6]/g,"O")
-    .replace(/[\u00DA\u00D9\u00DB\u00DC]/g,"U").replace(/\u00D1/g,"N")
-    .replace(/[\x27%_\\]/g," ").replace(/\s+/g," ").trim();
-  return u.replace(/[AEIOUN]/g,"_");
-};
-window.showSkeleton = function(){
-  try{
-    var tb = document.querySelector("#results tbody"); if(!tb) return;
-    var out=""; for(var i=0;i<8;i++){ out += "<tr class=\"sk-row\"><td colspan=\"16\"><div class=\"sk-line\" style=\"width:"+(88-i*6)+"%\"></div></td></tr>"; }
-    tb.innerHTML = out;
-    var c=document.getElementById("count"); if(c) c.textContent="Buscando...";
-  }catch(e){}
-};
-window.__moneyShort = function(n){
-  if(!isFinite(n)) return "$0";
-  if(n>=1e12) return "$"+(n/1e12).toFixed(2)+" B";
-  if(n>=1e9)  return "$"+(n/1e9).toFixed(1)+" mil M";
-  if(n>=1e6)  return "$"+(n/1e6).toFixed(1)+" M";
-  return "$"+Math.round(n).toLocaleString("es-CO");
-};
-window.__countUp = function(id, target, fmt){
-  var el = document.getElementById(id); if(!el) return;
-  var t0 = performance.now(), dur = 650;
-  function step(t){
-    var k = Math.min(1,(t-t0)/dur); k = 1-Math.pow(1-k,3);
-    el.textContent = fmt(target*k);
-    if(k<1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-};
-window.updateKpis = function(rows){
-  var elS = document.getElementById("kpiStrip"); if(!elS) return;
-  if(!rows || !rows.length){ elS.style.display="none"; return; }
-  elS.style.display="grid";
-  var tot=0, ent={}, cierra=0, now=Date.now(), in7=now+7*864e5;
-  rows.forEach(function(r){
-    var v=parseFloat(r.precio_base); if(isFinite(v)) tot+=v;
-    if(r.entidad) ent[r.entidad]=1;
-    var f=r.fecha_de_recepcion_de?Date.parse(r.fecha_de_recepcion_de):NaN;
-    if(isFinite(f) && f>=now && f<=in7) cierra++;
-  });
-  __countUp("kpiCount", rows.length, function(n){return String(Math.round(n))});
-  __countUp("kpiValor", tot, __moneyShort);
-  __countUp("kpiCierra", cierra, function(n){return String(Math.round(n))});
-  __countUp("kpiEnt", Object.keys(ent).length, function(n){return String(Math.round(n))});
-};
-</script>
-<script>
-/* ===== v4: chips de filtros activos ===== */
-window.renderActiveChips = function(p){
-  var bar=document.getElementById("chipsBar"); if(!bar) return;
-  var chips=[]; var add=function(l,f){ chips.push({l:l,f:f}); };
-  if(p.q) add("\uD83D\uDD0E "+p.q,"q");
-  if(p.entidad) add("Entidad: "+p.entidad,"entidad");
-  if(p.proceso) add("Proceso: "+p.proceso,"proceso");
-  if(p.ciudad) add("Municipio: "+p.ciudad,"ciudad");
-  if(p.unspsc) add("UNSPSC: "+p.unspsc,"unspsc");
-  var ML={departamento:"Depto",modalidad:"Modalidad",estado:"Estado",fase:"Fase",tipo_contrato:"Tipo"};
-  Object.keys(ML).forEach(function(f){
-    if(p[f] && p[f].length) add(ML[f]+": "+(p[f].length>2 ? p[f].length+" seleccionados" : p[f].join(", ")), f);
-  });
-  if(p.valor_min) add("\u2265 "+__moneyShort(parseFloat(p.valor_min)),"valor_min");
-  if(p.valor_max) add("\u2264 "+__moneyShort(parseFloat(p.valor_max)),"valor_max");
-  if(p.fecha_pub_desde||p.fecha_pub_hasta) add("Pub: "+(p.fecha_pub_desde||"...")+" \u2192 "+(p.fecha_pub_hasta||"..."),"fechas_pub");
-  if(p.fecha_cierre_desde||p.fecha_cierre_hasta) add("Cierre: "+(p.fecha_cierre_desde||"...")+" \u2192 "+(p.fecha_cierre_hasta||"..."),"fechas_cierre");
-  if(p.solo_abiertos) add("Solo abiertos hoy","solo_abiertos");
-  if(!chips.length){ bar.style.display="none"; bar.innerHTML=""; return; }
-  bar.style.display="flex";
-  bar.innerHTML = "<span class=\"chips-lbl\">Filtros activos</span>"+chips.map(function(c){
-    return "<span class=\"chip\">"+esc(c.l)+"<b class=\"chip-x\" data-f=\""+c.f+"\" onclick=\"__removeChip(this)\" title=\"Quitar filtro\">\u00D7</b></span>";
-  }).join("")+"<span class=\"chip chip-clear\" onclick=\"__clearAllChips()\">Limpiar todo</span>";
-};
-window.__removeChip = function(el){
-  var f=el.getAttribute("data-f"); var form=document.getElementById("form"); if(!form) return;
-  var ci=function(n){ var i=form.querySelector("[name=\""+n+"\"]"); if(i){ if(i.type==="checkbox") i.checked=false; else i.value=""; } };
-  if(f==="fechas_pub"){ ci("fecha_pub_desde"); ci("fecha_pub_hasta"); }
-  else if(f==="fechas_cierre"){ ci("fecha_cierre_desde"); ci("fecha_cierre_hasta"); }
-  else if(["departamento","modalidad","estado","fase","tipo_contrato"].indexOf(f)>=0){
-    document.querySelectorAll(".chk-group[data-field=\""+f+"\"] input[type=checkbox]").forEach(function(c){ c.checked=false; var l=c.closest("label"); if(l) l.classList.remove("checked"); });
-  } else ci(f);
-  runSearch(0);
-};
-window.__clearAllChips = function(){
-  var form=document.getElementById("form"); if(form) form.reset();
-  document.querySelectorAll(".chk-group input[type=checkbox]").forEach(function(c){ c.checked=false; var l=c.closest("label"); if(l) l.classList.remove("checked"); });
-  var bar=document.getElementById("chipsBar"); if(bar){bar.style.display="none";bar.innerHTML="";}
-  var ks=document.getElementById("kpiStrip"); if(ks) ks.style.display="none";
-  runSearch(0);
-};
 </script>
 </body>
 </html>
