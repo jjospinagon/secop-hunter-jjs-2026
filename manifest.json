@@ -1,0 +1,64 @@
+{
+  "name": "SECOP II Hunter",
+  "short_name": "SECOP Hunter",
+  "description": "Plataforma de busqueda y analisis de procesos de contratacion publica SECOP II con inteligencia artificial.",
+  "lang": "es-CO",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/secop-hunter-jjs-2026/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0ea5e9",
+  "categories": [
+    "business",
+    "productivity",
+    "government"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Procesos abiertos hoy",
+      "short_name": "Abiertos hoy",
+      "description": "Procesos que estan recibiendo ofertas",
+      "url": "./?abiertos=1"
+    },
+    {
+      "name": "Mis favoritos",
+      "short_name": "Favoritos",
+      "description": "Procesos marcados como favoritos",
+      "url": "./?favoritos=1"
+    }
+  ]
+}

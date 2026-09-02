@@ -2,8 +2,26 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>SECOP II Hunter - App standalone</title>
+
+<!-- ===== PWA: instalable en PC y celular ===== -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0ea5e9" />
+<meta name="description" content="Plataforma de busqueda y analisis de procesos de contratacion publica SECOP II con inteligencia artificial." />
+<meta name="application-name" content="SECOP Hunter" />
+
+<!-- iOS: icono de pantalla de inicio y modo app -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="SECOP Hunter" />
+<meta name="mobile-web-app-capable" content="yes" />
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -909,6 +927,32 @@
   .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;color:#c4b5fd;margin-bottom:12px}
   .setup-banner b{color:#ddd6fe}
 
+  /* ===== Boton Instalar app (PWA) ===== */
+  .install-btn{
+    background:linear-gradient(135deg, rgba(16,185,129,0.25), rgba(16,185,129,0.12)) !important;
+    border-color:rgba(16,185,129,0.5) !important;
+    color:#6ee7b7 !important;
+    animation:fadeIn 0.4s;
+  }
+  .install-btn:hover{
+    background:linear-gradient(135deg, rgba(16,185,129,0.4), rgba(16,185,129,0.2)) !important;
+    border-color:var(--ok) !important;
+  }
+  html[data-theme="light"] .install-btn{
+    background:linear-gradient(135deg, rgba(16,185,129,0.16), rgba(16,185,129,0.07)) !important;
+    border-color:rgba(5,150,105,0.45) !important;
+    color:#047857 !important;
+  }
+  @media (display-mode: standalone){ .install-btn{ display:none !important; } }
+
+  @supports (padding: env(safe-area-inset-top)){
+    header{
+      padding-top:calc(12px + env(safe-area-inset-top));
+      padding-left:calc(14px + env(safe-area-inset-left));
+      padding-right:calc(14px + env(safe-area-inset-right));
+    }
+  }
+
   /* ============================================================
      DIVISOR AJUSTABLE entre Criterios de busqueda y Resultados
      - Ancho automatico por defecto (lo definen las media queries)
@@ -1111,6 +1155,8 @@
     <h1>SECOP II Hunter <small>Plataforma de busqueda y analisis con IA</small></h1>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button id="btnInstalar" class="profile-btn install-btn" type="button" style="display:none"
+            title="Instalar SECOP Hunter como aplicacion en este dispositivo">&#x2B07; Instalar app</button>
     <button id="profileBtn" class="profile-btn" type="button" title="Mi perfil de empresa" onclick="openProfileModal()">&#x1F464; Mi perfil</button>
     <button id="alertsBtn" class="profile-btn" type="button" title="Mis alertas" onclick="openAlertsModal()">&#x1F514; Alertas</button>
     <button id="themeToggle" class="theme-toggle" title="Cambiar tema dia/noche" aria-label="Cambiar tema">
@@ -1338,6 +1384,96 @@ function checkAccess(){ return true; }
   }
 })();
 
+
+
+/* ==========================================================================
+   PWA: instalacion como aplicacion + service worker
+   - En PC (Chrome/Edge): aparece el boton "Instalar app" y tambien el icono
+     de instalar en la barra de direcciones del navegador.
+   - En Android: "Agregar a pantalla de inicio" usa el icono maskable.
+   - En iPhone: Safari > Compartir > Agregar a inicio (usa apple-touch-icon).
+   ========================================================================== */
+(function initPWA(){
+  const btn = document.getElementById('btnInstalar');
+  let promptDiferido = null;
+
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    promptDiferido = e;
+    if(btn) btn.style.display = 'inline-flex';
+  });
+
+  if(btn){
+    btn.onclick = async function(){
+      if(promptDiferido){
+        promptDiferido.prompt();
+        const res = await promptDiferido.userChoice;
+        promptDiferido = null;
+        btn.style.display = 'none';
+        if(res && res.outcome === 'accepted'){
+          try{ showToast('Instalando SECOP Hunter...', 'ok'); }catch(e){}
+        }
+        return;
+      }
+      mostrarComoInstalar();
+    };
+  }
+
+  window.addEventListener('appinstalled', function(){
+    if(btn) btn.style.display = 'none';
+    try{ showToast('SECOP Hunter quedo instalada. Puedes abrirla desde tu escritorio.', 'ok', {duration:6000}); }catch(e){}
+  });
+
+  function esIOS(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function mostrarComoInstalar(){
+    const pasos = esIOS()
+      ? 'En iPhone/iPad: toca el boton <b>Compartir</b> (cuadro con flecha) en Safari y elige <b>Agregar a pantalla de inicio</b>.'
+      : 'En este navegador: abre el menu y busca <b>Instalar SECOP Hunter</b> o <b>Agregar a pantalla de inicio</b>.';
+    try{ showToast(pasos, 'info', {duration: 12000}); }
+    catch(e){ alert(pasos.replace(/<[^>]+>/g,'')); }
+  }
+  window.mostrarComoInstalar = mostrarComoInstalar;
+
+  const yaEsApp = window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true;
+  if(esIOS() && !yaEsApp && btn){ btn.style.display = 'inline-flex'; }
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js', {scope: './'})
+        .then(function(reg){
+          console.log('[PWA] Service worker registrado. Alcance:', reg.scope);
+          if(reg.waiting) reg.waiting.postMessage('skipWaiting');
+          reg.addEventListener('updatefound', function(){
+            const nuevo = reg.installing;
+            if(!nuevo) return;
+            nuevo.addEventListener('statechange', function(){
+              if(nuevo.state === 'installed' && navigator.serviceWorker.controller){
+                try{
+                  showToast('Hay una version nueva de la app.', 'info', {
+                    duration: 0,
+                    actions: [{
+                      label: 'Actualizar',
+                      style: 'primary',
+                      onClick: function(){
+                        if(reg.waiting) reg.waiting.postMessage('skipWaiting');
+                        location.reload();
+                      }
+                    }]
+                  });
+                }catch(e){}
+              }
+            });
+          });
+        })
+        .catch(function(err){ console.warn('[PWA] No se pudo registrar el SW:', err); });
+    });
+  }
+})();
 
 
 /* ==========================================================================
