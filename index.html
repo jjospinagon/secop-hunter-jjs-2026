@@ -927,6 +927,41 @@
   .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;color:#c4b5fd;margin-bottom:12px}
   .setup-banner b{color:#ddd6fe}
 
+  /* ===== Campos de dinero con separador de miles ===== */
+  .money-input{
+    font-family:'JetBrains Mono', monospace !important;
+    letter-spacing:0.02em;
+    font-weight:600;
+  }
+  .money-wrap{ position:relative; }
+  .money-wrap .money-prefix{
+    position:absolute;
+    left:9px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:12px;
+    font-weight:700;
+    color:var(--muted);
+    pointer-events:none;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .money-wrap .money-input{ padding-left:22px !important; }
+  .money-hint{
+    font-size:10px;
+    color:var(--acc-bright);
+    margin-top:3px;
+    min-height:13px;
+    font-weight:600;
+    letter-spacing:0.01em;
+  }
+  html[data-theme="light"] .money-hint{ color:#0369a1; }
+  html[data-theme="light"] .money-wrap .money-prefix{ color:#64748b; }
+  @media (max-width:768px){
+    .money-hint{ font-size:11.5px; }
+    .money-wrap .money-prefix{ font-size:14px; }
+    .money-wrap .money-input{ padding-left:26px !important; }
+  }
+
   /* ===== Boton Instalar app (PWA) ===== */
   .install-btn{
     background:linear-gradient(135deg, rgba(16,185,129,0.25), rgba(16,185,129,0.12)) !important;
@@ -943,8 +978,12 @@
     border-color:rgba(5,150,105,0.45) !important;
     color:#047857 !important;
   }
-  @media (display-mode: standalone){ .install-btn{ display:none !important; } }
+  /* Cuando ya corre como app instalada, no tiene sentido mostrar el boton */
+  @media (display-mode: standalone){
+    .install-btn{ display:none !important; }
+  }
 
+  /* Respetar el notch en iOS cuando corre como app */
   @supports (padding: env(safe-area-inset-top)){
     header{
       padding-top:calc(12px + env(safe-area-inset-top));
@@ -962,39 +1001,78 @@
   main > section.panel:first-child{ position:relative; }
 
   #splitter{
-    position:absolute; top:0; bottom:0; right:-13px; width:14px;
-    cursor:col-resize; z-index:20; display:flex; align-items:center;
-    justify-content:center; user-select:none; touch-action:none;
-    background:transparent; transition:background 0.15s;
+    position:absolute;
+    top:0;
+    bottom:0;
+    right:-13px;              /* queda centrado en el gap entre paneles */
+    width:14px;
+    cursor:col-resize;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    user-select:none;
+    touch-action:none;
+    background:transparent;
+    transition:background 0.15s;
   }
+  /* Linea visual delgada, se engrosa al pasar el mouse */
   #splitter::before{
-    content:''; width:2px; height:100%; background:var(--border);
-    border-radius:2px; transition:background 0.15s, width 0.15s;
+    content:'';
+    width:2px;
+    height:100%;
+    background:var(--border);
+    border-radius:2px;
+    transition:background 0.15s, width 0.15s;
   }
-  #splitter:hover::before, #splitter.dragging::before{
-    background:var(--acc); width:4px; box-shadow:0 0 10px rgba(14,165,233,0.5);
+  #splitter:hover::before,
+  #splitter.dragging::before{
+    background:var(--acc);
+    width:4px;
+    box-shadow:0 0 10px rgba(14,165,233,0.5);
   }
+  /* Agarradera de puntos al centro */
   #splitter::after{
-    content:''; position:absolute; width:4px; height:34px; border-radius:3px;
-    background:radial-gradient(circle, var(--muted) 1px, transparent 1.2px) 0 0 / 4px 6px repeat-y;
-    opacity:0.55; transition:opacity 0.15s; pointer-events:none;
+    content:'';
+    position:absolute;
+    width:4px;
+    height:34px;
+    border-radius:3px;
+    background:
+      radial-gradient(circle, var(--muted) 1px, transparent 1.2px) 0 0 / 4px 6px repeat-y;
+    opacity:0.55;
+    transition:opacity 0.15s;
+    pointer-events:none;
   }
   #splitter:hover::after, #splitter.dragging::after{ opacity:1; }
 
+  /* Durante el arrastre: sin seleccion de texto ni iframes robando el mouse */
   body.resizing{ cursor:col-resize !important; user-select:none !important; }
   body.resizing iframe, body.resizing .leaflet-container{ pointer-events:none !important; }
 
   html[data-theme="light"] #splitter::before{ background:rgba(148,163,184,0.55); }
   html[data-theme="light"] #splitter:hover::before{ background:var(--acc); }
 
+  /* Etiqueta flotante con el ancho mientras se arrastra */
   #splitterTip{
-    position:fixed; z-index:9998; background:var(--acc); color:#fff;
-    font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px;
-    pointer-events:none; display:none; box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    position:fixed;
+    z-index:9998;
+    background:var(--acc);
+    color:#fff;
+    font-size:11px;
+    font-weight:700;
+    padding:4px 9px;
+    border-radius:6px;
+    pointer-events:none;
+    display:none;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
     font-family:'JetBrains Mono', monospace;
   }
 
-  @media (max-width:760px){ #splitter{ display:none; } }
+  /* En movil el layout es de una sola columna: no aplica el divisor */
+  @media (max-width:760px){
+    #splitter{ display:none; }
+  }
 
   /* ============================================================
      AUTOCOMPLETADO DE ENTIDAD ESTATAL
@@ -1002,17 +1080,30 @@
   .ac-wrap{ position:relative; }
 
   .ac-list{
-    position:absolute; top:calc(100% + 3px); left:0; right:0; z-index:60;
-    max-height:280px; overflow-y:auto; overflow-x:hidden;
-    background:var(--panel-solid, #0f172a); border:1px solid var(--acc);
-    border-radius:var(--radius-sm); box-shadow:0 12px 32px rgba(0,0,0,0.55);
+    position:absolute;
+    top:calc(100% + 3px);
+    left:0;
+    right:0;
+    z-index:60;
+    max-height:280px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    background:var(--panel-solid, #0f172a);
+    border:1px solid var(--acc);
+    border-radius:var(--radius-sm);
+    box-shadow:0 12px 32px rgba(0,0,0,0.55);
     display:none;
   }
   .ac-list.show{ display:block; animation:fadeIn 0.12s; }
 
   .ac-item{
-    padding:9px 11px; cursor:pointer; border-bottom:1px solid var(--border);
-    font-size:12px; line-height:1.35; color:var(--txt); transition:background 0.1s;
+    padding:9px 11px;
+    cursor:pointer;
+    border-bottom:1px solid var(--border);
+    font-size:12px;
+    line-height:1.35;
+    color:var(--txt);
+    transition:background 0.1s;
   }
   .ac-item:last-child{ border-bottom:0; }
   .ac-item:hover, .ac-item.active{
@@ -1021,18 +1112,31 @@
   }
   .ac-item .ac-nombre{ font-weight:600; word-break:break-word; display:block; }
   .ac-item .ac-nit{
-    font-size:10px; color:var(--muted); font-family:'JetBrains Mono', monospace;
-    margin-top:2px; display:block;
+    font-size:10px;
+    color:var(--muted);
+    font-family:'JetBrains Mono', monospace;
+    margin-top:2px;
+    display:block;
   }
   .ac-item mark{
-    background:rgba(245,158,11,0.28); color:inherit; font-weight:800;
-    border-radius:2px; padding:0 1px;
+    background:rgba(245,158,11,0.28);
+    color:inherit;
+    font-weight:800;
+    border-radius:2px;
+    padding:0 1px;
   }
-  .ac-msg{ padding:10px 11px; font-size:11.5px; color:var(--muted); text-align:center; }
+  .ac-msg{
+    padding:10px 11px;
+    font-size:11.5px;
+    color:var(--muted);
+    text-align:center;
+  }
   .ac-msg .spinner{ margin-right:6px; }
 
   html[data-theme="light"] .ac-list{
-    background:#ffffff; border-color:var(--acc); box-shadow:0 12px 32px rgba(15,23,42,0.18);
+    background:#ffffff;
+    border-color:var(--acc);
+    box-shadow:0 12px 32px rgba(15,23,42,0.18);
   }
   html[data-theme="light"] .ac-item{ color:#0f172a; border-bottom-color:rgba(203,213,225,0.7); }
   html[data-theme="light"] .ac-item:hover, html[data-theme="light"] .ac-item.active{
@@ -1215,8 +1319,18 @@
         </div>
       </div>
       <div class="row">
-        <div><label>Valor min (COP)</label><input type="number" name="valor_min" placeholder="100000000" /></div>
-        <div><label>Valor max (COP)</label><input type="number" name="valor_max" placeholder="5000000000" /></div>
+        <div>
+          <label>Valor min (COP)</label>
+          <div class="money-wrap"><span class="money-prefix">$</span><input type="text" inputmode="numeric" autocomplete="off"
+            class="money-input" name="valor_min" placeholder="100.000.000" data-hint="hintValorMin" /></div>
+          <div class="money-hint" id="hintValorMin"></div>
+        </div>
+        <div>
+          <label>Valor max (COP)</label>
+          <div class="money-wrap"><span class="money-prefix">$</span><input type="text" inputmode="numeric" autocomplete="off"
+            class="money-input" name="valor_max" placeholder="5.000.000.000" data-hint="hintValorMax" /></div>
+          <div class="money-hint" id="hintValorMax"></div>
+        </div>
       </div>
       <div class="row">
         <div><label>Publicacion desde</label><input type="date" name="fecha_pub_desde" /></div>
@@ -1387,6 +1501,74 @@ function checkAccess(){ return true; }
 
 
 /* ==========================================================================
+   CAMPOS DE DINERO
+   Los valores en pesos colombianos son numeros largos donde es facil
+   equivocarse contando ceros (500.000.000 vs 5.000.000.000). Se formatean
+   con separador de miles mientras se escribe y se muestra el monto en
+   palabras debajo del campo.
+   ========================================================================== */
+
+// "500.000.000" -> 500000000  |  "" -> NaN
+function montoANumero(v){
+  if(v === null || v === undefined) return NaN;
+  const d = String(v).replace(/[^\d]/g, '');
+  return d ? parseInt(d, 10) : NaN;
+}
+// 500000000 -> "500.000.000"
+function montoAFormato(n){
+  if(n === null || n === undefined || n === '' || isNaN(Number(n))) return '';
+  return Number(n).toLocaleString('es-CO');
+}
+// 500000000 -> "500 millones"
+function montoLegible(n){
+  if(!isFinite(n) || n <= 0) return '';
+  const red = function(x){ return (Math.round(x * 100) / 100).toLocaleString('es-CO'); };
+  if(n >= 1e12) return red(n/1e12) + (n/1e12 === 1 ? ' billon' : ' billones');
+  if(n >= 1e9)  return red(n/1e9)  + ' mil millones';
+  if(n >= 1e6)  return red(n/1e6)  + (n/1e6 === 1 ? ' millon' : ' millones');
+  if(n >= 1e3)  return red(n/1e3)  + ' mil';
+  return String(n);
+}
+
+// Formatea un campo y actualiza su ayuda. Conserva la posicion del cursor.
+function formatearCampoMonto(el){
+  if(!el) return;
+  const posAntes = el.selectionStart;
+  const largoAntes = el.value.length;
+
+  const digitos = String(el.value).replace(/[^\d]/g, '').slice(0, 15);
+  el.value = digitos ? Number(digitos).toLocaleString('es-CO') : '';
+
+  // Reubicar el cursor tras insertar/quitar puntos
+  if(document.activeElement === el){
+    const delta = el.value.length - largoAntes;
+    const nueva = Math.max(0, Math.min(el.value.length, (posAntes || 0) + delta));
+    try{ el.setSelectionRange(nueva, nueva); }catch(e){}
+  }
+
+  // Ayuda legible debajo
+  const hint = el.dataset && el.dataset.hint ? document.getElementById(el.dataset.hint) : null;
+  if(hint){
+    const n = digitos ? parseInt(digitos, 10) : NaN;
+    hint.textContent = isFinite(n) && n > 0 ? '= ' + montoLegible(n) + ' de pesos' : '';
+  }
+}
+
+// Delegado: cubre tambien los campos del formulario de alertas,
+// que se crean dinamicamente cuando se abre el modal.
+document.addEventListener('input', function(e){
+  const el = e.target;
+  if(el && el.classList && el.classList.contains('money-input')) formatearCampoMonto(el);
+});
+
+// Al pegar un valor con formato raro, normalizarlo tambien
+document.addEventListener('change', function(e){
+  const el = e.target;
+  if(el && el.classList && el.classList.contains('money-input')) formatearCampoMonto(el);
+});
+
+
+/* ==========================================================================
    PWA: instalacion como aplicacion + service worker
    - En PC (Chrome/Edge): aparece el boton "Instalar app" y tambien el icono
      de instalar en la barra de direcciones del navegador.
@@ -1397,6 +1579,7 @@ function checkAccess(){ return true; }
   const btn = document.getElementById('btnInstalar');
   let promptDiferido = null;
 
+  // Chrome dispara esto cuando la app cumple los requisitos de instalacion
   window.addEventListener('beforeinstallprompt', function(e){
     e.preventDefault();
     promptDiferido = e;
@@ -1415,10 +1598,12 @@ function checkAccess(){ return true; }
         }
         return;
       }
+      // Safari / iOS y navegadores sin beforeinstallprompt: instruccion manual
       mostrarComoInstalar();
     };
   }
 
+  // Si ya quedo instalada
   window.addEventListener('appinstalled', function(){
     if(btn) btn.style.display = 'none';
     try{ showToast('SECOP Hunter quedo instalada. Puedes abrirla desde tu escritorio.', 'ok', {duration:6000}); }catch(e){}
@@ -1432,21 +1617,28 @@ function checkAccess(){ return true; }
   function mostrarComoInstalar(){
     const pasos = esIOS()
       ? 'En iPhone/iPad: toca el boton <b>Compartir</b> (cuadro con flecha) en Safari y elige <b>Agregar a pantalla de inicio</b>.'
-      : 'En este navegador: abre el menu y busca <b>Instalar SECOP Hunter</b> o <b>Agregar a pantalla de inicio</b>.';
-    try{ showToast(pasos, 'info', {duration: 12000}); }
-    catch(e){ alert(pasos.replace(/<[^>]+>/g,'')); }
+      : 'En este navegador: abre el menu (&#8942;) y busca <b>Instalar SECOP Hunter</b> o <b>Agregar a pantalla de inicio</b>.';
+    try{
+      showToast(pasos, 'info', {duration: 12000});
+    }catch(e){ alert(pasos.replace(/<[^>]+>/g,'')); }
   }
   window.mostrarComoInstalar = mostrarComoInstalar;
 
+  // En iOS nunca se dispara beforeinstallprompt: mostramos el boton igual
+  // (solo si no esta corriendo ya como app instalada)
   const yaEsApp = window.matchMedia('(display-mode: standalone)').matches ||
                   window.navigator.standalone === true;
-  if(esIOS() && !yaEsApp && btn){ btn.style.display = 'inline-flex'; }
+  if(esIOS() && !yaEsApp && btn){
+    btn.style.display = 'inline-flex';
+  }
 
+  // Registrar el service worker (necesario para poder instalar)
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
       navigator.serviceWorker.register('sw.js', {scope: './'})
         .then(function(reg){
           console.log('[PWA] Service worker registrado. Alcance:', reg.scope);
+          // Si hay una version nueva esperando, activarla de una vez
           if(reg.waiting) reg.waiting.postMessage('skipWaiting');
           reg.addEventListener('updatefound', function(){
             const nuevo = reg.installing;
@@ -1483,30 +1675,41 @@ function checkAccess(){ return true; }
    - Doble clic sobre el divisor restaura el ancho automatico
    ========================================================================== */
 const SPLIT_KEY = 'secop_sidebar_w_v1';
-const SPLIT_MIN = 240;
-const SPLIT_MAX_RATIO = 0.62;
+const SPLIT_MIN = 240;   // px minimos del panel de criterios
+const SPLIT_MAX_RATIO = 0.62; // no puede ocupar mas del 62% de la ventana
 
 (function initSplitter(){
   const main = document.querySelector('main');
   const splitter = document.getElementById('splitter');
   if(!main || !splitter) return;
 
+  // Etiqueta flotante que muestra el ancho durante el arrastre
   const tip = document.createElement('div');
   tip.id = 'splitterTip';
   document.body.appendChild(tip);
 
-  const esMovil = function(){ return window.matchMedia('(max-width:760px)').matches; };
+  const esMovil = ()=> window.matchMedia('(max-width:760px)').matches;
 
-  function aplicarAncho(px){ main.style.gridTemplateColumns = px + 'px minmax(0, 1fr)'; }
-  function limpiarAncho(){ main.style.gridTemplateColumns = ''; }
-  function anchoMaximo(){ return Math.max(SPLIT_MIN + 100, Math.round(window.innerWidth * SPLIT_MAX_RATIO)); }
-  function acotar(px){ return Math.min(anchoMaximo(), Math.max(SPLIT_MIN, Math.round(px))); }
+  function aplicarAncho(px){
+    main.style.gridTemplateColumns = px + 'px minmax(0, 1fr)';
+  }
+  function limpiarAncho(){
+    main.style.gridTemplateColumns = '';   // vuelve a mandar el CSS
+  }
+  function anchoMaximo(){
+    return Math.max(SPLIT_MIN + 100, Math.round(window.innerWidth * SPLIT_MAX_RATIO));
+  }
+  function acotar(px){
+    return Math.min(anchoMaximo(), Math.max(SPLIT_MIN, Math.round(px)));
+  }
 
+  // Restaurar el ancho guardado (si hay) al abrir la app
   function restaurarGuardado(){
     if(esMovil()){ limpiarAncho(); return; }
-    let g = null;
-    try{ g = parseInt(localStorage.getItem(SPLIT_KEY) || '', 10); }catch(e){}
-    if(g && !isNaN(g)) aplicarAncho(acotar(g)); else limpiarAncho();
+    let guardado = null;
+    try{ guardado = parseInt(localStorage.getItem(SPLIT_KEY) || '', 10); }catch(e){}
+    if(guardado && !isNaN(guardado)) aplicarAncho(acotar(guardado));
+    else limpiarAncho();
   }
   restaurarGuardado();
 
@@ -1529,8 +1732,9 @@ const SPLIT_MAX_RATIO = 0.62;
   function onMove(e){
     if(!arrastrando) return;
     const rect = main.getBoundingClientRect();
-    const st = getComputedStyle(main);
-    const padIzq = parseFloat(st.paddingLeft) || 0;
+    const estilos = getComputedStyle(main);
+    const padIzq = parseFloat(estilos.paddingLeft) || 0;
+    // Ancho = distancia del cursor al borde interior izquierdo de main
     anchoActual = acotar(e.clientX - rect.left - padIzq);
     aplicarAncho(anchoActual);
     tip.textContent = anchoActual + ' px';
@@ -1548,9 +1752,11 @@ const SPLIT_MAX_RATIO = 0.62;
       try{ splitter.releasePointerCapture(e.pointerId); }catch(err){}
     }
     try{ localStorage.setItem(SPLIT_KEY, String(anchoActual)); }catch(err){}
+    // Los mapas y tablas necesitan recalcular su tamano
     notificarCambioDeAncho();
   }
 
+  // Doble clic: volver al ancho estandar disenado
   function onDoubleClick(e){
     e.preventDefault();
     try{ localStorage.removeItem(SPLIT_KEY); }catch(err){}
@@ -1559,6 +1765,7 @@ const SPLIT_MAX_RATIO = 0.62;
     try{ showToast('Ancho restaurado al valor estandar.', 'ok', {duration:2500}); }catch(err){}
   }
 
+  // Accesibilidad: flechas izquierda/derecha ajustan, Escape restaura
   function onKey(e){
     if(esMovil()) return;
     const paso = e.shiftKey ? 40 : 12;
@@ -1575,10 +1782,11 @@ const SPLIT_MAX_RATIO = 0.62;
     }
   }
 
+  // Avisar a componentes que dependen del ancho (mapa Leaflet, etc.)
   let tmrResize = null;
   function notificarCambioDeAncho(){
     clearTimeout(tmrResize);
-    tmrResize = setTimeout(function(){
+    tmrResize = setTimeout(()=>{
       window.dispatchEvent(new Event('resize'));
       if(window._map && typeof window._map.invalidateSize === 'function'){
         try{ window._map.invalidateSize(); }catch(e){}
@@ -1593,18 +1801,21 @@ const SPLIT_MAX_RATIO = 0.62;
   splitter.addEventListener('dblclick', onDoubleClick);
   splitter.addEventListener('keydown', onKey);
 
-  window.addEventListener('resize', function(){
+  // Si la ventana cambia de tamano, reacotar para que no quede desproporcionado
+  window.addEventListener('resize', ()=>{
     if(arrastrando) return;
     if(esMovil()){ limpiarAncho(); return; }
-    let g = null;
-    try{ g = parseInt(localStorage.getItem(SPLIT_KEY) || '', 10); }catch(e){}
-    if(g && !isNaN(g)) aplicarAncho(acotar(g));
+    let guardado = null;
+    try{ guardado = parseInt(localStorage.getItem(SPLIT_KEY) || '', 10); }catch(e){}
+    if(guardado && !isNaN(guardado)) aplicarAncho(acotar(guardado));
   });
 })();
 
 
 /* ==========================================================================
    AUTOCOMPLETADO DE ENTIDAD ESTATAL
+   Busca coincidencias en datos.gov.co mientras se escribe y las muestra
+   en una lista scrolleable. Acepta nombre o NIT.
    ========================================================================== */
 (function initEntidadAutocomplete(){
   const input = document.getElementById('entidadInput');
@@ -1620,12 +1831,11 @@ const SPLIT_MAX_RATIO = 0.62;
   let opciones = [];
   let ultimaBusqueda = '';
   let peticionEnCurso = null;
-  const cache = new Map();
+  const cache = new Map();   // texto -> resultados
 
-  const esc2 = function(x){
-    return String(x == null ? '' : x)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  };
+  const esc2 = (s)=> String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
 
   function cerrar(){
     lista.classList.remove('show');
@@ -1641,11 +1851,12 @@ const SPLIT_MAX_RATIO = 0.62;
     input.setAttribute('aria-expanded','true');
   }
 
+  // Resalta la parte del nombre que coincide con lo escrito
   function resaltar(texto, termino){
     const t = esc2(texto);
     if(!termino) return t;
     try{
-      const limpio = termino.replace(/[.*+?^${}()|[\]\\]/g, '\\/* ============ Proxies CORS con fallback automatico ============ */');
+      const limpio = termino.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       return t.replace(new RegExp('(' + limpio + ')', 'ig'), '<mark>$1</mark>');
     }catch(e){ return t; }
   }
@@ -1653,13 +1864,16 @@ const SPLIT_MAX_RATIO = 0.62;
   function pintar(items, termino){
     opciones = items;
     idxActivo = -1;
-    if(!items.length){ mensaje('Sin coincidencias para <b>' + esc2(termino) + '</b>'); return; }
-    lista.innerHTML = items.map(function(it,i){
-      return '<div class="ac-item" role="option" data-i="'+i+'">' +
+    if(!items.length){
+      mensaje('Sin coincidencias para <b>' + esc2(termino) + '</b>');
+      return;
+    }
+    lista.innerHTML = items.map((it,i)=>
+      '<div class="ac-item" role="option" data-i="'+i+'">' +
         '<span class="ac-nombre">' + resaltar(it.entidad, termino) + '</span>' +
         (it.nit ? '<span class="ac-nit">NIT ' + esc2(it.nit) + '</span>' : '') +
-      '</div>';
-    }).join('');
+      '</div>'
+    ).join('');
     lista.classList.add('show');
     input.setAttribute('aria-expanded','true');
   }
@@ -1678,19 +1892,26 @@ const SPLIT_MAX_RATIO = 0.62;
     if(termino === ultimaBusqueda && lista.classList.contains('show')) return;
     ultimaBusqueda = termino;
 
-    if(cache.has(termino.toLowerCase())){ pintar(cache.get(termino.toLowerCase()), termino); return; }
+    // Cache en memoria para no repetir consultas
+    if(cache.has(termino.toLowerCase())){
+      pintar(cache.get(termino.toLowerCase()), termino);
+      return;
+    }
 
     mensaje('<span class="spinner"></span>Buscando entidades...');
 
+    // Si escribe numeros, buscamos por NIT; si no, por nombre
     const esNit = /^[\d\-\.]+$/.test(termino);
     const limpio = termino.replace(/'/g, "''");
     const where = esNit
       ? "nit_entidad like '%" + limpio.replace(/[\-\.]/g,'') + "%'"
       : "upper(entidad) like upper('%" + limpio + "%')";
 
-    const url = API + '?$select=entidad,nit_entidad&$where=' + encodeURIComponent(where) + '&$limit=400';
+    const url = API + '?$select=entidad,nit_entidad&$where=' +
+                encodeURIComponent(where) + '&$limit=400';
 
-    if(peticionEnCurso){ try{ peticionEnCurso.abort(); }catch(e){} }
+    // Cancelar la peticion anterior si sigue viva
+    if(peticionEnCurso) { try{ peticionEnCurso.abort(); }catch(e){} }
     const ctrl = new AbortController();
     peticionEnCurso = ctrl;
 
@@ -1699,6 +1920,7 @@ const SPLIT_MAX_RATIO = 0.62;
       if(!r.ok) throw new Error('HTTP ' + r.status);
       const filas = await r.json();
 
+      // Deduplicar por entidad+NIT (la API devuelve una fila por proceso)
       const vistos = new Set();
       const unicos = [];
       for(const f of (filas || [])){
@@ -1710,9 +1932,11 @@ const SPLIT_MAX_RATIO = 0.62;
         unicos.push({ entidad: nombre, nit: f.nit_entidad || '' });
         if(unicos.length >= MAX_ITEMS) break;
       }
-      unicos.sort(function(a,b){ return a.entidad.length - b.entidad.length; });
+      // Los nombres mas cortos suelen ser la entidad principal: van primero
+      unicos.sort((a,b)=> a.entidad.length - b.entidad.length);
 
       cache.set(termino.toLowerCase(), unicos);
+      // Solo pintar si el usuario no siguio escribiendo otra cosa
       if(ultimaBusqueda === termino) pintar(unicos, termino);
     }catch(e){
       if(e.name === 'AbortError') return;
@@ -1731,17 +1955,20 @@ const SPLIT_MAX_RATIO = 0.62;
     if(idxActivo < 0) idxActivo = items.length - 1;
     if(idxActivo >= items.length) idxActivo = 0;
     const el = items[idxActivo];
-    if(el){ el.classList.add('active'); el.scrollIntoView({block:'nearest'}); }
+    if(el){
+      el.classList.add('active');
+      el.scrollIntoView({block:'nearest'});
+    }
   }
 
-  input.addEventListener('input', function(){
+  input.addEventListener('input', ()=>{
     clearTimeout(timer);
     const v = input.value;
     if(v.trim().length < MIN_CHARS){ cerrar(); return; }
-    timer = setTimeout(function(){ buscar(v); }, DEBOUNCE_MS);
+    timer = setTimeout(()=> buscar(v), DEBOUNCE_MS);
   });
 
-  input.addEventListener('keydown', function(e){
+  input.addEventListener('keydown', (e)=>{
     const abierta = lista.classList.contains('show');
     if(e.key === 'ArrowDown'){ if(abierta){ e.preventDefault(); mover(1); } }
     else if(e.key === 'ArrowUp'){ if(abierta){ e.preventDefault(); mover(-1); } }
@@ -1753,19 +1980,21 @@ const SPLIT_MAX_RATIO = 0.62;
     else if(e.key === 'Tab'){ cerrar(); }
   });
 
-  lista.addEventListener('mousedown', function(e){
+  lista.addEventListener('mousedown', (e)=>{
+    // mousedown (no click) para adelantarse al blur del input
     const it = e.target.closest('.ac-item');
     if(!it) return;
     e.preventDefault();
     elegir(parseInt(it.dataset.i, 10));
   });
 
-  input.addEventListener('blur', function(){ setTimeout(cerrar, 150); });
-  input.addEventListener('focus', function(){
+  input.addEventListener('blur', ()=> setTimeout(cerrar, 150));
+  input.addEventListener('focus', ()=>{
     if(input.value.trim().length >= MIN_CHARS) buscar(input.value);
   });
 
-  document.addEventListener('click', function(e){
+  // Cerrar si se hace clic fuera
+  document.addEventListener('click', (e)=>{
     if(!e.target.closest('.ac-wrap')) cerrar();
   });
 })();
@@ -1867,8 +2096,11 @@ function buildQuery(p, off, limit){
   inFilter('fase', p.fase);
   inFilter('tipo_de_contrato', p.tipo_contrato);
   if(p.unspsc) where.push("categorias like '%"+sq(p.unspsc)+"%'");
-  if(p.valor_min) where.push("precio_base >= "+parseFloat(p.valor_min));
-  if(p.valor_max) where.push("precio_base <= "+parseFloat(p.valor_max));
+  // montoANumero descarta los puntos de miles: "500.000.000" -> 500000000
+  const vMin = montoANumero(p.valor_min);
+  const vMax = montoANumero(p.valor_max);
+  if(isFinite(vMin)) where.push("precio_base >= " + vMin);
+  if(isFinite(vMax)) where.push("precio_base <= " + vMax);
   if(p.fecha_pub_desde) where.push("fecha_de_publicacion_del >= '"+p.fecha_pub_desde+"T00:00:00.000'");
   if(p.fecha_pub_hasta) where.push("fecha_de_publicacion_del <= '"+p.fecha_pub_hasta+"T23:59:59.999'");
   if(p.fecha_cierre_desde) where.push("fecha_de_recepcion_de >= '"+p.fecha_cierre_desde+"T00:00:00.000'");
@@ -4860,7 +5092,11 @@ function applyNlCriteria(c){
   if(!c) return;
   const setVal = (name, val) => {
     const el = document.querySelector('[name="'+name+'"]');
-    if(el && val != null) el.value = val;
+    if(el && val != null){
+      el.value = val;
+      // Los campos de dinero se muestran con separador de miles
+      if(el.classList && el.classList.contains('money-input')) formatearCampoMonto(el);
+    }
   };
   setVal('q', c.q);
   setVal('entidad', c.entidad);
@@ -5579,8 +5815,8 @@ function showAlertForm(alert, idx){
     <div class="full"><label>Palabra clave (objeto)</label><input type="text" name="q" value="${esc(c.q||'')}" placeholder="alcantarillado, acueducto" /></div>
     <div><label>Entidad</label><input type="text" name="entidad" value="${esc(c.entidad||'')}" placeholder="EPM, Alcaldia..." /></div>
     <div><label>Municipio</label><input type="text" name="ciudad" value="${esc(c.ciudad||'')}" placeholder="Medellin" /></div>
-    <div><label>Valor minimo (COP)</label><input type="number" name="valor_min" value="${c.valor_min||''}" placeholder="100000000" /></div>
-    <div><label>Valor maximo (COP)</label><input type="number" name="valor_max" value="${c.valor_max||''}" placeholder="5000000000" /></div>
+    <div><label>Valor minimo (COP)</label><div class="money-wrap"><span class="money-prefix">$</span><input type="text" inputmode="numeric" autocomplete="off" class="money-input" name="valor_min" value="${c.valor_min ? Number(c.valor_min).toLocaleString('es-CO') : ''}" placeholder="100.000.000" /></div></div>
+    <div><label>Valor maximo (COP)</label><div class="money-wrap"><span class="money-prefix">$</span><input type="text" inputmode="numeric" autocomplete="off" class="money-input" name="valor_max" value="${c.valor_max ? Number(c.valor_max).toLocaleString('es-CO') : ''}" placeholder="5.000.000.000" /></div></div>
     <div class="full"><label>Departamentos (separados por coma, vacio=todos)</label><input type="text" name="departamentos" value="${esc((c.departamento||[]).join(', '))}" placeholder="Antioquia, Caldas, Risaralda" /></div>
     <div class="full"><label>Modalidades (separadas por coma, vacio=todas)</label><input type="text" name="modalidades" value="${esc((c.modalidad||[]).join(', '))}" placeholder="Licitacion Publica, Minima Cuantia" /></div>
     <div class="full"><label>Tipos contrato (separados por coma)</label><input type="text" name="tipos" value="${esc((c.tipo_contrato||[]).join(', '))}" placeholder="Obra, Interventoria" /></div>
@@ -5617,8 +5853,8 @@ function saveAlert(idx){
       q: fd.get('q') || undefined,
       entidad: fd.get('entidad') || undefined,
       ciudad: fd.get('ciudad') || undefined,
-      valor_min: parseFloat(fd.get('valor_min')) || undefined,
-      valor_max: parseFloat(fd.get('valor_max')) || undefined,
+      valor_min: montoANumero(fd.get('valor_min')) || undefined,
+      valor_max: montoANumero(fd.get('valor_max')) || undefined,
       departamento: splitList(fd.get('departamentos')),
       modalidad: splitList(fd.get('modalidades')),
       tipo_contrato: splitList(fd.get('tipos')),
@@ -5686,8 +5922,8 @@ async function testAlert(idx){
     }
   }
   if(c.ciudad) where.push("upper(ciudad_entidad)=upper('"+sq(c.ciudad)+"')");
-  if(c.valor_min) where.push("precio_base >= "+parseFloat(c.valor_min));
-  if(c.valor_max) where.push("precio_base <= "+parseFloat(c.valor_max));
+  if(c.valor_min) where.push("precio_base >= "+montoANumero(c.valor_min));
+  if(c.valor_max) where.push("precio_base <= "+montoANumero(c.valor_max));
   if(c.departamento && c.departamento.length){ where.push("upper(departamento_entidad) IN ("+c.departamento.map(v=>"upper('"+sq(v)+"')").join(',')+")"); }
   if(c.modalidad && c.modalidad.length){ where.push("modalidad_de_contratacion IN ("+c.modalidad.map(v=>"'"+sq(v)+"'").join(',')+")"); }
   if(c.tipo_contrato && c.tipo_contrato.length){ where.push("tipo_de_contrato IN ("+c.tipo_contrato.map(v=>"'"+sq(v)+"'").join(',')+")"); }
