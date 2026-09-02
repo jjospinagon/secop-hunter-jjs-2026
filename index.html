@@ -909,6 +909,99 @@
   .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;color:#c4b5fd;margin-bottom:12px}
   .setup-banner b{color:#ddd6fe}
 
+  /* ============================================================
+     DIVISOR AJUSTABLE entre Criterios de busqueda y Resultados
+     - Ancho automatico por defecto (lo definen las media queries)
+     - Arrastrable con el mouse para ajustarlo a gusto
+     - Doble clic: vuelve al ancho estandar
+     ============================================================ */
+  main > section.panel:first-child{ position:relative; }
+
+  #splitter{
+    position:absolute; top:0; bottom:0; right:-13px; width:14px;
+    cursor:col-resize; z-index:20; display:flex; align-items:center;
+    justify-content:center; user-select:none; touch-action:none;
+    background:transparent; transition:background 0.15s;
+  }
+  #splitter::before{
+    content:''; width:2px; height:100%; background:var(--border);
+    border-radius:2px; transition:background 0.15s, width 0.15s;
+  }
+  #splitter:hover::before, #splitter.dragging::before{
+    background:var(--acc); width:4px; box-shadow:0 0 10px rgba(14,165,233,0.5);
+  }
+  #splitter::after{
+    content:''; position:absolute; width:4px; height:34px; border-radius:3px;
+    background:radial-gradient(circle, var(--muted) 1px, transparent 1.2px) 0 0 / 4px 6px repeat-y;
+    opacity:0.55; transition:opacity 0.15s; pointer-events:none;
+  }
+  #splitter:hover::after, #splitter.dragging::after{ opacity:1; }
+
+  body.resizing{ cursor:col-resize !important; user-select:none !important; }
+  body.resizing iframe, body.resizing .leaflet-container{ pointer-events:none !important; }
+
+  html[data-theme="light"] #splitter::before{ background:rgba(148,163,184,0.55); }
+  html[data-theme="light"] #splitter:hover::before{ background:var(--acc); }
+
+  #splitterTip{
+    position:fixed; z-index:9998; background:var(--acc); color:#fff;
+    font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px;
+    pointer-events:none; display:none; box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  @media (max-width:760px){ #splitter{ display:none; } }
+
+  /* ============================================================
+     AUTOCOMPLETADO DE ENTIDAD ESTATAL
+     ============================================================ */
+  .ac-wrap{ position:relative; }
+
+  .ac-list{
+    position:absolute; top:calc(100% + 3px); left:0; right:0; z-index:60;
+    max-height:280px; overflow-y:auto; overflow-x:hidden;
+    background:var(--panel-solid, #0f172a); border:1px solid var(--acc);
+    border-radius:var(--radius-sm); box-shadow:0 12px 32px rgba(0,0,0,0.55);
+    display:none;
+  }
+  .ac-list.show{ display:block; animation:fadeIn 0.12s; }
+
+  .ac-item{
+    padding:9px 11px; cursor:pointer; border-bottom:1px solid var(--border);
+    font-size:12px; line-height:1.35; color:var(--txt); transition:background 0.1s;
+  }
+  .ac-item:last-child{ border-bottom:0; }
+  .ac-item:hover, .ac-item.active{
+    background:linear-gradient(90deg, rgba(14,165,233,0.22), rgba(14,165,233,0.06));
+    color:var(--acc-bright);
+  }
+  .ac-item .ac-nombre{ font-weight:600; word-break:break-word; display:block; }
+  .ac-item .ac-nit{
+    font-size:10px; color:var(--muted); font-family:'JetBrains Mono', monospace;
+    margin-top:2px; display:block;
+  }
+  .ac-item mark{
+    background:rgba(245,158,11,0.28); color:inherit; font-weight:800;
+    border-radius:2px; padding:0 1px;
+  }
+  .ac-msg{ padding:10px 11px; font-size:11.5px; color:var(--muted); text-align:center; }
+  .ac-msg .spinner{ margin-right:6px; }
+
+  html[data-theme="light"] .ac-list{
+    background:#ffffff; border-color:var(--acc); box-shadow:0 12px 32px rgba(15,23,42,0.18);
+  }
+  html[data-theme="light"] .ac-item{ color:#0f172a; border-bottom-color:rgba(203,213,225,0.7); }
+  html[data-theme="light"] .ac-item:hover, html[data-theme="light"] .ac-item.active{
+    background:linear-gradient(90deg, rgba(14,165,233,0.16), rgba(14,165,233,0.05));
+    color:#0c4a6e;
+  }
+
+  @media (max-width:768px){
+    .ac-list{ max-height:240px; }
+    .ac-item{ padding:12px 12px; font-size:14px; min-height:46px; }
+    .ac-item .ac-nit{ font-size:11px; }
+  }
+
   /* Asegurar que checkboxes nunca se desborden horizontalmente */
   .chk-group{width:100% !important;box-sizing:border-box;overflow-x:hidden;overflow-y:auto}
   .chk-group label{width:100%;box-sizing:border-box;max-width:100%}
@@ -1047,7 +1140,13 @@
       </div></div>
       <div class="row">
         <div><label>N proceso</label><input name="proceso" placeholder="LP-2026-001" /></div>
-        <div><label>Entidad estatal</label><input name="entidad" placeholder="Alcaldia, EPM, INVIAS..." /></div>
+        <div class="ac-wrap">
+          <label for="entidadInput">Entidad estatal</label>
+          <input name="entidad" id="entidadInput" placeholder="Alcaldia, EPM, INVIAS..."
+                 autocomplete="off" role="combobox" aria-autocomplete="list"
+                 aria-expanded="false" aria-controls="entidadAc" />
+          <div class="ac-list" id="entidadAc" role="listbox"></div>
+        </div>
       </div>
       <div class="row">
         <div>
@@ -1128,6 +1227,10 @@
         - URL -> campo <code>urlproceso</code> (enlace directo a SECOP II)
       </div>
     </details>
+
+    <!-- Divisor ajustable: arrastrar para cambiar el ancho, doble clic para restaurar -->
+    <div id="splitter" title="Arrastra para ajustar el ancho &middot; Doble clic para restaurar"
+         role="separator" aria-orientation="vertical" tabindex="0"></div>
   </section>
 
   <section class="panel results-panel">
@@ -1235,6 +1338,301 @@ function checkAccess(){ return true; }
   }
 })();
 
+
+
+/* ==========================================================================
+   DIVISOR AJUSTABLE entre "Criterios de busqueda" y "Resultados"
+   - Por defecto el ancho es automatico (lo deciden las media queries del CSS)
+   - Arrastrando el divisor se fija un ancho manual (se guarda en el navegador)
+   - Doble clic sobre el divisor restaura el ancho automatico
+   ========================================================================== */
+const SPLIT_KEY = 'secop_sidebar_w_v1';
+const SPLIT_MIN = 240;
+const SPLIT_MAX_RATIO = 0.62;
+
+(function initSplitter(){
+  const main = document.querySelector('main');
+  const splitter = document.getElementById('splitter');
+  if(!main || !splitter) return;
+
+  const tip = document.createElement('div');
+  tip.id = 'splitterTip';
+  document.body.appendChild(tip);
+
+  const esMovil = function(){ return window.matchMedia('(max-width:760px)').matches; };
+
+  function aplicarAncho(px){ main.style.gridTemplateColumns = px + 'px minmax(0, 1fr)'; }
+  function limpiarAncho(){ main.style.gridTemplateColumns = ''; }
+  function anchoMaximo(){ return Math.max(SPLIT_MIN + 100, Math.round(window.innerWidth * SPLIT_MAX_RATIO)); }
+  function acotar(px){ return Math.min(anchoMaximo(), Math.max(SPLIT_MIN, Math.round(px))); }
+
+  function restaurarGuardado(){
+    if(esMovil()){ limpiarAncho(); return; }
+    let g = null;
+    try{ g = parseInt(localStorage.getItem(SPLIT_KEY) || '', 10); }catch(e){}
+    if(g && !isNaN(g)) aplicarAncho(acotar(g)); else limpiarAncho();
+  }
+  restaurarGuardado();
+
+  let arrastrando = false;
+  let anchoActual = 0;
+
+  function onDown(e){
+    if(esMovil()) return;
+    e.preventDefault();
+    arrastrando = true;
+    splitter.classList.add('dragging');
+    document.body.classList.add('resizing');
+    tip.style.display = 'block';
+    if(splitter.setPointerCapture && e.pointerId != null){
+      try{ splitter.setPointerCapture(e.pointerId); }catch(err){}
+    }
+    onMove(e);
+  }
+
+  function onMove(e){
+    if(!arrastrando) return;
+    const rect = main.getBoundingClientRect();
+    const st = getComputedStyle(main);
+    const padIzq = parseFloat(st.paddingLeft) || 0;
+    anchoActual = acotar(e.clientX - rect.left - padIzq);
+    aplicarAncho(anchoActual);
+    tip.textContent = anchoActual + ' px';
+    tip.style.left = Math.min(window.innerWidth - 70, e.clientX + 14) + 'px';
+    tip.style.top  = (e.clientY - 30) + 'px';
+  }
+
+  function onUp(e){
+    if(!arrastrando) return;
+    arrastrando = false;
+    splitter.classList.remove('dragging');
+    document.body.classList.remove('resizing');
+    tip.style.display = 'none';
+    if(splitter.releasePointerCapture && e && e.pointerId != null){
+      try{ splitter.releasePointerCapture(e.pointerId); }catch(err){}
+    }
+    try{ localStorage.setItem(SPLIT_KEY, String(anchoActual)); }catch(err){}
+    notificarCambioDeAncho();
+  }
+
+  function onDoubleClick(e){
+    e.preventDefault();
+    try{ localStorage.removeItem(SPLIT_KEY); }catch(err){}
+    limpiarAncho();
+    notificarCambioDeAncho();
+    try{ showToast('Ancho restaurado al valor estandar.', 'ok', {duration:2500}); }catch(err){}
+  }
+
+  function onKey(e){
+    if(esMovil()) return;
+    const paso = e.shiftKey ? 40 : 12;
+    const actual = main.querySelector('section.panel').getBoundingClientRect().width;
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+      e.preventDefault();
+      const nuevo = acotar(actual + (e.key === 'ArrowRight' ? paso : -paso));
+      aplicarAncho(nuevo);
+      try{ localStorage.setItem(SPLIT_KEY, String(nuevo)); }catch(err){}
+      notificarCambioDeAncho();
+    } else if(e.key === 'Escape' || e.key === 'Home'){
+      e.preventDefault();
+      onDoubleClick(e);
+    }
+  }
+
+  let tmrResize = null;
+  function notificarCambioDeAncho(){
+    clearTimeout(tmrResize);
+    tmrResize = setTimeout(function(){
+      window.dispatchEvent(new Event('resize'));
+      if(window._map && typeof window._map.invalidateSize === 'function'){
+        try{ window._map.invalidateSize(); }catch(e){}
+      }
+    }, 120);
+  }
+
+  splitter.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+  splitter.addEventListener('dblclick', onDoubleClick);
+  splitter.addEventListener('keydown', onKey);
+
+  window.addEventListener('resize', function(){
+    if(arrastrando) return;
+    if(esMovil()){ limpiarAncho(); return; }
+    let g = null;
+    try{ g = parseInt(localStorage.getItem(SPLIT_KEY) || '', 10); }catch(e){}
+    if(g && !isNaN(g)) aplicarAncho(acotar(g));
+  });
+})();
+
+
+/* ==========================================================================
+   AUTOCOMPLETADO DE ENTIDAD ESTATAL
+   ========================================================================== */
+(function initEntidadAutocomplete(){
+  const input = document.getElementById('entidadInput');
+  const lista = document.getElementById('entidadAc');
+  if(!input || !lista) return;
+
+  const MIN_CHARS = 3;
+  const DEBOUNCE_MS = 320;
+  const MAX_ITEMS = 40;
+
+  let timer = null;
+  let idxActivo = -1;
+  let opciones = [];
+  let ultimaBusqueda = '';
+  let peticionEnCurso = null;
+  const cache = new Map();
+
+  const esc2 = function(x){
+    return String(x == null ? '' : x)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  };
+
+  function cerrar(){
+    lista.classList.remove('show');
+    lista.innerHTML = '';
+    input.setAttribute('aria-expanded','false');
+    idxActivo = -1;
+    opciones = [];
+  }
+
+  function mensaje(html){
+    lista.innerHTML = '<div class="ac-msg">' + html + '</div>';
+    lista.classList.add('show');
+    input.setAttribute('aria-expanded','true');
+  }
+
+  function resaltar(texto, termino){
+    const t = esc2(texto);
+    if(!termino) return t;
+    try{
+      const limpio = termino.replace(/[.*+?^${}()|[\]\\]/g, '\\/* ============ Proxies CORS con fallback automatico ============ */');
+      return t.replace(new RegExp('(' + limpio + ')', 'ig'), '<mark>$1</mark>');
+    }catch(e){ return t; }
+  }
+
+  function pintar(items, termino){
+    opciones = items;
+    idxActivo = -1;
+    if(!items.length){ mensaje('Sin coincidencias para <b>' + esc2(termino) + '</b>'); return; }
+    lista.innerHTML = items.map(function(it,i){
+      return '<div class="ac-item" role="option" data-i="'+i+'">' +
+        '<span class="ac-nombre">' + resaltar(it.entidad, termino) + '</span>' +
+        (it.nit ? '<span class="ac-nit">NIT ' + esc2(it.nit) + '</span>' : '') +
+      '</div>';
+    }).join('');
+    lista.classList.add('show');
+    input.setAttribute('aria-expanded','true');
+  }
+
+  function elegir(i){
+    const it = opciones[i];
+    if(!it) return;
+    input.value = it.entidad;
+    cerrar();
+    input.focus();
+  }
+
+  async function buscar(texto){
+    const termino = texto.trim();
+    if(termino.length < MIN_CHARS){ cerrar(); return; }
+    if(termino === ultimaBusqueda && lista.classList.contains('show')) return;
+    ultimaBusqueda = termino;
+
+    if(cache.has(termino.toLowerCase())){ pintar(cache.get(termino.toLowerCase()), termino); return; }
+
+    mensaje('<span class="spinner"></span>Buscando entidades...');
+
+    const esNit = /^[\d\-\.]+$/.test(termino);
+    const limpio = termino.replace(/'/g, "''");
+    const where = esNit
+      ? "nit_entidad like '%" + limpio.replace(/[\-\.]/g,'') + "%'"
+      : "upper(entidad) like upper('%" + limpio + "%')";
+
+    const url = API + '?$select=entidad,nit_entidad&$where=' + encodeURIComponent(where) + '&$limit=400';
+
+    if(peticionEnCurso){ try{ peticionEnCurso.abort(); }catch(e){} }
+    const ctrl = new AbortController();
+    peticionEnCurso = ctrl;
+
+    try{
+      const r = await fetch(url, {signal: ctrl.signal});
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      const filas = await r.json();
+
+      const vistos = new Set();
+      const unicos = [];
+      for(const f of (filas || [])){
+        const nombre = (f.entidad || '').trim();
+        if(!nombre) continue;
+        const clave = nombre.toLowerCase() + '|' + (f.nit_entidad || '');
+        if(vistos.has(clave)) continue;
+        vistos.add(clave);
+        unicos.push({ entidad: nombre, nit: f.nit_entidad || '' });
+        if(unicos.length >= MAX_ITEMS) break;
+      }
+      unicos.sort(function(a,b){ return a.entidad.length - b.entidad.length; });
+
+      cache.set(termino.toLowerCase(), unicos);
+      if(ultimaBusqueda === termino) pintar(unicos, termino);
+    }catch(e){
+      if(e.name === 'AbortError') return;
+      mensaje('<span style="color:var(--warn)">No se pudo consultar datos.gov.co.</span><br>' +
+              '<span style="font-size:10.5px">Puedes escribir el nombre manualmente.</span>');
+    }finally{
+      if(peticionEnCurso === ctrl) peticionEnCurso = null;
+    }
+  }
+
+  function mover(delta){
+    if(!opciones.length) return;
+    const items = lista.querySelectorAll('.ac-item');
+    if(idxActivo >= 0 && items[idxActivo]) items[idxActivo].classList.remove('active');
+    idxActivo += delta;
+    if(idxActivo < 0) idxActivo = items.length - 1;
+    if(idxActivo >= items.length) idxActivo = 0;
+    const el = items[idxActivo];
+    if(el){ el.classList.add('active'); el.scrollIntoView({block:'nearest'}); }
+  }
+
+  input.addEventListener('input', function(){
+    clearTimeout(timer);
+    const v = input.value;
+    if(v.trim().length < MIN_CHARS){ cerrar(); return; }
+    timer = setTimeout(function(){ buscar(v); }, DEBOUNCE_MS);
+  });
+
+  input.addEventListener('keydown', function(e){
+    const abierta = lista.classList.contains('show');
+    if(e.key === 'ArrowDown'){ if(abierta){ e.preventDefault(); mover(1); } }
+    else if(e.key === 'ArrowUp'){ if(abierta){ e.preventDefault(); mover(-1); } }
+    else if(e.key === 'Enter'){
+      if(abierta && idxActivo >= 0){ e.preventDefault(); elegir(idxActivo); }
+      else cerrar();
+    }
+    else if(e.key === 'Escape'){ cerrar(); }
+    else if(e.key === 'Tab'){ cerrar(); }
+  });
+
+  lista.addEventListener('mousedown', function(e){
+    const it = e.target.closest('.ac-item');
+    if(!it) return;
+    e.preventDefault();
+    elegir(parseInt(it.dataset.i, 10));
+  });
+
+  input.addEventListener('blur', function(){ setTimeout(cerrar, 150); });
+  input.addEventListener('focus', function(){
+    if(input.value.trim().length >= MIN_CHARS) buscar(input.value);
+  });
+
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.ac-wrap')) cerrar();
+  });
+})();
 
 
 /* ============ Proxies CORS con fallback automatico ============ */
@@ -2164,11 +2562,20 @@ async function callAi(payload){
   });
 }
 
+/* Modelos Groq vigentes.
+   Los Llama 3.x y Gemma 2 fueron descontinuados por Groq el 16/08/2026.
+   Reemplazos recomendados oficialmente:
+     llama-3.3-70b-versatile -> openai/gpt-oss-120b
+     llama-3.1-8b-instant    -> openai/gpt-oss-20b
+   Si Groq vuelve a descontinuar, revisar console.groq.com/docs/deprecations */
 const GROQ_MODELS = [
-  {id:'llama-3.3-70b-versatile', tpm:12000, label:'Llama 3.3 70B (alta calidad)'},
-  {id:'llama-3.1-8b-instant',    tpm:30000, label:'Llama 3.1 8B (mas cuota, fallback)'},
-  {id:'gemma2-9b-it',            tpm:15000, label:'Gemma 2 9B (fallback secundario)'}
+  {id:'openai/gpt-oss-120b', tpm:12000, label:'GPT-OSS 120B (alta calidad)'},
+  {id:'openai/gpt-oss-20b',  tpm:30000, label:'GPT-OSS 20B (mas cuota, fallback)'},
+  {id:'qwen/qwen3.6-27b',    tpm:15000, label:'Qwen 3.6 27B (fallback secundario)'}
 ];
+// Atajos usados en llamadas puntuales
+const MODEL_CALIDAD = 'openai/gpt-oss-120b';
+const MODEL_RAPIDO  = 'openai/gpt-oss-20b';
 const GROQ_URL = '__USE_MAILER_PROXY__';  // Las llamadas IA pasan por MAILER_URL
 
 async function analyzeWithAI(r, idProc){
@@ -2436,6 +2843,15 @@ DEVUELVE UNICAMENTE UN JSON valido (sin markdown, sin texto antes ni despues) co
       // Otro error -> propagar
       break;
     }catch(e){ lastErr = e.message; }
+  }
+
+  // Si TODOS los modelos fallaron, response queda undefined
+  if(!response){
+    throw new Error(
+      'Ningun modelo de IA respondio. Ultimo error: ' + (lastErr || 'desconocido') +
+      '\n\nSi dice que el modelo no existe, Groq lo descontinuo: revisa ' +
+      'console.groq.com/docs/deprecations y actualiza GROQ_MODELS.'
+    );
   }
 
   if(!response.ok){
@@ -3906,7 +4322,7 @@ async function generateAiSummaries(){
     const prompt = 'Genera un resumen MUY CORTO (max 80 caracteres) en una sola linea para cada objeto contractual. Responde con JSON array de strings, en orden, sin texto adicional.\n\nObjetos:\n'+listText+'\n\nResponde solo el JSON: ["resumen1", "resumen2", ...]';
     try {
       const r = await callAi({
-        model: 'llama-3.1-8b-instant',
+        model: MODEL_RAPIDO,
         messages: [{role:'user', content: prompt}],
         temperature: 0.2,
         max_tokens: 2048,
@@ -4276,7 +4692,7 @@ Consulta del usuario: "${query}"
 Responde SOLO con JSON valido. Sin markdown.`;
   try {
     const r = await callAi({
-      model:'llama-3.3-70b-versatile',
+      model: MODEL_CALIDAD,
       messages:[{role:'user',content:prompt}],
       temperature: 0.1,
       max_tokens: 1024,
@@ -4481,7 +4897,7 @@ async function sendChatMessage(){
 
   try {
     const resp = await callAi({
-      model:'llama-3.3-70b-versatile',
+      model: MODEL_CALIDAD,
       messages: messages,
       temperature: 0.2,
       max_tokens: 800
@@ -4578,7 +4994,7 @@ ${comp.text}
 
   try {
     const resp = await callAi({
-      model:'llama-3.3-70b-versatile',
+      model: MODEL_CALIDAD,
       messages:[{role:'user',content:prompt}],
       temperature: 0.1,
       max_tokens: 2048,
