@@ -1010,20 +1010,7 @@
 </style>
 </head>
 <body>
-<div id="loginGate">
-  <div class="box">
-    <div class="logo-big">S</div>
-    <h2>SECOP II Hunter</h2>
-    <p>Plataforma privada para busqueda y analisis de procesos.<br>Ingresa tu correo autorizado para continuar.</p>
-    <form id="loginForm" autocomplete="off">
-      <label for="emailInput">Correo electronico</label>
-      <input type="email" id="emailInput" placeholder="ejemplo@correo.com" autofocus required autocomplete="email" />
-      <button type="submit" class="btn-login">Entrar</button>
-      <div class="err" id="loginErr">Correo no autorizado. Solicita acceso al administrador.</div>
-    </form>
-    <div class="footer">Acceso restringido. Si tu correo deberia estar en la lista, contacta al administrador del repositorio.</div>
-  </div>
-</div>
+<!-- Login gate eliminado: acceso libre para cualquiera con el enlace -->
 
 <header>
   <div class="h-left">
@@ -1229,38 +1216,23 @@
 const API = "https://www.datos.gov.co/resource/p6dx-8zbt.json";
 const $ = (id) => document.getElementById(id);
 const tbody = document.querySelector("#results tbody");
-/* ============ LOGIN GATE ============ */
-const ALLOWED_EMAILS = ['jjospinagon@gmail.com', 'ing.jjgomezm@gmail.com'];
+/* ============ ACCESO ABIERTO (sin restriccion de correo) ============
+   La app es de acceso libre para cualquiera que tenga el enlace.
+   ALLOWED_EMAILS se conserva SOLO como lista de destinatarios por defecto
+   para "Compartir por correo" y "Alertas diarias" (editable en cada envio). */
+const ALLOWED_EMAILS = ['jjospinagon@gmail.com', 'ing.jjgomezm@gmail.com', 'jaimeandresbejarano@gmail.com'];
 const LOGIN_KEY = 'secop_hunter_user_v1';
 
-function checkAccess(){
-  const saved = (localStorage.getItem(LOGIN_KEY) || '').toLowerCase().trim();
-  if(saved && ALLOWED_EMAILS.includes(saved)){
-    document.getElementById('loginGate').classList.add('hidden');
-    return true;
-  }
-  return false;
-}
+function checkAccess(){ return true; }
 
 (function(){
   const gate = document.getElementById('loginGate');
-  const form = document.getElementById('loginForm');
-  const input = document.getElementById('emailInput');
-  const err = document.getElementById('loginErr');
-  if(checkAccess()) return;
-  form.addEventListener('submit', (e)=>{
-    e.preventDefault();
-    const v = (input.value || '').toLowerCase().trim();
-    if(ALLOWED_EMAILS.includes(v)){
-      localStorage.setItem(LOGIN_KEY, v);
-      gate.classList.add('hidden');
-      err.classList.remove('show');
-    } else {
-      err.classList.add('show');
-      input.focus();
-      input.select();
-    }
-  });
+  if(gate){
+    gate.classList.add('hidden');
+    gate.style.display = 'none';
+    // Eliminar del DOM para que no capture foco ni tabulacion
+    if(gate.parentNode) gate.parentNode.removeChild(gate);
+  }
 })();
 
 
@@ -2148,16 +2120,48 @@ function getUsageToday(){
    Las keys empiezan con gsk_*. Para crear: console.groq.com/keys */
 const EMBEDDED_GROQ_KEY = '__PROXY__';  // IA via Apps Script proxy (key oculta en server)
 // Wrapper: todas las llamadas IA pasan por el Apps Script proxy
+/* Identificador estable de este navegador. Sirve para que el servidor
+   aplique un limite diario de IA por usuario y un abusador no consuma
+   la cuota de todos. No contiene datos personales. */
+function getClientId(){
+  try{
+    let id = localStorage.getItem('secop_client_id');
+    if(!id){
+      id = 'c' + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-5);
+      localStorage.setItem('secop_client_id', id);
+    }
+    return id;
+  }catch(e){ return 'anonimo'; }
+}
+
 async function callAi(payload){
   // payload = {model, messages, temperature, max_tokens, response_format}
-  const body = Object.assign({action:'aiProxy'}, payload);
+  const body = Object.assign({action:'aiProxy', clientId: getClientId()}, payload);
   const r = await fetch(MAILER_URL, {
     method: 'POST',
     headers: {'Content-Type':'text/plain;charset=utf-8'},
     body: JSON.stringify(body),
     redirect: 'follow'
   });
-  return r;
+
+  const txt = await r.text();
+  let parsed = null;
+  try { parsed = JSON.parse(txt); } catch(e){ parsed = null; }
+
+  // El proxy devuelve errores con la misma forma que Groq: {error:{message,type}}
+  if(parsed && parsed.error && parsed.error.message){
+    const msg = parsed.error.message;
+    if(parsed.error.type === 'secop_hunter_limit'){
+      try{ showToast(msg, 'err', {duration: 9000}); }catch(e){}
+    }
+    throw new Error(msg);
+  }
+
+  // Reconstruimos una Response para no romper a quien llame .json()/.ok/.status
+  return new Response(txt, {
+    status: r.status,
+    headers: {'Content-Type': 'application/json'}
+  });
 }
 
 const GROQ_MODELS = [
