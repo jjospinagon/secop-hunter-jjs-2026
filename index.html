@@ -927,6 +927,12 @@
   .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;color:#c4b5fd;margin-bottom:12px}
   .setup-banner b{color:#ddd6fe}
 
+  /* ===== Boton de recarga forzada ===== */
+  .refresh-btn:hover{ transform:rotate(-25deg) scale(1.05); }
+  .refresh-btn.girando{ pointer-events:none; opacity:0.75; }
+  .refresh-btn.girando svg{ animation:girar 0.7s linear infinite; }
+  @keyframes girar{ to{ transform:rotate(360deg); } }
+
   /* ===== Campos de dinero con separador de miles ===== */
   .money-input{
     font-family:'JetBrains Mono', monospace !important;
@@ -1263,6 +1269,16 @@
             title="Instalar SECOP Hunter como aplicacion en este dispositivo">&#x2B07; Instalar app</button>
     <button id="profileBtn" class="profile-btn" type="button" title="Mi perfil de empresa" onclick="openProfileModal()">&#x1F464; Mi perfil</button>
     <button id="alertsBtn" class="profile-btn" type="button" title="Mis alertas" onclick="openAlertsModal()">&#x1F514; Alertas</button>
+    <button id="btnRefrescar" class="theme-toggle refresh-btn" type="button"
+            title="Actualizar la app (recarga forzada, equivale a Ctrl+Shift+R)" aria-label="Actualizar la app">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 2v6h-6"></path>
+        <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+        <path d="M3 22v-6h6"></path>
+        <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+      </svg>
+    </button>
     <button id="themeToggle" class="theme-toggle" title="Cambiar tema dia/noche" aria-label="Cambiar tema">
       <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -1498,6 +1514,55 @@ function checkAccess(){ return true; }
   }
 })();
 
+
+
+/* ==========================================================================
+   RECARGA FORZADA (equivalente a Ctrl + Shift + R)
+   Javascript no puede disparar el atajo del navegador, asi que se replica
+   su efecto: se borran los caches del service worker, se desregistra, y se
+   recarga la pagina con un parametro anti-cache que despues se limpia
+   de la barra de direcciones.
+   ========================================================================== */
+async function refrescarDuro(){
+  const btn = document.getElementById('btnRefrescar');
+  if(btn) btn.classList.add('girando');
+
+  try{
+    if(window.caches && caches.keys){
+      const claves = await caches.keys();
+      await Promise.all(claves.map(function(k){ return caches.delete(k); }));
+    }
+  }catch(e){ console.warn('[Refrescar] caches:', e); }
+
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(function(r){ return r.unregister().catch(function(){}); }));
+    }
+  }catch(e){ console.warn('[Refrescar] sw:', e); }
+
+  try{
+    const u = new URL(location.href);
+    u.searchParams.set('_r', Date.now());
+    location.replace(u.toString());
+  }catch(e){
+    location.reload();
+  }
+}
+window.refrescarDuro = refrescarDuro;
+
+(function initRefrescar(){
+  const btn = document.getElementById('btnRefrescar');
+  if(btn) btn.onclick = refrescarDuro;
+
+  try{
+    const u = new URL(location.href);
+    if(u.searchParams.has('_r')){
+      u.searchParams.delete('_r');
+      history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+    }
+  }catch(e){}
+})();
 
 
 /* ==========================================================================
