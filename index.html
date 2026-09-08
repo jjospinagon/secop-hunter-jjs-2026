@@ -927,6 +927,73 @@
   .setup-banner{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.05));border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;color:#c4b5fd;margin-bottom:12px}
   .setup-banner b{color:#ddd6fe}
 
+  /* ============================================================
+     VISTA DE FAVORITOS (tarjetas)
+     ============================================================ */
+  .fav-toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--border);
+  }
+  .fav-toolbar .fav-total{ font-size:12px; font-weight:700; color:var(--acc-bright); }
+  .fav-toolbar select{ width:auto; padding:6px 9px; font-size:11.5px; }
+  .fav-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:12px; }
+  .fav-card{
+    background:rgba(15,23,42,0.5); border:1px solid var(--border);
+    border-left:3px solid var(--acc); border-radius:var(--radius-sm);
+    padding:13px 14px; display:flex; flex-direction:column; gap:7px;
+    transition:border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+  .fav-card:hover{ border-color:var(--acc); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.35); }
+  .fav-card.cerrado{ border-left-color:var(--err); opacity:0.75; }
+  .fav-card.urgente{ border-left-color:var(--warn); }
+  .fav-card .fc-top{ display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+  .fav-card .fc-proc{
+    font-family:'JetBrains Mono', monospace; font-size:11.5px; font-weight:700;
+    color:var(--acc-bright); word-break:break-all; line-height:1.3;
+  }
+  .fav-card .fc-quitar{
+    background:none; border:0; color:var(--muted); cursor:pointer;
+    font-size:16px; line-height:1; padding:2px 4px; border-radius:4px; flex-shrink:0;
+  }
+  .fav-card .fc-quitar:hover{ color:var(--err-bright); background:rgba(239,68,68,0.12); }
+  .fav-card .fc-entidad{ font-size:12px; font-weight:600; color:var(--txt); line-height:1.35; }
+  .fav-card .fc-objeto{
+    font-size:11.5px; color:var(--muted); line-height:1.45;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .fav-card .fc-meta{ display:flex; flex-wrap:wrap; gap:5px; }
+  .fav-card .fc-valor{ font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; color:var(--ok-bright); }
+  .fav-card .fc-cierre{ font-size:11px; color:var(--muted); }
+  .fav-card .fc-cierre b{ color:var(--txt); }
+  .fav-card .fc-dias{ font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:999px; display:inline-block; }
+  .fc-dias.ok{ background:rgba(16,185,129,0.18); color:var(--ok-bright); }
+  .fc-dias.pronto{ background:rgba(245,158,11,0.18); color:#fbbf24; }
+  .fc-dias.vencido{ background:rgba(239,68,68,0.15); color:var(--err-bright); }
+  .fav-card .fc-acciones{
+    display:flex; flex-wrap:wrap; gap:5px; margin-top:3px;
+    padding-top:9px; border-top:1px solid var(--border);
+  }
+  .fav-card .fc-acciones button, .fav-card .fc-acciones a{
+    font-size:10.5px; padding:5px 9px; border-radius:5px; font-weight:600;
+    text-decoration:none; cursor:pointer; border:1px solid var(--border);
+    background:rgba(56,189,248,0.1); color:var(--acc-bright);
+    display:inline-flex; align-items:center; gap:4px;
+  }
+  .fav-card .fc-acciones button:hover, .fav-card .fc-acciones a:hover{
+    background:rgba(56,189,248,0.25); border-color:var(--acc);
+  }
+  .fav-vacio{ text-align:center; padding:50px 24px; color:var(--muted); }
+  .fav-vacio .fv-icono{ font-size:44px; margin-bottom:14px; opacity:0.5; }
+  .fav-vacio h3{ color:var(--txt); margin:0 0 8px; font-size:16px; font-weight:700; }
+  .fav-vacio p{ margin:0 auto; font-size:12.5px; line-height:1.6; max-width:420px; }
+  html[data-theme="light"] .fav-card{ background:rgba(255,255,255,0.75); }
+  html[data-theme="light"] .fav-card .fc-entidad{ color:#0f172a; }
+  html[data-theme="light"] .fav-card .fc-objeto{ color:#475569; }
+  @media (max-width:768px){
+    .fav-grid{ grid-template-columns:1fr; }
+    .fav-card .fc-acciones button, .fav-card .fc-acciones a{ font-size:12px; padding:8px 11px; }
+  }
+
   /* ===== Boton de recarga forzada ===== */
   .refresh-btn:hover{ transform:rotate(-25deg) scale(1.05); }
   .refresh-btn.girando{ pointer-events:none; opacity:0.75; }
@@ -1415,6 +1482,7 @@
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <div class="view-switcher">
           <button id="viewTable" class="active" type="button">Tabla</button>
+          <button id="viewFav" type="button" title="Procesos guardados: se ven sin volver a buscar">&#9733; Favoritos (<span id="favTabCount">0</span>)</button>
           <button id="viewCal" type="button">Calendario</button>
           <button id="viewKanban" type="button">Kanban</button>
           <button id="viewMap" type="button">Mapa</button>
@@ -1443,6 +1511,7 @@
       </table>
     </div>
     <div class="calendar-wrap" id="calendarView" style="display:none"></div>
+    <div id="favView" style="display:none"></div>
     <div class="kanban-wrap" id="kanbanView" style="display:none"></div>
     <div class="map-wrap" id="mapView" style="display:none"><div id="mapStats"></div><div id="leafletMap"></div><div class="map-legend" id="mapLegend"></div></div>
     <div class="pager" id="pager"></div>
@@ -2260,7 +2329,7 @@ function render(rows, off){
     const fav = isFavorite(idProc);
     const cmpChecked = (window.__compareSet && window.__compareSet.has(idProc)) ? 'checked' : '';
     return '<tr>'+
-      '<td style="text-align:center"><span class="fav-star '+(fav?'active':'')+'" data-id="'+esc(idProc)+'" onclick="toggleFav(this)" title="Marcar como favorito">'+(fav?'★':'☆')+'</span></td>'+
+      '<td style="text-align:center"><span class="fav-star '+(fav?'active':'')+'" data-id="'+esc(idProc)+'" onclick="toggleFav(this, '+(off+i)+')" title="Guardar en Favoritos para verlo despues sin buscar">'+(fav?'★':'☆')+'</span></td>'+
       '<td>'+(off+i+1)+'</td>'+
       '<td>'+esc(r.referencia_del_proceso || r.proceso_de_compra || '')+'</td>'+
       '<td class="truncate" title="'+esc(r.entidad)+'">'+esc(r.entidad)+'</td>'+
@@ -2713,6 +2782,13 @@ function confirmCloseIfBusy(){
 
 function showDetails(idx){
   const r = lastResults[idx - offset];
+  if(!r){ alert('Registro no encontrado'); return; }
+  abrirDetalles(r);
+}
+
+// Abre el modal a partir del registro. Permite ver un favorito guardado
+// aunque no este en los resultados de la busqueda actual.
+function abrirDetalles(r){
   if(!r){ alert('Registro no encontrado'); return; }
   _currentRecord = r;
   document.getElementById('mdTitle').textContent = 'Proceso: ' + (r.referencia_del_proceso || r.proceso_de_compra || 's/n');
@@ -4622,38 +4698,310 @@ const _form = $('form'); if(_form) _form.addEventListener('keydown', (e)=>{
 
 
 
-/* ============ FASE 1: FAVORITOS ============ */
-const FAVS_KEY = 'secop_favorites_v1';
-function getFavs(){ try{ return JSON.parse(localStorage.getItem(FAVS_KEY) || '[]'); }catch(e){ return []; } }
-function setFavs(arr){ localStorage.setItem(FAVS_KEY, JSON.stringify(arr.slice(-200))); updateFavCount(); }
-function isFavorite(id){ return getFavs().indexOf(String(id)) >= 0; }
-function updateFavCount(){
-  const el = document.getElementById('favCount');
-  if(el) el.textContent = getFavs().length;
+/* ==========================================================================
+   FAVORITOS PERSISTENTES
+   --------------------------------------------------------------------------
+   Antes solo se guardaba el ID del proceso, asi que los favoritos unicamente
+   se podian ver si por casualidad estaban en los resultados de la busqueda
+   actual. Ahora se guarda el registro completo, por lo que la pestaña
+   Favoritos funciona sin volver a consultar la base de datos.
+   ========================================================================== */
+const FAVS_KEY     = 'secop_favoritos_v2';
+const FAVS_KEY_OLD = 'secop_favorites_v1';
+const FAVS_MAX     = 300;
+
+const FAV_CAMPOS = [
+  'id_del_proceso','id_del_portafolio','referencia_del_proceso','proceso_de_compra',
+  'entidad','nit_entidad','departamento_entidad','ciudad_entidad',
+  'descripci_n_del_procedimiento','nombre_del_procedimiento',
+  'modalidad_de_contratacion','estado_del_procedimiento','fase','tipo_de_contrato',
+  'precio_base','duracion','unidad_de_duracion',
+  'fecha_de_publicacion_del','fecha_de_recepcion_de','fecha_de_apertura_de_respuesta',
+  'adjudicado','valor_total_adjudicacion','nombre_del_proveedor',
+  'respuestas_al_procedimiento','proveedores_que_manifestaron','proveedores_unicos_con',
+  'urlproceso','codigo_principal_de_categoria'
+];
+
+function idDeProceso(r){
+  if(!r) return '';
+  return String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso || '');
 }
-function toggleFav(starEl){
+function recortarRegistro(r){
+  const o = {};
+  FAV_CAMPOS.forEach(function(k){ if(r[k] !== undefined && r[k] !== null) o[k] = r[k]; });
+  return o;
+}
+function getFavs(){
+  try{
+    const v2 = JSON.parse(localStorage.getItem(FAVS_KEY) || 'null');
+    if(Array.isArray(v2)) return v2;
+  }catch(e){}
+  try{
+    const v1 = JSON.parse(localStorage.getItem(FAVS_KEY_OLD) || '[]');
+    if(Array.isArray(v1) && v1.length){
+      return v1.map(function(id){ return {id:String(id), ts:0, data:null}; });
+    }
+  }catch(e){}
+  return [];
+}
+function setFavs(arr){
+  const recortado = arr.slice(-FAVS_MAX);
+  try{
+    localStorage.setItem(FAVS_KEY, JSON.stringify(recortado));
+  }catch(e){
+    try{
+      localStorage.setItem(FAVS_KEY, JSON.stringify(recortado.slice(-100)));
+      showToast('Almacenamiento lleno: se conservaron los 100 favoritos mas recientes.', 'err', {duration:7000});
+    }catch(e2){
+      showToast('No se pudo guardar el favorito: almacenamiento del navegador lleno.', 'err');
+    }
+  }
+  actualizarContadoresFav();
+}
+function isFavorite(id){
+  const s2 = String(id);
+  return getFavs().some(function(f){ return f.id === s2; });
+}
+function actualizarContadoresFav(){
+  const n = getFavs().length;
+  ['favCount','favTabCount'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.textContent = n;
+  });
+}
+function updateFavCount(){ actualizarContadoresFav(); }
+
+function toggleFav(starEl, idx){
   const id = String(starEl.dataset.id);
   const favs = getFavs();
-  const idx = favs.indexOf(id);
-  if(idx >= 0){ favs.splice(idx,1); starEl.classList.remove('active'); starEl.textContent = '\u2606'; }
-  else { favs.push(id); starEl.classList.add('active'); starEl.textContent = '\u2605'; }
+  const pos = favs.findIndex(function(f){ return f.id === id; });
+  if(pos >= 0){
+    favs.splice(pos,1);
+    starEl.classList.remove('active');
+    starEl.textContent = '☆';
+  } else {
+    let registro = null;
+    if(typeof idx === 'number' && lastResults) registro = lastResults[idx - offset] || null;
+    if(!registro && lastResults){
+      registro = lastResults.find(function(r){ return idDeProceso(r) === id; }) || null;
+    }
+    favs.push({id:id, ts:Date.now(), data: registro ? recortarRegistro(registro) : null});
+    starEl.classList.add('active');
+    starEl.textContent = '★';
+  }
   setFavs(favs);
-  // Re-render si filtro favoritos activo
-  if(window.__favsOnly) render(window.__lastFilteredResults || lastResults, offset);
+  const fv = document.getElementById('favView');
+  if(fv && fv.style.display !== 'none') renderFavoritos();
 }
 window.toggleFav = toggleFav;
 
-/* Filtro "Solo favoritos" toggle */
+function quitarFavorito(id){
+  setFavs(getFavs().filter(function(f){ return f.id !== String(id); }));
+  renderFavoritos();
+  const estrella = document.querySelector('.fav-star[data-id="' + String(id).replace(/"/g,'\\"') + '"]');
+  if(estrella){ estrella.classList.remove('active'); estrella.textContent = '☆'; }
+  showToast('Quitado de favoritos.', 'ok', {duration:2200});
+}
+window.quitarFavorito = quitarFavorito;
+
+function abrirFavorito(id){
+  const f = getFavs().find(function(x){ return x.id === String(id); });
+  if(!f || !f.data){
+    showToast('Este favorito se guardo con una version anterior y no tiene datos. Buscalo de nuevo y vuelve a marcarlo.', 'err', {duration:8000});
+    return;
+  }
+  abrirDetalles(f.data);
+}
+window.abrirFavorito = abrirFavorito;
+
+function diasParaCierre(fecha){
+  if(!fecha) return null;
+  const f = new Date(String(fecha).substring(0,10) + 'T23:59:59');
+  if(isNaN(f.getTime())) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  return Math.round((f - hoy) / 86400000);
+}
+
+window.__favOrden = 'agregado';
+
+function renderFavoritos(){
+  const cont = document.getElementById('favView');
+  if(!cont) return;
+  let favs = getFavs();
+
+  if(!favs.length){
+    cont.innerHTML =
+      '<div class="fav-vacio">' +
+        '<div class="fv-icono">&#9734;</div>' +
+        '<h3>Todavia no tienes favoritos</h3>' +
+        '<p>Busca procesos en la pestaña <b>Tabla</b> y pulsa la <b>estrella</b> de la primera columna. ' +
+        'Los que marques quedan guardados aqui y podras verlos sin volver a buscar en toda la base de datos.</p>' +
+      '</div>';
+    return;
+  }
+
+  const orden = window.__favOrden;
+  favs = favs.slice();
+  if(orden === 'agregado') favs.sort(function(a2,b2){ return (b2.ts||0)-(a2.ts||0); });
+  else if(orden === 'cierre') favs.sort(function(a2,b2){
+    const fa=(a2.data&&a2.data.fecha_de_recepcion_de)||'9999';
+    const fb=(b2.data&&b2.data.fecha_de_recepcion_de)||'9999';
+    return fa<fb?-1:1;
+  });
+  else if(orden === 'valor') favs.sort(function(a2,b2){
+    return (Number((b2.data||{}).precio_base)||0)-(Number((a2.data||{}).precio_base)||0);
+  });
+  else if(orden === 'entidad') favs.sort(function(a2,b2){
+    return String((a2.data||{}).entidad||'').localeCompare(String((b2.data||{}).entidad||''));
+  });
+
+  const tarjetas = favs.map(function(f){
+    const d = f.data || {};
+    const proc = d.referencia_del_proceso || d.proceso_de_compra || f.id || 's/n';
+    const url = (d.urlproceso && d.urlproceso.url) ? d.urlproceso.url : '';
+    const dias = diasParaCierre(d.fecha_de_recepcion_de);
+    let claseTarjeta='', chip='';
+    if(dias !== null){
+      if(dias < 0){ claseTarjeta='cerrado'; chip='<span class="fc-dias vencido">Cerrado hace '+Math.abs(dias)+' d</span>'; }
+      else if(dias <= 5){ claseTarjeta='urgente'; chip='<span class="fc-dias pronto">Cierra en '+dias+' d</span>'; }
+      else { chip='<span class="fc-dias ok">Cierra en '+dias+' d</span>'; }
+    }
+    const sinDatos = !f.data;
+    const idEsc = String(f.id).replace(/'/g, "\\'");
+
+    return '<div class="fav-card '+claseTarjeta+'">' +
+      '<div class="fc-top">' +
+        '<div class="fc-proc">'+esc(proc)+'</div>' +
+        '<button class="fc-quitar" onclick="quitarFavorito(\''+idEsc+'\')" title="Quitar de favoritos">&times;</button>' +
+      '</div>' +
+      (sinDatos
+        ? '<div class="fc-objeto" style="color:var(--warn)">Guardado con una version anterior: no tiene datos. Buscalo y vuelve a marcarlo.</div>'
+        : '<div class="fc-entidad">'+esc(d.entidad||'')+'</div>' +
+          '<div class="fc-objeto">'+esc(d.descripci_n_del_procedimiento||d.nombre_del_procedimiento||'')+'</div>' +
+          '<div class="fc-valor">'+(d.precio_base?fmtMoney(d.precio_base):'')+'</div>' +
+          '<div class="fc-meta">' +
+            (d.modalidad_de_contratacion?'<span class="tag">'+esc(d.modalidad_de_contratacion)+'</span>':'') +
+            (d.tipo_de_contrato?'<span class="tag">'+esc(d.tipo_de_contrato)+'</span>':'') +
+            (d.estado_del_procedimiento?'<span class="tag">'+esc(d.estado_del_procedimiento)+'</span>':'') +
+          '</div>' +
+          '<div class="fc-cierre">' +
+            (d.departamento_entidad?esc(d.departamento_entidad)+' &middot; ':'') +
+            (d.fecha_de_recepcion_de?'Cierre: <b>'+fmtDate(d.fecha_de_recepcion_de)+'</b> ':'') +
+            chip +
+          '</div>'
+      ) +
+      '<div class="fc-acciones">' +
+        (sinDatos?'':'<button onclick="abrirFavorito(\''+idEsc+'\')">Detalles</button>') +
+        (url?'<a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir en SECOP</a>':'') +
+        (url?'<button onclick="copiarEnlaceFavorito(\''+idEsc+'\', this)">&#128203; Copiar</button>':'') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  const proximos = favs.filter(function(f){
+    if(!f.data || !f.data.fecha_de_recepcion_de) return false;
+    const d2 = diasParaCierre(f.data.fecha_de_recepcion_de);
+    return d2 !== null && d2 >= 0 && d2 <= 7;
+  }).length;
+
+  cont.innerHTML =
+    '<div class="fav-toolbar">' +
+      '<span class="fav-total">&#9733; '+favs.length+' guardado'+(favs.length===1?'':'s')+'</span>' +
+      (proximos?'<span class="fc-dias pronto">'+proximos+' cierra'+(proximos===1?'':'n')+' esta semana</span>':'') +
+      '<span style="flex:1"></span>' +
+      '<label style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.06em;margin:0">Ordenar</label>' +
+      '<select id="favOrden">' +
+        '<option value="agregado">Mas recientes primero</option>' +
+        '<option value="cierre">Cierre mas proximo</option>' +
+        '<option value="valor">Mayor valor</option>' +
+        '<option value="entidad">Entidad (A-Z)</option>' +
+      '</select>' +
+      '<button class="btn-success" style="padding:6px 11px;font-size:11px" onclick="exportarFavoritos()">Exportar Excel</button>' +
+      '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="vaciarFavoritos()">Vaciar</button>' +
+    '</div>' +
+    '<div class="fav-grid">'+tarjetas+'</div>';
+
+  const sel = document.getElementById('favOrden');
+  if(sel){
+    sel.value = window.__favOrden;
+    sel.onchange = function(){ window.__favOrden = sel.value; renderFavoritos(); };
+  }
+}
+window.renderFavoritos = renderFavoritos;
+
+function copiarEnlaceFavorito(id, btn){
+  const f = getFavs().find(function(x){ return x.id === String(id); });
+  const url = f && f.data && f.data.urlproceso ? f.data.urlproceso.url : '';
+  if(!url){ showToast('Sin URL disponible.', 'err'); return; }
+  const ok = function(){
+    const orig = btn.innerHTML;
+    btn.innerHTML = '&#10004; Copiado';
+    setTimeout(function(){ btn.innerHTML = orig; }, 1800);
+    showToast('Enlace copiado.', 'ok', {duration:2000});
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(ok).catch(function(){ fallbackCopy(url, ok); });
+  } else fallbackCopy(url, ok);
+}
+window.copiarEnlaceFavorito = copiarEnlaceFavorito;
+
+function vaciarFavoritos(){
+  const n = getFavs().length;
+  if(!n) return;
+  if(!confirm('Se van a eliminar los '+n+' favoritos guardados. Esta accion no se puede deshacer.\n\nContinuar?')) return;
+  setFavs([]);
+  try{ localStorage.removeItem(FAVS_KEY_OLD); }catch(e){}
+  renderFavoritos();
+  document.querySelectorAll('.fav-star.active').forEach(function(el){
+    el.classList.remove('active'); el.textContent = '☆';
+  });
+  showToast('Favoritos vaciados.', 'ok');
+}
+window.vaciarFavoritos = vaciarFavoritos;
+
+function exportarFavoritos(){
+  const favs = getFavs().filter(function(f){ return f.data; });
+  if(!favs.length){ showToast('No hay favoritos con datos para exportar.', 'err'); return; }
+  const filas = favs.map(function(f,i){
+    const d = f.data;
+    return {
+      '#': i+1,
+      'Guardado el': f.ts ? new Date(f.ts).toLocaleDateString('es-CO') : '',
+      'N Proceso': d.referencia_del_proceso || d.proceso_de_compra || '',
+      'Entidad': d.entidad || '',
+      'NIT': d.nit_entidad || '',
+      'Objeto': d.descripci_n_del_procedimiento || d.nombre_del_procedimiento || '',
+      'Modalidad': d.modalidad_de_contratacion || '',
+      'Estado': d.estado_del_procedimiento || '',
+      'Fase': d.fase || '',
+      'Tipo': d.tipo_de_contrato || '',
+      'Departamento': d.departamento_entidad || '',
+      'Municipio': d.ciudad_entidad || '',
+      'Valor (COP)': d.precio_base ? Number(d.precio_base) : '',
+      'Publicacion': fmtDate(d.fecha_de_publicacion_del),
+      'Cierre ofertas': fmtDate(d.fecha_de_recepcion_de),
+      'Dias para cierre': diasParaCierre(d.fecha_de_recepcion_de),
+      'URL': (d.urlproceso && d.urlproceso.url) || ''
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(filas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Favoritos');
+  XLSX.writeFile(wb, 'SECOP_favoritos_' + new Date().toISOString().substring(0,10) + '.xlsx');
+  showToast('Exportados '+filas.length+' favoritos.', 'ok');
+}
+window.exportarFavoritos = exportarFavoritos;
+
 window.__favsOnly = false;
 function setupFavsFilter(){
   const btn = document.getElementById('filterFavs');
   if(!btn) return;
-  btn.onclick = ()=>{
+  btn.onclick = function(){
     window.__favsOnly = !window.__favsOnly;
     btn.classList.toggle('active', window.__favsOnly);
     if(window.__favsOnly){
-      const favs = new Set(getFavs());
-      const filtered = lastResults.filter(r => favs.has(String(r.id_del_proceso || r.id_del_portafolio || r.referencia_del_proceso)));
+      const ids = new Set(getFavs().map(function(f){ return f.id; }));
+      const filtered = lastResults.filter(function(r){ return ids.has(idDeProceso(r)); });
       window.__lastFilteredResults = filtered;
       render(filtered, 0);
     } else {
@@ -4662,7 +5010,46 @@ function setupFavsFilter(){
     }
   };
 }
-setTimeout(()=>{ updateFavCount(); setupFavsFilter(); }, 100);
+
+/* ==========================================================================
+   CONMUTADOR UNIFICADO DE VISTAS
+   ========================================================================== */
+const VISTAS = [
+  {boton:'viewTable',  panel:'tableView',    alMostrar:null},
+  {boton:'viewFav',    panel:'favView',      alMostrar:function(){ renderFavoritos(); }},
+  {boton:'viewCal',    panel:'calendarView', alMostrar:function(){ if(typeof renderCalendar==='function') renderCalendar(); }},
+  {boton:'viewKanban', panel:'kanbanView',   alMostrar:function(){ if(typeof renderKanban==='function') renderKanban(); }},
+  {boton:'viewMap',    panel:'mapView',      alMostrar:function(){ if(typeof renderMap==='function') renderMap(); }}
+];
+
+function mostrarVista(idBoton){
+  VISTAS.forEach(function(v){
+    const b2 = document.getElementById(v.boton);
+    const p = document.getElementById(v.panel);
+    const activa = (v.boton === idBoton);
+    if(b2) b2.classList.toggle('active', activa);
+    if(p) p.style.display = activa ? '' : 'none';
+  });
+  const v = VISTAS.find(function(x){ return x.boton === idBoton; });
+  if(v && v.alMostrar){ try{ v.alMostrar(); }catch(e){ console.warn('[Vista]', idBoton, e); } }
+  const pg = document.getElementById('pager');
+  if(pg) pg.style.display = (idBoton === 'viewTable') ? '' : 'none';
+}
+window.mostrarVista = mostrarVista;
+
+function setupConmutadorVistas(){
+  VISTAS.forEach(function(v){
+    const b2 = document.getElementById(v.boton);
+    if(b2) b2.onclick = function(){ mostrarVista(v.boton); };
+  });
+}
+
+setTimeout(function(){
+  actualizarContadoresFav();
+  setupFavsFilter();
+  setupConmutadorVistas();
+}, 100);
+setTimeout(setupConmutadorVistas, 900);
 
 /* ============ FASE 1: VISTA CALENDARIO ============ */
 let _calMonth = new Date();
