@@ -998,6 +998,34 @@
   .fav-sync.trabajando::before{ background:var(--acc); animation:latir 1s ease-in-out infinite; }
   @keyframes latir{ 0%,100%{opacity:1} 50%{opacity:0.25} }
 
+  .fav-filtros{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px;
+  }
+  .fav-buscar{
+    flex:1; min-width:200px; padding:8px 12px !important; font-size:12px !important;
+    background:rgba(15,23,42,0.6) !important;
+  }
+  .fav-filtros select{
+    width:auto; max-width:280px; padding:8px 10px; font-size:11.5px;
+  }
+  .fc-cambio{
+    font-size:9.5px; font-weight:800; color:#fbbf24; background:rgba(245,158,11,0.16);
+    border:1px solid rgba(245,158,11,0.4); padding:1px 7px; border-radius:999px;
+    margin-left:6px; white-space:nowrap; cursor:help; vertical-align:middle;
+  }
+  .fc-adjudicado{
+    display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline;
+    background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35);
+    border-radius:6px; padding:7px 10px; font-size:11px;
+  }
+  .fc-adjudicado b{ color:var(--ok-bright); font-size:11px; }
+  .fc-adjudicado span{ color:var(--txt); }
+  .fc-adjudicado .fa-valor{
+    font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--ok-bright); margin-left:auto;
+  }
+  html[data-theme="light"] .fc-adjudicado span{ color:#0f172a; }
+  html[data-theme="light"] .fc-adjudicado b{ color:#047857; }
+
   .fav-vacio{ text-align:center; padding:50px 24px; color:var(--muted); }
   .fav-vacio .fv-icono{ font-size:44px; margin-bottom:14px; opacity:0.5; }
   .fav-vacio h3{ color:var(--txt); margin:0 0 8px; font-size:16px; font-weight:700; }
@@ -5239,12 +5267,22 @@ function diasParaCierre(fecha){
 
 window.__favOrden = 'agregado';
 
+window.__favOrden   = window.__favOrden || 'agregado';
+window.__favTexto   = '';
+window.__favEntidad = '';
+const FAV_ACT_KEY   = 'secop_fav_actualizado';
+const FAV_ACT_HORAS = 6;   // refresco automatico al abrir la pestaña
+
+function normalizar(t){
+  return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+
 function renderFavoritos(){
   const cont = document.getElementById('favView');
   if(!cont) return;
-  let favs = getFavs();
+  const todos = getFavs();
 
-  if(!favs.length){
+  if(!todos.length){
     cont.innerHTML =
       '<div class="fav-vacio">' +
         '<div class="fv-icono">&#9734;</div>' +
@@ -5255,6 +5293,36 @@ function renderFavoritos(){
     return;
   }
 
+  // --- Entidades presentes, con conteo ---
+  const conteo = {};
+  todos.forEach(function(f){
+    const e = (f.data && f.data.entidad) ? f.data.entidad : '(sin entidad)';
+    conteo[e] = (conteo[e] || 0) + 1;
+  });
+  const entidades = Object.keys(conteo).sort(function(x,y){
+    return conteo[y] - conteo[x] || x.localeCompare(y);
+  });
+
+  // --- Aplicar filtros ---
+  const txt = normalizar(window.__favTexto);
+  let favs = todos.filter(function(f){
+    const d = f.data || {};
+    if(window.__favEntidad){
+      const e = d.entidad || '(sin entidad)';
+      if(e !== window.__favEntidad) return false;
+    }
+    if(txt){
+      const heno = normalizar(
+        (d.entidad||'') + ' ' + (d.referencia_del_proceso||'') + ' ' + (d.proceso_de_compra||'') + ' ' +
+        (d.descripci_n_del_procedimiento||d.nombre_del_procedimiento||'') + ' ' +
+        (d.departamento_entidad||'') + ' ' + (d.ciudad_entidad||'') + ' ' + (d.modalidad_de_contratacion||'')
+      );
+      if(heno.indexOf(txt) < 0) return false;
+    }
+    return true;
+  });
+
+  // --- Orden ---
   const orden = window.__favOrden;
   favs = favs.slice();
   if(orden === 'agregado') favs.sort(function(a2,b2){ return (b2.ts||0)-(a2.ts||0); });
@@ -5283,10 +5351,16 @@ function renderFavoritos(){
     }
     const sinDatos = !f.data;
     const idEsc = String(f.id).replace(/'/g, "\\'");
+    // SECOP marca la adjudicacion de varias formas segun la etapa
+    const adjudicado = (String(d.adjudicado||'').toLowerCase() === 'si') ||
+      ['adjudicado','celebrado','seleccionado','liquidado'].indexOf(String(d.estado_del_procedimiento||'').toLowerCase()) >= 0 ||
+      Number(d.valor_total_adjudicacion) > 0;
+    const marcaCambio = f.cambio
+      ? '<span class="fc-cambio" title="' + esc(f.cambio) + '">&#9679; Cambio</span>' : '';
 
     return '<div class="fav-card '+claseTarjeta+'">' +
       '<div class="fc-top">' +
-        '<div class="fc-proc">'+esc(proc)+'</div>' +
+        '<div class="fc-proc">'+esc(proc)+' '+marcaCambio+'</div>' +
         '<button class="fc-quitar" onclick="quitarFavorito(\''+idEsc+'\')" title="Quitar de favoritos">&times;</button>' +
       '</div>' +
       (sinDatos
@@ -5294,6 +5368,15 @@ function renderFavoritos(){
         : '<div class="fc-entidad">'+esc(d.entidad||'')+'</div>' +
           '<div class="fc-objeto">'+esc(d.descripci_n_del_procedimiento||d.nombre_del_procedimiento||'')+'</div>' +
           '<div class="fc-valor">'+(d.precio_base?fmtMoney(d.precio_base):'')+'</div>' +
+          (adjudicado
+            ? '<div class="fc-adjudicado">' +
+                '<b>&#10003; Adjudicado</b>' +
+                (d.nombre_del_proveedor && d.nombre_del_proveedor !== 'No Definido'
+                   ? '<span>' + esc(d.nombre_del_proveedor) + '</span>' : '') +
+                (Number(d.valor_total_adjudicacion) > 0
+                   ? '<span class="fa-valor">' + fmtMoney(d.valor_total_adjudicacion) + '</span>' : '') +
+              '</div>'
+            : '') +
           '<div class="fc-meta">' +
             (d.modalidad_de_contratacion?'<span class="tag">'+esc(d.modalidad_de_contratacion)+'</span>':'') +
             (d.tipo_de_contrato?'<span class="tag">'+esc(d.tipo_de_contrato)+'</span>':'') +
@@ -5319,32 +5402,220 @@ function renderFavoritos(){
     return d2 !== null && d2 >= 0 && d2 <= 7;
   }).length;
 
+  const hayFiltro = !!(window.__favTexto || window.__favEntidad);
+  const conteoTexto = hayFiltro
+    ? favs.length + ' de ' + todos.length
+    : todos.length + ' guardado' + (todos.length===1?'':'s');
+
   cont.innerHTML =
     '<div class="fav-toolbar">' +
-      '<span class="fav-total">&#9733; '+favs.length+' guardado'+(favs.length===1?'':'s')+'</span>' +
+      '<span class="fav-total">&#9733; ' + conteoTexto + '</span>' +
       (proximos?'<span class="fc-dias pronto">'+proximos+' cierra'+(proximos===1?'':'n')+' esta semana</span>':'') +
       '<span style="flex:1"></span>' +
-      '<label style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.06em;margin:0">Ordenar</label>' +
+      '<span id="favSyncEstado" class="fav-sync">' + textoUltimaSync() + '</span>' +
+      '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="favActualizarDatos(false)" title="Consultar datos.gov.co y refrescar estado, fase, cierre y adjudicacion">&#8635; Actualizar datos</button>' +
+      '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="sincronizarFavoritos(false)" title="Sincronizar con tu cuenta">&#9729; Sincronizar</button>' +
+      '<button class="btn-success" style="padding:6px 11px;font-size:11px" onclick="exportarFavoritos()">Exportar Excel</button>' +
+      '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="vaciarFavoritos()">Vaciar</button>' +
+    '</div>' +
+
+    '<div class="fav-filtros">' +
+      '<input type="text" id="favFiltro" class="fav-buscar" placeholder="Filtrar por entidad, numero de proceso u objeto..." value="' + esc(window.__favTexto) + '" />' +
+      '<select id="favEntidad" title="Filtrar por entidad">' +
+        '<option value="">Todas las entidades (' + todos.length + ')</option>' +
+        entidades.map(function(e){
+          return '<option value="' + esc(e) + '"' + (e===window.__favEntidad?' selected':'') + '>' +
+                 esc(e.length>44 ? e.substring(0,41)+'...' : e) + ' (' + conteo[e] + ')</option>';
+        }).join('') +
+      '</select>' +
       '<select id="favOrden">' +
         '<option value="agregado">Mas recientes primero</option>' +
         '<option value="cierre">Cierre mas proximo</option>' +
         '<option value="valor">Mayor valor</option>' +
         '<option value="entidad">Entidad (A-Z)</option>' +
       '</select>' +
-      '<span id="favSyncEstado" class="fav-sync">' + textoUltimaSync() + '</span>' +
-      '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="sincronizarFavoritos(false)" title="Traer y enviar los favoritos de este correo">&#8635; Sincronizar</button>' +
-      '<button class="btn-success" style="padding:6px 11px;font-size:11px" onclick="exportarFavoritos()">Exportar Excel</button>' +
-      '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="vaciarFavoritos()">Vaciar</button>' +
+      (hayFiltro ? '<button class="btn-secondary" style="padding:7px 12px;font-size:11px" onclick="limpiarFiltroFav()">Limpiar filtro</button>' : '') +
     '</div>' +
-    '<div class="fav-grid">'+tarjetas+'</div>';
+
+    (favs.length
+      ? '<div class="fav-grid">'+tarjetas+'</div>'
+      : '<div class="fav-vacio"><div class="fv-icono">&#128269;</div><h3>Ningun favorito coincide</h3>' +
+        '<p>Prueba con otra entidad o borra el filtro.</p></div>');
 
   const sel = document.getElementById('favOrden');
   if(sel){
     sel.value = window.__favOrden;
     sel.onchange = function(){ window.__favOrden = sel.value; renderFavoritos(); };
   }
+  const selE = document.getElementById('favEntidad');
+  if(selE) selE.onchange = function(){ window.__favEntidad = selE.value; renderFavoritos(); };
+
+  const inp = document.getElementById('favFiltro');
+  if(inp){
+    let t = null;
+    inp.oninput = function(){
+      clearTimeout(t);
+      t = setTimeout(function(){
+        window.__favTexto = inp.value;
+        renderFavoritos();
+        const nuevo = document.getElementById('favFiltro');
+        if(nuevo){ nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
+      }, 280);
+    };
+  }
 }
+function limpiarFiltroFav(){
+  window.__favTexto = ''; window.__favEntidad = '';
+  renderFavoritos();
+}
+window.limpiarFiltroFav = limpiarFiltroFav;
+
 window.renderFavoritos = renderFavoritos;
+
+/* ==========================================================================
+   MANTENER LOS FAVORITOS AL DIA
+   --------------------------------------------------------------------------
+   Un favorito guarda una foto del proceso al momento de marcarlo. Con el
+   tiempo cambian el estado, la fase, la fecha de cierre y la adjudicacion.
+   Esta funcion vuelve a consultar datos.gov.co y actualiza lo guardado,
+   avisando que cambio para que no se pase por alto un cierre o una
+   adjudicacion.
+   ========================================================================== */
+let _actualizandoFav = false;
+
+async function favActualizarDatos(silencioso){
+  if(_actualizandoFav) return;
+  const favs = getFavs();
+  const conDatos = favs.filter(function(f){ return f.data; });
+  if(!conDatos.length){
+    if(!silencioso) showToast('No hay favoritos con datos para actualizar.', 'info');
+    return;
+  }
+
+  _actualizandoFav = true;
+  estadoSync('Actualizando datos...', 'trabajando');
+
+  // Indice: cualquier identificador conocido apunta al favorito
+  const porId = new Map();
+  conDatos.forEach(function(f){
+    const d = f.data;
+    [d.id_del_proceso, d.id_del_portafolio, d.referencia_del_proceso, f.id].forEach(function(k){
+      if(k) porId.set(String(k), f);
+    });
+  });
+
+  const CAMPOS = [
+    ['estado_del_procedimiento','Estado'],
+    ['fase','Fase'],
+    ['fecha_de_recepcion_de','Cierre de ofertas'],
+    ['adjudicado','Adjudicacion'],
+    ['precio_base','Valor']
+  ];
+
+  let refrescados = 0;
+  const cambios = [];
+
+  // Consultamos por lotes para no armar URLs gigantes
+  const LOTE = 20;
+  try{
+    for(let i = 0; i < conDatos.length; i += LOTE){
+      const lote = conDatos.slice(i, i + LOTE);
+      const ids = new Set();
+      lote.forEach(function(f){
+        const d = f.data;
+        if(d.id_del_proceso)    ids.add(d.id_del_proceso);
+        if(d.id_del_portafolio) ids.add(d.id_del_portafolio);
+        if(!d.id_del_proceso && !d.id_del_portafolio && d.referencia_del_proceso) ids.add(d.referencia_del_proceso);
+      });
+      if(!ids.size) continue;
+
+      const lista = Array.from(ids).map(function(x){
+        return "'" + String(x).replace(/'/g, "''") + "'";
+      }).join(',');
+
+      const where = "id_del_proceso IN (" + lista + ") OR id_del_portafolio IN (" + lista + ") OR referencia_del_proceso IN (" + lista + ")";
+      const url = API + '?$where=' + encodeURIComponent(where) + '&$limit=200';
+
+      const r = await fetch(url);
+      if(!r.ok) continue;
+      const filas = await r.json();
+
+      filas.forEach(function(row){
+        const f = porId.get(String(row.id_del_proceso)) ||
+                  porId.get(String(row.id_del_portafolio)) ||
+                  porId.get(String(row.referencia_del_proceso));
+        if(!f) return;
+
+        const antes = f.data || {};
+        const listaCambios = [];
+        CAMPOS.forEach(function(par){
+          const k = par[0], etq = par[1];
+          if(row[k] === undefined) return;
+          const va = String(antes[k] == null ? '' : antes[k]);
+          const vb = String(row[k] == null ? '' : row[k]);
+          if(va !== vb && vb !== ''){
+            const fmt = function(v){
+              if(k === 'precio_base') return v ? fmtMoney(v) : '-';
+              if(k === 'fecha_de_recepcion_de') return v ? fmtDate(v) : '-';
+              return v || '-';
+            };
+            listaCambios.push(etq + ': ' + fmt(va) + ' -> ' + fmt(vb));
+          }
+        });
+
+        f.data = recortarRegistro(row);
+        f.actualizadoEl = Date.now();
+        if(listaCambios.length){
+          f.cambio = listaCambios.join(' | ');
+          cambios.push({
+            proc: row.referencia_del_proceso || f.id,
+            detalle: listaCambios.join(' | ')
+          });
+        }
+        refrescados++;
+      });
+    }
+
+    try{ localStorage.setItem(claveUsuario(FAVS_KEY), JSON.stringify(favs.slice(-FAVS_MAX))); }catch(e){}
+    try{ localStorage.setItem(claveUsuario(FAV_ACT_KEY), String(Date.now())); }catch(e){}
+
+    estadoSync('Sincronizado', 'ok');
+    renderFavoritos();
+    if(tokenActual()) programarSync();
+
+    if(!silencioso){
+      if(cambios.length){
+        const resumen = cambios.slice(0,4).map(function(c){ return c.proc + ' - ' + c.detalle; }).join('\n');
+        showToast('Actualizados ' + refrescados + '. <b>' + cambios.length + ' con cambios:</b><br>' +
+                  esc(resumen).replace(/\n/g,'<br>') +
+                  (cambios.length > 4 ? '<br>y ' + (cambios.length-4) + ' mas...' : ''),
+                  'info', {duration: 14000});
+      } else {
+        showToast('Actualizados ' + refrescados + ' favoritos. Ningun cambio.', 'ok');
+      }
+    } else if(cambios.length){
+      showToast(cambios.length + ' favorito(s) cambiaron de estado. Revisa las tarjetas marcadas.', 'info', {duration:9000});
+    }
+  }catch(e){
+    console.warn('[Actualizar favoritos]', e);
+    estadoSync('Sin actualizar', 'error');
+    if(!silencioso) showToast('No se pudieron actualizar: ' + e.message, 'err');
+  }finally{
+    _actualizandoFav = false;
+  }
+}
+window.favActualizarDatos = favActualizarDatos;
+
+/* Refresco automatico al abrir la pestaña si los datos estan viejos */
+function autoActualizarFavoritos(){
+  let ts = 0;
+  try{ ts = parseInt(localStorage.getItem(claveUsuario(FAV_ACT_KEY)) || '0', 10); }catch(e){}
+  const horas = (Date.now() - ts) / 3600000;
+  if(!ts || horas >= FAV_ACT_HORAS){
+    setTimeout(function(){ favActualizarDatos(true); }, 1200);
+  }
+}
+window.autoActualizarFavoritos = autoActualizarFavoritos;
 
 function copiarEnlaceFavorito(id, btn){
   const f = getFavs().find(function(x){ return x.id === String(id); });
@@ -5565,7 +5836,7 @@ function textoUltimaSync(){
    ========================================================================== */
 const VISTAS = [
   {boton:'viewTable',  panel:'tableView',    alMostrar:null},
-  {boton:'viewFav',    panel:'favView',      alMostrar:function(){ renderFavoritos(); }},
+  {boton:'viewFav',    panel:'favView',      alMostrar:function(){ renderFavoritos(); autoActualizarFavoritos(); }},
   {boton:'viewCal',    panel:'calendarView', alMostrar:function(){ if(typeof renderCalendar==='function') renderCalendar(); }},
   {boton:'viewKanban', panel:'kanbanView',   alMostrar:function(){ if(typeof renderKanban==='function') renderKanban(); }},
   {boton:'viewMap',    panel:'mapView',      alMostrar:function(){ if(typeof renderMap==='function') renderMap(); }}
