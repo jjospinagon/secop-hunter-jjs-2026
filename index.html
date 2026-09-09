@@ -982,6 +982,22 @@
   .fav-card .fc-acciones button:hover, .fav-card .fc-acciones a:hover{
     background:rgba(56,189,248,0.25); border-color:var(--acc);
   }
+  .fav-sync{
+    font-size:10.5px; font-weight:600; color:var(--muted);
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .fav-sync::before{
+    content:''; width:7px; height:7px; border-radius:50%;
+    background:var(--muted); flex-shrink:0;
+  }
+  .fav-sync.ok{ color:var(--ok-bright); }
+  .fav-sync.ok::before{ background:var(--ok); box-shadow:0 0 6px var(--ok); }
+  .fav-sync.error{ color:var(--err-bright); }
+  .fav-sync.error::before{ background:var(--err); }
+  .fav-sync.trabajando{ color:var(--acc-bright); }
+  .fav-sync.trabajando::before{ background:var(--acc); animation:latir 1s ease-in-out infinite; }
+  @keyframes latir{ 0%,100%{opacity:1} 50%{opacity:0.25} }
+
   .fav-vacio{ text-align:center; padding:50px 24px; color:var(--muted); }
   .fav-vacio .fv-icono{ font-size:44px; margin-bottom:14px; opacity:0.5; }
   .fav-vacio h3{ color:var(--txt); margin:0 0 8px; font-size:16px; font-weight:700; }
@@ -1704,6 +1720,10 @@ function checkAccess(){ return !!usuarioActual(); }
     if(gate){ gate.classList.add('hidden'); }
     pintarUsuarioEnHeader();
     try{ if(typeof actualizarContadoresFav === 'function') actualizarContadoresFav(); }catch(e){}
+    // Traer del servidor los favoritos guardados bajo este correo
+    setTimeout(function(){
+      try{ if(typeof sincronizarFavoritos === 'function') sincronizarFavoritos(true); }catch(e){}
+    }, 800);
     try{
       const fv = document.getElementById('favView');
       if(fv && fv.style.display !== 'none' && typeof renderFavoritos === 'function') renderFavoritos();
@@ -4925,6 +4945,7 @@ function toggleFav(starEl, idx){
   const pos = favs.findIndex(function(f){ return f.id === id; });
   if(pos >= 0){
     favs.splice(pos,1);
+    marcarBorrado(id);
     starEl.classList.remove('active');
     starEl.textContent = '☆';
   } else {
@@ -4938,13 +4959,16 @@ function toggleFav(starEl, idx){
     starEl.textContent = '★';
   }
   setFavs(favs);
+  programarSync();
   const fv = document.getElementById('favView');
   if(fv && fv.style.display !== 'none') renderFavoritos();
 }
 window.toggleFav = toggleFav;
 
 function quitarFavorito(id){
+  marcarBorrado(id);
   setFavs(getFavs().filter(function(f){ return f.id !== String(id); }));
+  programarSync();
   renderFavoritos();
   const estrella = document.querySelector('.fav-star[data-id="' + String(id).replace(/"/g,'\\"') + '"]');
   if(estrella){ estrella.classList.remove('active'); estrella.textContent = '☆'; }
@@ -5064,6 +5088,8 @@ function renderFavoritos(){
         '<option value="valor">Mayor valor</option>' +
         '<option value="entidad">Entidad (A-Z)</option>' +
       '</select>' +
+      '<span id="favSyncEstado" class="fav-sync">' + textoUltimaSync() + '</span>' +
+      '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="sincronizarFavoritos(false)" title="Traer y enviar los favoritos de este correo">&#8635; Sincronizar</button>' +
       '<button class="btn-success" style="padding:6px 11px;font-size:11px" onclick="exportarFavoritos()">Exportar Excel</button>' +
       '<button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="vaciarFavoritos()">Vaciar</button>' +
     '</div>' +
@@ -5097,7 +5123,9 @@ function vaciarFavoritos(){
   const n = getFavs().length;
   if(!n) return;
   if(!confirm('Se van a eliminar los '+n+' favoritos guardados. Esta accion no se puede deshacer.\n\nContinuar?')) return;
+  getFavs().forEach(function(f){ marcarBorrado(f.id); });
   setFavs([]);
+  programarSync();
   try{ localStorage.removeItem(claveUsuario(FAVS_KEY_OLD)); }catch(e){}
   renderFavoritos();
   document.querySelectorAll('.fav-star.active').forEach(function(el){
@@ -5157,6 +5185,134 @@ function setupFavsFilter(){
       render(lastResults, offset);
     }
   };
+}
+
+/* ==========================================================================
+   SINCRONIZACION DE FAVORITOS ENTRE EQUIPOS
+   --------------------------------------------------------------------------
+   Los favoritos se guardan en el servidor (Apps Script -> Drive) indexados
+   por correo. Al entrar con el mismo correo en otro computador se descargan.
+
+   Fusion: se unen los favoritos locales y los del servidor quedandose con la
+   version mas reciente de cada uno. Los borrados se registran como "lapidas"
+   con su fecha, de forma que si quitas un favorito en un equipo no vuelva a
+   aparecer al sincronizar con otro.
+   ========================================================================== */
+const BORRADOS_KEY = 'secop_fav_borrados';
+const SYNC_TS_KEY  = 'secop_fav_sync_ts';
+const LAPIDA_DIAS  = 120;
+
+function getBorrados(){
+  try{ return JSON.parse(localStorage.getItem(claveUsuario(BORRADOS_KEY)) || '[]'); }
+  catch(e){ return []; }
+}
+function setBorrados(arr){
+  const corte = Date.now() - LAPIDA_DIAS*86400000;
+  const vigentes = arr.filter(function(b){ return (b.ts||0) > corte; });
+  try{ localStorage.setItem(claveUsuario(BORRADOS_KEY), JSON.stringify(vigentes.slice(-FAVS_MAX))); }catch(e){}
+}
+function marcarBorrado(id){
+  const b = getBorrados().filter(function(x){ return x.id !== String(id); });
+  b.push({id:String(id), ts:Date.now()});
+  setBorrados(b);
+}
+
+function fusionarPorId(a, b){
+  const mapa = new Map();
+  (a||[]).concat(b||[]).forEach(function(x){
+    if(!x || !x.id) return;
+    const prev = mapa.get(x.id);
+    if(!prev || (x.ts||0) > (prev.ts||0)) mapa.set(x.id, x);
+  });
+  return Array.from(mapa.values());
+}
+
+function estadoSync(texto, tipo){
+  const el = document.getElementById('favSyncEstado');
+  if(!el) return;
+  el.textContent = texto;
+  el.className = 'fav-sync ' + (tipo || '');
+}
+
+let _syncEnCurso = false;
+
+async function sincronizarFavoritos(silencioso){
+  const correo = usuarioActual();
+  if(!correo) return {ok:false, motivo:'sin sesion'};
+  if(_syncEnCurso) return {ok:false, motivo:'en curso'};
+  _syncEnCurso = true;
+  estadoSync('Sincronizando...', 'trabajando');
+
+  try{
+    const r = await fetch(MAILER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'favLeer', correo: correo}),
+      redirect:'follow'
+    });
+    const remoto = await r.json();
+    if(!remoto || remoto.ok === false) throw new Error(remoto && remoto.error ? remoto.error : 'respuesta invalida');
+
+    const favLocal = getFavs();
+    const delLocal = getBorrados();
+    const favUnidos = fusionarPorId(favLocal, remoto.favoritos || []);
+    const delUnidos = fusionarPorId(delLocal, remoto.borrados || []);
+
+    const mapaDel = new Map(delUnidos.map(function(d){ return [d.id, d.ts||0]; }));
+    const finales = favUnidos.filter(function(f){
+      const tsBorrado = mapaDel.get(f.id);
+      return !(tsBorrado && tsBorrado >= (f.ts||0));
+    });
+
+    try{ localStorage.setItem(claveUsuario(FAVS_KEY), JSON.stringify(finales.slice(-FAVS_MAX))); }catch(e){}
+    setBorrados(delUnidos);
+    actualizarContadoresFav();
+
+    const r2 = await fetch(MAILER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'favGuardar', correo: correo, favoritos: finales, borrados: delUnidos}),
+      redirect:'follow'
+    });
+    const guardado = await r2.json();
+    if(!guardado || guardado.ok === false) throw new Error(guardado && guardado.error ? guardado.error : 'no se pudo guardar');
+
+    try{ localStorage.setItem(claveUsuario(SYNC_TS_KEY), String(Date.now())); }catch(e){}
+    estadoSync('Sincronizado', 'ok');
+
+    const fv = document.getElementById('favView');
+    if(fv && fv.style.display !== 'none') renderFavoritos();
+
+    return {ok:true, total: finales.length};
+  }catch(e){
+    console.warn('[Sync favoritos]', e);
+    estadoSync('Sin sincronizar', 'error');
+    if(!silencioso) showToast('No se pudo sincronizar: ' + e.message + '. Tus favoritos siguen guardados en este equipo.', 'err', {duration:7000});
+    return {ok:false, motivo:e.message};
+  }finally{
+    _syncEnCurso = false;
+  }
+}
+window.sincronizarFavoritos = sincronizarFavoritos;
+
+let _syncTimer = null;
+function programarSync(){
+  if(!usuarioActual()) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(function(){ sincronizarFavoritos(true); }, 2500);
+}
+window.programarSync = programarSync;
+
+function textoUltimaSync(){
+  let ts = 0;
+  try{ ts = parseInt(localStorage.getItem(claveUsuario(SYNC_TS_KEY)) || '0', 10); }catch(e){}
+  if(!ts) return 'Sin sincronizar aun';
+  const min = Math.round((Date.now() - ts)/60000);
+  if(min < 1)  return 'Sincronizado hace un momento';
+  if(min < 60) return 'Sincronizado hace ' + min + ' min';
+  const h = Math.round(min/60);
+  if(h < 24)   return 'Sincronizado hace ' + h + ' h';
+  return 'Sincronizado el ' + new Date(ts).toLocaleDateString('es-CO');
 }
 
 /* ==========================================================================
