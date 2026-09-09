@@ -1010,6 +1010,104 @@
     .fav-card .fc-acciones button, .fav-card .fc-acciones a{ font-size:12px; padding:8px 11px; }
   }
 
+  /* ============================================================
+     MODAL DE CUENTA Y PANEL DE ADMINISTRACION
+     ============================================================ */
+  .cuenta-back{
+    position:fixed; inset:0; z-index:9998; display:none;
+    background:rgba(2,6,23,0.82); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center; padding:20px; overflow-y:auto;
+  }
+  .cuenta-back.show{ display:flex; }
+  .cuenta-box{
+    background:linear-gradient(180deg,var(--panel-solid),#0f172a);
+    border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:30px 28px; max-width:420px; width:100%; position:relative;
+    box-shadow:0 24px 80px rgba(0,0,0,0.65); animation:scaleIn 0.25s cubic-bezier(0.4,0,0.2,1);
+    margin:auto;
+  }
+  .cuenta-box.admin-box{ max-width:920px; }
+  .cuenta-x{
+    position:absolute; top:12px; right:14px; background:none; border:0;
+    color:var(--muted); font-size:24px; cursor:pointer; line-height:1; padding:4px 8px; border-radius:6px;
+  }
+  .cuenta-x:hover{ color:var(--err-bright); background:rgba(239,68,68,0.12); }
+  .cuenta-logo{
+    width:56px; height:56px; background:linear-gradient(135deg,var(--acc),var(--acc2));
+    border-radius:14px; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:800; font-size:25px; margin:0 auto 14px;
+    box-shadow:0 8px 24px rgba(14,165,233,0.4);
+  }
+  .cuenta-titulo{ margin:0 0 6px; font-size:20px; font-weight:700; color:var(--txt-bright); text-align:center; }
+  .cuenta-sub{ margin:0 0 20px; font-size:12px; color:var(--muted); text-align:center; line-height:1.55; }
+  .cuenta-tabs{
+    display:flex; gap:3px; background:rgba(15,23,42,0.6); border:1px solid var(--border);
+    border-radius:8px; padding:3px; margin-bottom:16px;
+  }
+  .cuenta-tabs button{
+    flex:1; background:transparent; color:var(--muted); padding:8px;
+    font-size:12px; font-weight:600; border-radius:5px; border:0; cursor:pointer;
+  }
+  .cuenta-tabs button.active{
+    background:linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff;
+    box-shadow:0 2px 6px rgba(14,165,233,0.4);
+  }
+  .cuenta-box label{
+    display:block; font-size:10px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:0.08em; margin:12px 0 5px; font-weight:700;
+  }
+  .cuenta-box input{
+    width:100%; background:rgba(15,23,42,0.6); border:1px solid var(--border);
+    color:var(--txt); padding:11px 13px; border-radius:var(--radius-sm);
+    font-size:14px; font-weight:500;
+  }
+  .cuenta-box input:focus{ outline:none; border-color:var(--acc); box-shadow:var(--shadow-glow); }
+  .cuenta-fila{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cuenta-fila label{ margin-top:0; }
+  .cuenta-box .btn-login{
+    width:100%; background:var(--gradient-1); color:#fff; padding:13px; margin-top:18px;
+    border-radius:var(--radius-sm); font-size:14px; font-weight:700; cursor:pointer; border:0;
+    box-shadow:0 4px 16px rgba(14,165,233,0.4);
+  }
+  .cuenta-box .btn-login:disabled{ opacity:0.55; cursor:wait; }
+  .cuenta-enlace{
+    display:block; width:100%; background:none; border:0; color:var(--acc-bright);
+    font-size:12px; margin-top:12px; cursor:pointer; text-align:center; font-weight:600;
+  }
+  .cuenta-enlace:hover{ text-decoration:underline; }
+  .cuenta-nota{ font-size:11px; color:var(--muted); margin:12px 0 0; line-height:1.5; text-align:center; }
+  .cuenta-aviso{ display:none; padding:10px 12px; border-radius:var(--radius-sm); font-size:12px; line-height:1.45; margin-bottom:4px; }
+  .cuenta-aviso.show{ display:block; animation:fadeIn 0.2s; }
+  .cuenta-aviso.error{ background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:var(--err-bright); }
+  .cuenta-aviso.ok{ background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); color:var(--ok-bright); }
+
+  .adm-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin:16px 0 20px; }
+  .adm-kpi{ background:rgba(15,23,42,0.5); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
+  .adm-kpi .k-n{ font-size:22px; font-weight:800; color:var(--acc-bright); font-family:'JetBrains Mono',monospace; }
+  .adm-kpi .k-t{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:3px; }
+  .adm-tabla-wrap{ overflow:auto; max-height:340px; border:1px solid var(--border); border-radius:8px; margin-bottom:18px; }
+  .adm-tabla{ width:100%; border-collapse:collapse; font-size:11.5px; }
+  .adm-tabla th{
+    background:linear-gradient(180deg,#0c4a6e,#075985); color:#fff; padding:9px 10px;
+    text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;
+    position:sticky; top:0; white-space:nowrap;
+  }
+  .adm-tabla td{ padding:8px 10px; border-bottom:1px solid var(--border); color:var(--txt); }
+  .adm-tabla tr:hover td{ background:rgba(56,189,248,0.06); }
+  .adm-tabla .mono{ font-family:'JetBrains Mono',monospace; font-size:10.5px; }
+
+  html[data-theme="light"] .cuenta-box{ background:linear-gradient(180deg,#ffffff,#f8fafc); }
+  html[data-theme="light"] .cuenta-titulo{ color:#0f172a; }
+  html[data-theme="light"] .cuenta-box input{ background:rgba(255,255,255,0.9); color:#0f172a; }
+  html[data-theme="light"] .adm-kpi{ background:rgba(255,255,255,0.8); }
+  html[data-theme="light"] .adm-tabla td{ color:#0f172a; }
+
+  @media (max-width:600px){
+    .cuenta-box{ padding:24px 20px; }
+    .cuenta-fila{ grid-template-columns:1fr; }
+    .cuenta-box input{ font-size:16px; }
+  }
+
   /* ===== Caja de sesion en el header ===== */
   .sesion-box{
     display:inline-flex; align-items:center; gap:7px;
@@ -1370,28 +1468,7 @@
 </head>
 <body>
 
-<!-- Pantalla de ingreso: solo pide correo, sin contraseña.
-     Sirve para separar los favoritos y notas de cada persona en este equipo. -->
-<div id="loginGate" class="hidden">
-  <div class="box">
-    <div class="logo-big">S</div>
-    <h2>SECOP II Hunter</h2>
-    <p>Ingresa tu correo para acceder.<br>
-       Tus <b>favoritos</b>, notas y pipeline quedan guardados bajo ese correo en este equipo.</p>
-    <form id="loginForm" autocomplete="on">
-      <label for="emailInput">Correo electronico</label>
-      <input type="email" id="emailInput" name="email" placeholder="nombre@dominio.com"
-             autofocus required autocomplete="email" inputmode="email" />
-      <button type="submit" class="btn-login">Entrar</button>
-      <div class="err" id="loginErr">Escribe un correo valido.</div>
-    </form>
-    <div class="footer">
-      No se pide contraseña y no se valida el correo: solo separa la informacion
-      de cada persona que use este computador. Puedes cambiar de correo en
-      cualquier momento con <b>Cerrar sesion</b>.
-    </div>
-  </div>
-</div>
+<!-- La app se usa sin cuenta. El ingreso es opcional (modal de cuenta). -->
 
 <header>
   <div class="h-left">
@@ -1399,11 +1476,15 @@
     <h1>SECOP II Hunter <small>Plataforma de busqueda y analisis con IA</small></h1>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button id="sesionAnonima" class="profile-btn" type="button" onclick="abrirCuenta('ingresar')"
+            title="Ingresa o crea una cuenta para que tus favoritos te sigan entre computadores">&#128100; Ingresar</button>
     <span id="sesionBox" class="sesion-box" style="display:none">
-      <span class="sesion-avatar" id="sesionAvatar">&#128100;</span>
+      <span class="sesion-avatar">&#128100;</span>
       <span class="sesion-correo" id="usuarioActual"></span>
-      <button type="button" class="sesion-salir" onclick="cerrarSesion()" title="Cerrar sesion y cambiar de correo">Salir</button>
+      <button type="button" class="sesion-salir" onclick="cerrarSesion()" title="Cerrar sesion">Salir</button>
     </span>
+    <button id="btnAdmin" class="profile-btn" type="button" style="display:none" onclick="abrirAdmin()"
+            title="Panel de administracion">&#128202; Admin</button>
     <button id="btnInstalar" class="profile-btn install-btn" type="button" style="display:none"
             title="Instalar SECOP Hunter como aplicacion en este dispositivo">&#x2B07; Instalar app</button>
     <button id="profileBtn" class="profile-btn" type="button" title="Mi perfil de empresa" onclick="openProfileModal()">&#x1F464; Mi perfil</button>
@@ -1637,40 +1718,40 @@ const API = "https://www.datos.gov.co/resource/p6dx-8zbt.json";
 const $ = (id) => document.getElementById(id);
 const tbody = document.querySelector("#results tbody");
 /* ==========================================================================
-   PERFIL DE USUARIO POR CORREO
+   CUENTAS DE USUARIO
    --------------------------------------------------------------------------
-   IMPORTANTE: esto NO es autenticacion. No hay contraseña ni verificacion:
-   cualquiera puede escribir cualquier correo. Su unico proposito es separar
-   los datos de trabajo (favoritos, notas, pipeline, perfil, alertas) cuando
-   varias personas usan la app en el mismo computador.
-
-   Los datos viven en el navegador de este equipo. El mismo correo en otro
-   computador NO vera los mismos favoritos.
+   La app se usa SIN cuenta, igual que SECOP II. Crear cuenta solo agrega:
+     - Tus favoritos te siguen entre computadores.
+     - Notas, pipeline y perfil quedan separados por persona.
    ========================================================================== */
 const ALLOWED_EMAILS = ['jjospinagon@gmail.com', 'ing.jjgomezm@gmail.com', 'jaimeandresbejarano@gmail.com'];
-const LOGIN_KEY   = 'secop_hunter_user_v1';
-const USUARIO_KEY = 'secop_usuario_actual';
+const SESION_KEY = 'secop_sesion_v1';
 
-function usuarioActual(){
-  try{ return (localStorage.getItem(USUARIO_KEY) || '').trim().toLowerCase(); }
-  catch(e){ return ''; }
+function getSesion(){
+  try{ return JSON.parse(localStorage.getItem(SESION_KEY) || 'null'); }catch(e){ return null; }
 }
+function setSesion(s){
+  try{
+    if(s) localStorage.setItem(SESION_KEY, JSON.stringify(s));
+    else  localStorage.removeItem(SESION_KEY);
+  }catch(e){}
+  pintarSesion();
+}
+function usuarioActual(){ const s = getSesion(); return (s && s.correo) ? s.correo : ''; }
+function tokenActual(){   const s = getSesion(); return (s && s.token)  ? s.token  : ''; }
+function nombreActual(){  const s = getSesion(); return s ? ((s.nombre||'') + ' ' + (s.apellidos||'')).trim() : ''; }
+function esAdministrador(){ const s = getSesion(); return !!(s && s.esAdmin); }
 
 function claveUsuario(base){
   const u = usuarioActual();
   return u ? (base + '::' + u) : base;
 }
-
 function esCorreoValido(v){
   return /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || '').trim());
 }
 
 const CLAVES_DE_USUARIO = [
-  'secop_favoritos_v2',
-  'secop_profile_v1',
-  'secop_kanban_v1',
-  'secop_notes_v1',
-  'secop_alerts_v1'
+  'secop_favoritos_v2','secop_profile_v1','secop_kanban_v1','secop_notes_v1','secop_alerts_v1'
 ];
 
 function migrarDatosSinDueno(correo){
@@ -1686,71 +1767,233 @@ function migrarDatosSinDueno(correo){
   });
 }
 
-function iniciarSesion(correo){
-  const c = String(correo).trim().toLowerCase();
-  if(!esCorreoValido(c)) return false;
-  migrarDatosSinDueno(c);
-  try{ localStorage.setItem(USUARIO_KEY, c); }catch(e){}
-  return true;
+async function apiCuenta(accion, datos){
+  const cuerpo = Object.assign({action: accion}, datos || {});
+  const r = await fetch(MAILER_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(cuerpo), redirect:'follow'
+  });
+  const txt = await r.text();
+  try{ return JSON.parse(txt); }catch(e){ return {ok:false, error:'Respuesta invalida del servidor'}; }
 }
 
-function cerrarSesion(){
-  if(!confirm('Cerrar sesion de ' + usuarioActual() + '?\n\nTus favoritos y notas quedan guardados en este equipo y volveras a verlos cuando entres con el mismo correo.')) return;
-  try{ localStorage.removeItem(USUARIO_KEY); }catch(e){}
+function pintarSesion(){
+  const anon = document.getElementById('sesionAnonima');
+  const caja = document.getElementById('sesionBox');
+  const nom  = document.getElementById('usuarioActual');
+  const adm  = document.getElementById('btnAdmin');
+  const hay  = !!usuarioActual();
+  if(anon) anon.style.display = hay ? 'none' : 'inline-flex';
+  if(caja) caja.style.display = hay ? 'inline-flex' : 'none';
+  if(nom)  nom.textContent = nombreActual() || usuarioActual();
+  if(adm)  adm.style.display = esAdministrador() ? 'inline-flex' : 'none';
+}
+
+async function cerrarSesion(){
+  if(!confirm('Cerrar sesion de ' + (nombreActual() || usuarioActual()) + '?\n\nTus favoritos quedan guardados en tu cuenta y los recuperas al volver a entrar.')) return;
+  const t = tokenActual();
+  setSesion(null);
+  try{ await apiCuenta('salir', {token: t}); }catch(e){}
   location.reload();
 }
 window.cerrarSesion = cerrarSesion;
 
-function checkAccess(){ return !!usuarioActual(); }
+function checkAccess(){ return true; }
 
-(function initSesion(){
-  const gate  = document.getElementById('loginGate');
-  const form  = document.getElementById('loginForm');
-  const input = document.getElementById('emailInput');
-  const err   = document.getElementById('loginErr');
+function abrirCuenta(pestana){
+  const m = document.getElementById('cuentaModal');
+  if(!m) return;
+  m.classList.add('show');
+  mostrarPestanaCuenta(pestana || 'ingresar');
+}
+window.abrirCuenta = abrirCuenta;
+function cerrarCuenta(){
+  const m = document.getElementById('cuentaModal');
+  if(m) m.classList.remove('show');
+  const av = document.getElementById('cuentaAviso');
+  if(av) av.className = 'cuenta-aviso';
+}
+window.cerrarCuenta = cerrarCuenta;
 
-  function pintarUsuarioEnHeader(){
-    const cont = document.getElementById('usuarioActual');
-    if(cont) cont.textContent = usuarioActual();
-    const caja = document.getElementById('sesionBox');
-    if(caja) caja.style.display = usuarioActual() ? 'inline-flex' : 'none';
-  }
+function mostrarPestanaCuenta(nombre){
+  ['ingresar','crear','recuperar','restablecer'].forEach(function(n){
+    const p = document.getElementById('panel-' + n);
+    const b = document.getElementById('tab-' + n);
+    if(p) p.style.display = (n === nombre) ? '' : 'none';
+    if(b) b.classList.toggle('active', n === nombre);
+  });
+  const av = document.getElementById('cuentaAviso');
+  if(av) av.className = 'cuenta-aviso';
+}
+window.mostrarPestanaCuenta = mostrarPestanaCuenta;
 
-  function entrar(){
-    if(gate){ gate.classList.add('hidden'); }
-    pintarUsuarioEnHeader();
-    try{ if(typeof actualizarContadoresFav === 'function') actualizarContadoresFav(); }catch(e){}
-    // Traer del servidor los favoritos guardados bajo este correo
-    setTimeout(function(){
-      try{ if(typeof sincronizarFavoritos === 'function') sincronizarFavoritos(true); }catch(e){}
-    }, 800);
-    try{
-      const fv = document.getElementById('favView');
-      if(fv && fv.style.display !== 'none' && typeof renderFavoritos === 'function') renderFavoritos();
-    }catch(e){}
-  }
+function avisoCuenta(texto, tipo){
+  const av = document.getElementById('cuentaAviso');
+  if(!av) return;
+  av.textContent = texto;
+  av.className = 'cuenta-aviso show ' + (tipo || '');
+}
+function ocupado(idBoton, si, textoOcupado){
+  const b = document.getElementById(idBoton);
+  if(!b) return;
+  if(si){ b.dataset.txt = b.textContent; b.textContent = textoOcupado || 'Un momento...'; b.disabled = true; }
+  else  { if(b.dataset.txt) b.textContent = b.dataset.txt; b.disabled = false; }
+}
 
-  if(usuarioActual()){ entrar(); }
-  else if(gate){ gate.classList.remove('hidden'); }
+async function accionIngresar(e){
+  if(e) e.preventDefault();
+  const correo = (document.getElementById('inCorreo').value||'').trim().toLowerCase();
+  const clave  = document.getElementById('inClave').value || '';
+  if(!esCorreoValido(correo)) return avisoCuenta('Escribe un correo valido.', 'error');
+  if(!clave) return avisoCuenta('Escribe tu contraseña.', 'error');
+  ocupado('btnIngresar', true, 'Entrando...');
+  const r = await apiCuenta('ingresar', {correo: correo, clave: clave});
+  ocupado('btnIngresar', false);
+  if(!r.ok) return avisoCuenta(r.error || 'No se pudo ingresar.', 'error');
+  migrarDatosSinDueno(correo);
+  setSesion({correo:r.usuario.correo, nombre:r.usuario.nombre, apellidos:r.usuario.apellidos, esAdmin:r.usuario.esAdmin, token:r.token});
+  cerrarCuenta();
+  showToast('Hola ' + (r.usuario.nombre || '') + '. Sincronizando tus favoritos...', 'ok');
+  actualizarContadoresFav();
+  setTimeout(function(){ sincronizarFavoritos(true); }, 600);
+}
+window.accionIngresar = accionIngresar;
 
-  if(form){
-    form.addEventListener('submit', function(e){
-      e.preventDefault();
-      const v = (input.value || '').trim().toLowerCase();
-      if(!esCorreoValido(v)){
-        if(err){ err.textContent = 'Escribe un correo valido (ejemplo: nombre@dominio.com).'; err.classList.add('show'); }
-        input.focus(); input.select();
-        return;
+async function accionCrear(e){
+  if(e) e.preventDefault();
+  const nombre    = (document.getElementById('crNombre').value||'').trim();
+  const apellidos = (document.getElementById('crApellidos').value||'').trim();
+  const correo    = (document.getElementById('crCorreo').value||'').trim().toLowerCase();
+  const clave     = document.getElementById('crClave').value || '';
+  const clave2    = document.getElementById('crClave2').value || '';
+  if(nombre.length < 2)       return avisoCuenta('Escribe tu nombre.', 'error');
+  if(apellidos.length < 2)    return avisoCuenta('Escribe tus apellidos.', 'error');
+  if(!esCorreoValido(correo)) return avisoCuenta('Escribe un correo valido.', 'error');
+  if(clave.length < 8)        return avisoCuenta('La contraseña debe tener al menos 8 caracteres.', 'error');
+  if(clave !== clave2)        return avisoCuenta('Las contraseñas no coinciden.', 'error');
+  ocupado('btnCrear', true, 'Creando...');
+  const r = await apiCuenta('registrar', {correo:correo, nombre:nombre, apellidos:apellidos, clave:clave});
+  ocupado('btnCrear', false);
+  if(!r.ok) return avisoCuenta(r.error || 'No se pudo crear la cuenta.', 'error');
+  migrarDatosSinDueno(correo);
+  setSesion({correo:r.usuario.correo, nombre:r.usuario.nombre, apellidos:r.usuario.apellidos, esAdmin:r.usuario.esAdmin, token:r.token});
+  cerrarCuenta();
+  showToast('Cuenta creada. Tus favoritos ahora te siguen entre computadores.', 'ok', {duration:6000});
+  actualizarContadoresFav();
+  setTimeout(function(){ sincronizarFavoritos(true); }, 600);
+}
+window.accionCrear = accionCrear;
+
+async function accionRecuperar(e){
+  if(e) e.preventDefault();
+  const correo = (document.getElementById('recCorreo').value||'').trim().toLowerCase();
+  if(!esCorreoValido(correo)) return avisoCuenta('Escribe un correo valido.', 'error');
+  ocupado('btnRecuperar', true, 'Enviando...');
+  const r = await apiCuenta('solicitarCodigo', {correo: correo});
+  ocupado('btnRecuperar', false);
+  if(!r.ok) return avisoCuenta(r.error || 'No se pudo enviar.', 'error');
+  document.getElementById('resCorreo').value = correo;
+  mostrarPestanaCuenta('restablecer');
+  avisoCuenta('Si existe una cuenta con ese correo, te llego un enlace. Revisa tambien la carpeta de spam.', 'ok');
+}
+window.accionRecuperar = accionRecuperar;
+
+async function accionRestablecer(e){
+  if(e) e.preventDefault();
+  const correo = (document.getElementById('resCorreo').value||'').trim().toLowerCase();
+  const codigo = (document.getElementById('resCodigo').value||'').trim();
+  const clave  = document.getElementById('resClave').value || '';
+  const clave2 = document.getElementById('resClave2').value || '';
+  if(!esCorreoValido(correo)) return avisoCuenta('Escribe un correo valido.', 'error');
+  if(codigo.length < 4) return avisoCuenta('Escribe el codigo que llego a tu correo.', 'error');
+  if(clave.length < 8)  return avisoCuenta('La contraseña debe tener al menos 8 caracteres.', 'error');
+  if(clave !== clave2)  return avisoCuenta('Las contraseñas no coinciden.', 'error');
+  ocupado('btnRestablecer', true, 'Guardando...');
+  const r = await apiCuenta('restablecer', {correo:correo, codigo:codigo, claveNueva:clave});
+  ocupado('btnRestablecer', false);
+  if(!r.ok) return avisoCuenta(r.error || 'No se pudo restablecer.', 'error');
+  mostrarPestanaCuenta('ingresar');
+  document.getElementById('inCorreo').value = correo;
+  avisoCuenta('Contraseña actualizada. Ya puedes ingresar.', 'ok');
+}
+window.accionRestablecer = accionRestablecer;
+
+async function abrirAdmin(){
+  if(!esAdministrador()) return;
+  const m = document.getElementById('adminModal');
+  const c = document.getElementById('adminCuerpo');
+  m.classList.add('show');
+  c.innerHTML = '<div class="ac-msg"><span class="spinner"></span>Cargando...</div>';
+  const r = await apiCuenta('adminDatos', {token: tokenActual()});
+  if(!r.ok){ c.innerHTML = '<div class="ac-msg" style="color:var(--err-bright)">' + esc(r.error||'Error') + '</div>'; return; }
+  const s2 = r.resumen;
+  const kpi = function(n,t){ return '<div class="adm-kpi"><div class="k-n">'+n+'</div><div class="k-t">'+t+'</div></div>'; };
+  c.innerHTML =
+    '<div class="adm-kpis">' +
+      kpi(s2.total,'Usuarios') + kpi(s2.registrados_hoy,'Nuevos hoy') +
+      kpi(s2.activos_7dias,'Activos 7 dias') + kpi(s2.activos_30dias,'Activos 30 dias') +
+      kpi(s2.con_favoritos,'Con favoritos') + kpi(s2.total_favoritos,'Favoritos totales') +
+    '</div>' +
+    '<div class="sttl">Usuarios registrados</div>' +
+    '<div class="adm-tabla-wrap"><table class="adm-tabla"><thead><tr>' +
+      '<th>Nombre</th><th>Correo</th><th>Registro</th><th>Ultimo acceso</th><th>Fav</th><th>Estado</th>' +
+    '</tr></thead><tbody>' +
+    r.usuarios.map(function(u){
+      return '<tr><td>' + esc((u.nombre||'')+' '+(u.apellidos||'')) + '</td>' +
+        '<td class="mono">' + esc(u.correo) + '</td>' +
+        '<td>' + esc(String(u.creado||'').substring(0,10)) + '</td>' +
+        '<td>' + esc(String(u.ultimoAcceso||'').substring(0,10)) + '</td>' +
+        '<td style="text-align:center">' + u.favoritos + '</td>' +
+        '<td>' + (u.activo ? '<span class="tag" style="background:rgba(16,185,129,.2);color:var(--ok-bright)">Activo</span>'
+                           : '<span class="tag" style="background:rgba(239,68,68,.2);color:var(--err-bright)">Inactivo</span>') +
+        '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<div class="sttl">Bitacora reciente</div>' +
+    '<div class="adm-tabla-wrap" style="max-height:260px"><table class="adm-tabla"><thead><tr>' +
+      '<th>Fecha</th><th>Evento</th><th>Correo</th><th>Detalle</th></tr></thead><tbody>' +
+    r.bitacora.map(function(b2){
+      return '<tr><td class="mono">' + esc(String(b2.fecha||'').substring(0,16).replace('T',' ')) + '</td>' +
+             '<td>' + esc(b2.evento||'') + '</td><td class="mono">' + esc(b2.correo||'') + '</td>' +
+             '<td>' + esc(b2.detalle||'') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+window.abrirAdmin = abrirAdmin;
+function cerrarAdmin(){ document.getElementById('adminModal').classList.remove('show'); }
+window.cerrarAdmin = cerrarAdmin;
+
+(function initCuentas(){
+  pintarSesion();
+  try{
+    const p = new URLSearchParams(location.search);
+    if(p.get('reset')){
+      setTimeout(function(){
+        abrirCuenta('restablecer');
+        const c = document.getElementById('resCorreo');
+        const k = document.getElementById('resCodigo');
+        if(c) c.value = p.get('reset');
+        if(k) k.value = p.get('c') || '';
+        avisoCuenta('Define tu contraseña nueva.', 'ok');
+        const u = new URL(location.href);
+        u.searchParams.delete('reset'); u.searchParams.delete('c');
+        history.replaceState(null, '', u.pathname + (u.search||'') + u.hash);
+      }, 500);
+    }
+  }catch(e){}
+
+  if(tokenActual()){
+    setTimeout(async function(){
+      const r = await apiCuenta('verificarSesion', {token: tokenActual()});
+      if(!r.ok){
+        setSesion(null);
+        showToast('Tu sesion expiro. Vuelve a ingresar para sincronizar tus favoritos.', 'info', {duration:7000});
+      } else {
+        const s3 = getSesion();
+        setSesion(Object.assign({}, s3, {nombre:r.usuario.nombre, apellidos:r.usuario.apellidos, esAdmin:r.usuario.esAdmin}));
+        sincronizarFavoritos(true);
       }
-      iniciarSesion(v);
-      if(err) err.classList.remove('show');
-      entrar();
-    });
+    }, 900);
   }
-
-  pintarUsuarioEnHeader();
 })();
-
 
 
 /* ==========================================================================
@@ -5238,7 +5481,8 @@ let _syncEnCurso = false;
 
 async function sincronizarFavoritos(silencioso){
   const correo = usuarioActual();
-  if(!correo) return {ok:false, motivo:'sin sesion'};
+  const token  = tokenActual();
+  if(!correo || !token){ estadoSync('Solo en este equipo', ''); return {ok:false, motivo:'sin sesion'}; }
   if(_syncEnCurso) return {ok:false, motivo:'en curso'};
   _syncEnCurso = true;
   estadoSync('Sincronizando...', 'trabajando');
@@ -5247,7 +5491,7 @@ async function sincronizarFavoritos(silencioso){
     const r = await fetch(MAILER_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'favLeer', correo: correo}),
+      body: JSON.stringify({action:'favLeer', token: token}),
       redirect:'follow'
     });
     const remoto = await r.json();
@@ -5271,7 +5515,7 @@ async function sincronizarFavoritos(silencioso){
     const r2 = await fetch(MAILER_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'favGuardar', correo: correo, favoritos: finales, borrados: delUnidos}),
+      body: JSON.stringify({action:'favGuardar', token: token, favoritos: finales, borrados: delUnidos}),
       redirect:'follow'
     });
     const guardado = await r2.json();
@@ -5297,13 +5541,14 @@ window.sincronizarFavoritos = sincronizarFavoritos;
 
 let _syncTimer = null;
 function programarSync(){
-  if(!usuarioActual()) return;
+  if(!usuarioActual() || !tokenActual()) return;
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(function(){ sincronizarFavoritos(true); }, 2500);
 }
 window.programarSync = programarSync;
 
 function textoUltimaSync(){
+  if(!usuarioActual()) return 'Solo en este equipo';
   let ts = 0;
   try{ ts = parseInt(localStorage.getItem(claveUsuario(SYNC_TS_KEY)) || '0', 10); }catch(e){}
   if(!ts) return 'Sin sincronizar aun';
@@ -6748,5 +6993,80 @@ async function syncAlertsToBackend(){
 
 
 </script>
+<!-- ===== Modal de cuenta: ingresar / crear / recuperar ===== -->
+<div id="cuentaModal" class="cuenta-back" onclick="if(event.target===this) cerrarCuenta()">
+  <div class="cuenta-box">
+    <button class="cuenta-x" type="button" onclick="cerrarCuenta()" aria-label="Cerrar">&times;</button>
+    <div class="cuenta-logo">S</div>
+    <h2 class="cuenta-titulo">Tu cuenta</h2>
+    <p class="cuenta-sub">La app funciona sin cuenta. Ingresar sirve para que tus
+       <b>favoritos te sigan</b> a cualquier computador.</p>
+
+    <div class="cuenta-tabs">
+      <button type="button" id="tab-ingresar" class="active" onclick="mostrarPestanaCuenta('ingresar')">Ingresar</button>
+      <button type="button" id="tab-crear" onclick="mostrarPestanaCuenta('crear')">Crear cuenta</button>
+    </div>
+
+    <div id="cuentaAviso" class="cuenta-aviso"></div>
+
+    <form id="panel-ingresar" onsubmit="accionIngresar(event)">
+      <label for="inCorreo">Correo</label>
+      <input type="email" id="inCorreo" autocomplete="username" placeholder="nombre@dominio.com" />
+      <label for="inClave">Contrase&ntilde;a</label>
+      <input type="password" id="inClave" autocomplete="current-password" placeholder="Tu contrase&ntilde;a" />
+      <button type="submit" id="btnIngresar" class="btn-login">Entrar</button>
+      <button type="button" class="cuenta-enlace" onclick="mostrarPestanaCuenta('recuperar')">Olvide mi contrase&ntilde;a</button>
+    </form>
+
+    <form id="panel-crear" style="display:none" onsubmit="accionCrear(event)">
+      <div class="cuenta-fila">
+        <div><label for="crNombre">Nombre</label>
+          <input type="text" id="crNombre" autocomplete="given-name" placeholder="Juan" /></div>
+        <div><label for="crApellidos">Apellidos</label>
+          <input type="text" id="crApellidos" autocomplete="family-name" placeholder="Ospina" /></div>
+      </div>
+      <label for="crCorreo">Correo</label>
+      <input type="email" id="crCorreo" autocomplete="username" placeholder="nombre@dominio.com" />
+      <label for="crClave">Contrase&ntilde;a (minimo 8 caracteres)</label>
+      <input type="password" id="crClave" autocomplete="new-password" placeholder="Crea una contrase&ntilde;a" />
+      <label for="crClave2">Repite la contrase&ntilde;a</label>
+      <input type="password" id="crClave2" autocomplete="new-password" placeholder="Escribela de nuevo" />
+      <button type="submit" id="btnCrear" class="btn-login">Crear cuenta</button>
+      <p class="cuenta-nota">Usa una contrase&ntilde;a que no uses en otros servicios.</p>
+    </form>
+
+    <form id="panel-recuperar" style="display:none" onsubmit="accionRecuperar(event)">
+      <p class="cuenta-nota" style="margin-top:0">Te enviaremos un enlace para crear una contrase&ntilde;a nueva.</p>
+      <label for="recCorreo">Correo de tu cuenta</label>
+      <input type="email" id="recCorreo" autocomplete="username" placeholder="nombre@dominio.com" />
+      <button type="submit" id="btnRecuperar" class="btn-login">Enviar enlace</button>
+      <button type="button" class="cuenta-enlace" onclick="mostrarPestanaCuenta('ingresar')">Volver</button>
+    </form>
+
+    <form id="panel-restablecer" style="display:none" onsubmit="accionRestablecer(event)">
+      <p class="cuenta-nota" style="margin-top:0">Escribe el codigo que llego a tu correo y tu contrase&ntilde;a nueva.</p>
+      <label for="resCorreo">Correo</label>
+      <input type="email" id="resCorreo" autocomplete="username" placeholder="nombre@dominio.com" />
+      <label for="resCodigo">Codigo de 6 digitos</label>
+      <input type="text" id="resCodigo" inputmode="numeric" maxlength="6" placeholder="123456" />
+      <label for="resClave">Contrase&ntilde;a nueva</label>
+      <input type="password" id="resClave" autocomplete="new-password" placeholder="Minimo 8 caracteres" />
+      <label for="resClave2">Repite la contrase&ntilde;a</label>
+      <input type="password" id="resClave2" autocomplete="new-password" placeholder="Escribela de nuevo" />
+      <button type="submit" id="btnRestablecer" class="btn-login">Guardar contrase&ntilde;a</button>
+      <button type="button" class="cuenta-enlace" onclick="mostrarPestanaCuenta('ingresar')">Volver</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Panel de administracion ===== -->
+<div id="adminModal" class="cuenta-back" onclick="if(event.target===this) cerrarAdmin()">
+  <div class="cuenta-box admin-box">
+    <button class="cuenta-x" type="button" onclick="cerrarAdmin()" aria-label="Cerrar">&times;</button>
+    <h2 class="cuenta-titulo" style="text-align:left">Administracion</h2>
+    <div id="adminCuerpo"></div>
+  </div>
+</div>
+
 </body>
 </html>
