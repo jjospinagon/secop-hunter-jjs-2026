@@ -994,6 +994,35 @@
     .fav-card .fc-acciones button, .fav-card .fc-acciones a{ font-size:12px; padding:8px 11px; }
   }
 
+  /* ===== Caja de sesion en el header ===== */
+  .sesion-box{
+    display:inline-flex; align-items:center; gap:7px;
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+    border-radius:999px; padding:4px 5px 4px 11px; backdrop-filter:blur(10px);
+    max-width:280px;
+  }
+  .sesion-avatar{ font-size:13px; line-height:1; flex-shrink:0; }
+  .sesion-correo{
+    font-size:11.5px; font-weight:600; color:#fff;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:170px;
+  }
+  .sesion-salir{
+    background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.45);
+    color:#fecaca; font-size:10.5px; font-weight:700; padding:4px 10px;
+    border-radius:999px; cursor:pointer; flex-shrink:0; line-height:1;
+  }
+  .sesion-salir:hover{ background:rgba(239,68,68,0.4); color:#fff; }
+  html[data-theme="light"] .sesion-box{ background:rgba(14,165,233,0.1); border-color:rgba(14,165,233,0.35); }
+  html[data-theme="light"] .sesion-correo{ color:#0c4a6e; }
+  html[data-theme="light"] .sesion-salir{ background:rgba(239,68,68,0.12); border-color:rgba(220,38,38,0.4); color:#b91c1c; }
+  html[data-theme="light"] .sesion-salir:hover{ background:rgba(220,38,38,0.85); color:#fff; }
+  @media (max-width:768px){
+    .sesion-box{ max-width:100%; padding:5px 6px 5px 12px; }
+    .sesion-correo{ max-width:130px; font-size:12.5px; }
+    .sesion-salir{ font-size:12px; padding:6px 12px; }
+  }
+  @media (max-width:480px){ .sesion-correo{ max-width:92px; } }
+
   /* ===== Boton de recarga forzada ===== */
   .refresh-btn:hover{ transform:rotate(-25deg) scale(1.05); }
   .refresh-btn.girando{ pointer-events:none; opacity:0.75; }
@@ -1324,7 +1353,29 @@
 </style>
 </head>
 <body>
-<!-- Login gate eliminado: acceso libre para cualquiera con el enlace -->
+
+<!-- Pantalla de ingreso: solo pide correo, sin contraseña.
+     Sirve para separar los favoritos y notas de cada persona en este equipo. -->
+<div id="loginGate" class="hidden">
+  <div class="box">
+    <div class="logo-big">S</div>
+    <h2>SECOP II Hunter</h2>
+    <p>Ingresa tu correo para acceder.<br>
+       Tus <b>favoritos</b>, notas y pipeline quedan guardados bajo ese correo en este equipo.</p>
+    <form id="loginForm" autocomplete="on">
+      <label for="emailInput">Correo electronico</label>
+      <input type="email" id="emailInput" name="email" placeholder="nombre@dominio.com"
+             autofocus required autocomplete="email" inputmode="email" />
+      <button type="submit" class="btn-login">Entrar</button>
+      <div class="err" id="loginErr">Escribe un correo valido.</div>
+    </form>
+    <div class="footer">
+      No se pide contraseña y no se valida el correo: solo separa la informacion
+      de cada persona que use este computador. Puedes cambiar de correo en
+      cualquier momento con <b>Cerrar sesion</b>.
+    </div>
+  </div>
+</div>
 
 <header>
   <div class="h-left">
@@ -1332,6 +1383,11 @@
     <h1>SECOP II Hunter <small>Plataforma de busqueda y analisis con IA</small></h1>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <span id="sesionBox" class="sesion-box" style="display:none">
+      <span class="sesion-avatar" id="sesionAvatar">&#128100;</span>
+      <span class="sesion-correo" id="usuarioActual"></span>
+      <button type="button" class="sesion-salir" onclick="cerrarSesion()" title="Cerrar sesion y cambiar de correo">Salir</button>
+    </span>
     <button id="btnInstalar" class="profile-btn install-btn" type="button" style="display:none"
             title="Instalar SECOP Hunter como aplicacion en este dispositivo">&#x2B07; Instalar app</button>
     <button id="profileBtn" class="profile-btn" type="button" title="Mi perfil de empresa" onclick="openProfileModal()">&#x1F464; Mi perfil</button>
@@ -1564,23 +1620,115 @@
 const API = "https://www.datos.gov.co/resource/p6dx-8zbt.json";
 const $ = (id) => document.getElementById(id);
 const tbody = document.querySelector("#results tbody");
-/* ============ ACCESO ABIERTO (sin restriccion de correo) ============
-   La app es de acceso libre para cualquiera que tenga el enlace.
-   ALLOWED_EMAILS se conserva SOLO como lista de destinatarios por defecto
-   para "Compartir por correo" y "Alertas diarias" (editable en cada envio). */
+/* ==========================================================================
+   PERFIL DE USUARIO POR CORREO
+   --------------------------------------------------------------------------
+   IMPORTANTE: esto NO es autenticacion. No hay contraseña ni verificacion:
+   cualquiera puede escribir cualquier correo. Su unico proposito es separar
+   los datos de trabajo (favoritos, notas, pipeline, perfil, alertas) cuando
+   varias personas usan la app en el mismo computador.
+
+   Los datos viven en el navegador de este equipo. El mismo correo en otro
+   computador NO vera los mismos favoritos.
+   ========================================================================== */
 const ALLOWED_EMAILS = ['jjospinagon@gmail.com', 'ing.jjgomezm@gmail.com', 'jaimeandresbejarano@gmail.com'];
-const LOGIN_KEY = 'secop_hunter_user_v1';
+const LOGIN_KEY   = 'secop_hunter_user_v1';
+const USUARIO_KEY = 'secop_usuario_actual';
 
-function checkAccess(){ return true; }
+function usuarioActual(){
+  try{ return (localStorage.getItem(USUARIO_KEY) || '').trim().toLowerCase(); }
+  catch(e){ return ''; }
+}
 
-(function(){
-  const gate = document.getElementById('loginGate');
-  if(gate){
-    gate.classList.add('hidden');
-    gate.style.display = 'none';
-    // Eliminar del DOM para que no capture foco ni tabulacion
-    if(gate.parentNode) gate.parentNode.removeChild(gate);
+function claveUsuario(base){
+  const u = usuarioActual();
+  return u ? (base + '::' + u) : base;
+}
+
+function esCorreoValido(v){
+  return /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || '').trim());
+}
+
+const CLAVES_DE_USUARIO = [
+  'secop_favoritos_v2',
+  'secop_profile_v1',
+  'secop_kanban_v1',
+  'secop_notes_v1',
+  'secop_alerts_v1'
+];
+
+function migrarDatosSinDueno(correo){
+  CLAVES_DE_USUARIO.forEach(function(base){
+    try{
+      const suyo = localStorage.getItem(base + '::' + correo);
+      const huerfano = localStorage.getItem(base);
+      if(huerfano !== null && suyo === null){
+        localStorage.setItem(base + '::' + correo, huerfano);
+        localStorage.removeItem(base);
+      }
+    }catch(e){}
+  });
+}
+
+function iniciarSesion(correo){
+  const c = String(correo).trim().toLowerCase();
+  if(!esCorreoValido(c)) return false;
+  migrarDatosSinDueno(c);
+  try{ localStorage.setItem(USUARIO_KEY, c); }catch(e){}
+  return true;
+}
+
+function cerrarSesion(){
+  if(!confirm('Cerrar sesion de ' + usuarioActual() + '?\n\nTus favoritos y notas quedan guardados en este equipo y volveras a verlos cuando entres con el mismo correo.')) return;
+  try{ localStorage.removeItem(USUARIO_KEY); }catch(e){}
+  location.reload();
+}
+window.cerrarSesion = cerrarSesion;
+
+function checkAccess(){ return !!usuarioActual(); }
+
+(function initSesion(){
+  const gate  = document.getElementById('loginGate');
+  const form  = document.getElementById('loginForm');
+  const input = document.getElementById('emailInput');
+  const err   = document.getElementById('loginErr');
+
+  function pintarUsuarioEnHeader(){
+    const cont = document.getElementById('usuarioActual');
+    if(cont) cont.textContent = usuarioActual();
+    const caja = document.getElementById('sesionBox');
+    if(caja) caja.style.display = usuarioActual() ? 'inline-flex' : 'none';
   }
+
+  function entrar(){
+    if(gate){ gate.classList.add('hidden'); }
+    pintarUsuarioEnHeader();
+    try{ if(typeof actualizarContadoresFav === 'function') actualizarContadoresFav(); }catch(e){}
+    try{
+      const fv = document.getElementById('favView');
+      if(fv && fv.style.display !== 'none' && typeof renderFavoritos === 'function') renderFavoritos();
+    }catch(e){}
+  }
+
+  if(usuarioActual()){ entrar(); }
+  else if(gate){ gate.classList.remove('hidden'); }
+
+  if(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      const v = (input.value || '').trim().toLowerCase();
+      if(!esCorreoValido(v)){
+        if(err){ err.textContent = 'Escribe un correo valido (ejemplo: nombre@dominio.com).'; err.classList.add('show'); }
+        input.focus(); input.select();
+        return;
+      }
+      iniciarSesion(v);
+      if(err) err.classList.remove('show');
+      entrar();
+    });
+  }
+
+  pintarUsuarioEnHeader();
 })();
 
 
@@ -4733,11 +4881,11 @@ function recortarRegistro(r){
 }
 function getFavs(){
   try{
-    const v2 = JSON.parse(localStorage.getItem(FAVS_KEY) || 'null');
+    const v2 = JSON.parse(localStorage.getItem(claveUsuario(FAVS_KEY)) || 'null');
     if(Array.isArray(v2)) return v2;
   }catch(e){}
   try{
-    const v1 = JSON.parse(localStorage.getItem(FAVS_KEY_OLD) || '[]');
+    const v1 = JSON.parse(localStorage.getItem(claveUsuario(FAVS_KEY_OLD)) || '[]');
     if(Array.isArray(v1) && v1.length){
       return v1.map(function(id){ return {id:String(id), ts:0, data:null}; });
     }
@@ -4747,10 +4895,10 @@ function getFavs(){
 function setFavs(arr){
   const recortado = arr.slice(-FAVS_MAX);
   try{
-    localStorage.setItem(FAVS_KEY, JSON.stringify(recortado));
+    localStorage.setItem(claveUsuario(FAVS_KEY), JSON.stringify(recortado));
   }catch(e){
     try{
-      localStorage.setItem(FAVS_KEY, JSON.stringify(recortado.slice(-100)));
+      localStorage.setItem(claveUsuario(FAVS_KEY), JSON.stringify(recortado.slice(-100)));
       showToast('Almacenamiento lleno: se conservaron los 100 favoritos mas recientes.', 'err', {duration:7000});
     }catch(e2){
       showToast('No se pudo guardar el favorito: almacenamiento del navegador lleno.', 'err');
@@ -4950,7 +5098,7 @@ function vaciarFavoritos(){
   if(!n) return;
   if(!confirm('Se van a eliminar los '+n+' favoritos guardados. Esta accion no se puede deshacer.\n\nContinuar?')) return;
   setFavs([]);
-  try{ localStorage.removeItem(FAVS_KEY_OLD); }catch(e){}
+  try{ localStorage.removeItem(claveUsuario(FAVS_KEY_OLD)); }catch(e){}
   renderFavoritos();
   document.querySelectorAll('.fav-star.active').forEach(function(el){
     el.classList.remove('active'); el.textContent = '☆';
@@ -5260,8 +5408,8 @@ function openCompareModal(){
 
 /* ============ FASE 1: MI PERFIL + MATCH ============ */
 const PROFILE_KEY = 'secop_profile_v1';
-function getProfile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); }catch(e){ return {}; } }
-function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+function getProfile(){ try{ return JSON.parse(localStorage.getItem(claveUsuario(PROFILE_KEY)) || '{}'); }catch(e){ return {}; } }
+function saveProfile(p){ localStorage.setItem(claveUsuario(PROFILE_KEY), JSON.stringify(p)); }
 function openProfileModal(){
   const p = getProfile();
   document.getElementById('mdTitle').textContent = 'Mi Perfil de Empresa';
@@ -5348,9 +5496,9 @@ const KANBAN_COLS = [
 ];
 
 function getKanbanState(){
-  try { return JSON.parse(localStorage.getItem(KANBAN_KEY) || '{}'); } catch(e){ return {}; }
+  try { return JSON.parse(localStorage.getItem(claveUsuario(KANBAN_KEY)) || '{}'); } catch(e){ return {}; }
 }
-function setKanbanState(s){ localStorage.setItem(KANBAN_KEY, JSON.stringify(s)); }
+function setKanbanState(s){ localStorage.setItem(claveUsuario(KANBAN_KEY), JSON.stringify(s)); }
 function moveCardTo(idProc, colId){
   const s = getKanbanState();
   s[idProc] = colId;
@@ -5469,8 +5617,8 @@ setTimeout(()=>{
 
 /* ============ FASE 2: NOTAS PRIVADAS ============ */
 const NOTES_KEY = 'secop_notes_v1';
-function getNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); }catch(e){ return {}; } }
-function setNotes(n){ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }
+function getNotes(){ try{ return JSON.parse(localStorage.getItem(claveUsuario(NOTES_KEY)) || '{}'); }catch(e){ return {}; } }
+function setNotes(n){ localStorage.setItem(claveUsuario(NOTES_KEY), JSON.stringify(n)); }
 function getNote(id){ return getNotes()[String(id)] || ''; }
 function saveNote(id, text){
   const all = getNotes();
@@ -6183,8 +6331,8 @@ function escMapText(s){
 /* ============ FASE 5: ALERTAS DIARIAS POR EMAIL ============ */
 const ALERTS_KEY = 'secop_alerts_v1';
 
-function getAlerts(){ try{ return JSON.parse(localStorage.getItem(ALERTS_KEY) || '[]'); }catch(e){ return []; } }
-function setAlertsLocal(arr){ localStorage.setItem(ALERTS_KEY, JSON.stringify(arr)); }
+function getAlerts(){ try{ return JSON.parse(localStorage.getItem(claveUsuario(ALERTS_KEY)) || '[]'); }catch(e){ return []; } }
+function setAlertsLocal(arr){ localStorage.setItem(claveUsuario(ALERTS_KEY), JSON.stringify(arr)); }
 
 function openAlertsModal(){
   document.getElementById('mdTitle').textContent = 'Mis alertas automaticas';
