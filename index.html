@@ -1532,7 +1532,7 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
     </button>
-    <span class="badge">v3.3 &middot; Powered by Groq AI</span>
+    <span class="badge">v3.4 &middot; Powered by Groq AI</span>
   </div>
 </header>
 
@@ -1563,10 +1563,11 @@
         </div>
       </div>
       <div class="row full"><div>
-        <label for="vinculoInput">Vinculo con entidad <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(empresa, consorcio o persona natural que contrato con esa entidad)</small></label>
+        <label for="vinculoInput">Vinculo con entidad <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(nombre <b>o</b> numero de identificacion: NIT o cedula)</small></label>
         <input name="vinculo" id="vinculoInput" autocomplete="off"
-               placeholder="CONSTRUCTORA XYZ S.A.S / JUAN PEREZ RUIZ / 900123456 / 10123456" />
-        <div class="money-hint" id="hintVinculo">Busca el nombre (o el NIT/cedula) en contratista adjudicado, representante legal, supervisor, ordenador del gasto y en el titulo u objeto del proceso. Al llenarlo se consulta ademas el dataset de <b>contratos ejecutados</b> del SECOP II. No distingue tildes.</div>
+               placeholder="CONSTRUCTORA XYZ S.A.S  /  JUAN PEREZ RUIZ  /  900.123.456-7  /  10.123.456" />
+        <div class="money-hint" id="hintVinculo">Escribe un <b>nombre</b> (empresa, consorcio o persona natural) <b>o</b> un <b>NIT / cedula</b>. La app detecta cual es. Busca en contratista adjudicado, representante legal, supervisor, ordenador del gasto y en el titulo u objeto. Consulta ademas el dataset de <b>contratos ejecutados</b>. No distingue tildes ni digito de verificacion.</div>
+        <div class="money-hint" id="hintVinculoDet" style="display:none"></div>
       </div></div>
       <div class="row">
         <div>
@@ -2146,6 +2147,26 @@ document.addEventListener('change', function(e){
   if(el && el.classList && el.classList.contains('money-input')) formatearCampoMonto(el);
 });
 
+// "Vinculo con entidad": avisar en vivo si lo escrito se interpreta como
+// nombre o como documento, y con que digitos se va a consultar.
+document.addEventListener('input', function(e){
+  if(!e.target || e.target.id !== 'vinculoInput') return;
+  const det = document.getElementById('hintVinculoDet');
+  if(!det) return;
+  const v = String(e.target.value || '').trim();
+  if(!v){ det.style.display = 'none'; det.innerHTML = ''; return; }
+  det.style.display = '';
+  if(esDocumento(v)){
+    const vars = variantesDocumento(v);
+    det.innerHTML = '<b style="color:var(--acc)">Detectado: NIT / cedula</b> &rarr; se consultara ' +
+      vars.map(function(d){ return '<code>' + esc(d) + '</code>'; }).join(' o ') +
+      (vars.length > 1 ? ' <span style="color:var(--muted)">(con y sin digito de verificacion)</span>' : '');
+  } else {
+    det.innerHTML = '<b style="color:var(--acc)">Detectado: nombre</b> ' +
+      '<span style="color:var(--muted)">(empresa, consorcio o persona natural)</span>';
+  }
+});
+
 
 /* ==========================================================================
    PWA: instalacion como aplicacion + service worker
@@ -2673,17 +2694,39 @@ function patronFlexible(t){
   return sinTildes(t).toUpperCase().replace(/[AEIOUN]/g, '_');
 }
 function esDocumento(t){
-  // NIT o cedula: solo digitos (admite puntos, guiones y espacios), minimo 5
-  return /^[\d\.\-\s]{5,}$/.test(String(t).trim());
+  // NIT o cedula: solo digitos (admite puntos, guiones y espacios), minimo 5 digitos
+  const v = String(t == null ? '' : t).trim();
+  if(!/^[\d\.\-\s]+$/.test(v)) return false;
+  return v.replace(/\D/g, '').length >= 5;
+}
+
+// Variantes de un documento para consultar. datos.gov.co guarda los NIT SIN
+// digito de verificacion ("900068959"), asi que si el usuario escribe
+// "900.068.959-1" hay que buscar tambien los 9 digitos sin el ultimo.
+function variantesDocumento(t){
+  const v = String(t == null ? '' : t).trim();
+  const limpio = v.replace(/\D/g, '');
+  const vars = [limpio];
+  // a) DV escrito explicitamente como "-1" al final
+  if(/-\s*\d\s*$/.test(v) && limpio.length > 1){
+    vars.push(limpio.slice(0, -1));
+  }
+  // b) 10 digitos que empiezan en 8 o 9: casi siempre es NIT + DV sin guion
+  if(limpio.length === 10 && /^[89]/.test(limpio)){
+    vars.push(limpio.slice(0, -1));
+  }
+  return vars.filter(function(x, i, a){ return x && a.indexOf(x) === i; });
 }
 function clausulaVinculo(columnas, columnasDoc, termino, sq){
   const t = String(termino == null ? '' : termino).trim();
   if(!t) return '';
   const partes = [];
   if(esDocumento(t)){
-    const doc = t.replace(/[\.\-\s]/g, '');
+    const docs = variantesDocumento(t);
     columnasDoc.forEach(function(c){
-      partes.push(c + " like '%" + sq(doc) + "%'");
+      docs.forEach(function(d){
+        partes.push(c + " like '%" + sq(d) + "%'");
+      });
     });
   } else {
     const lit  = sq(sinTildes(t).toUpperCase());
@@ -2772,7 +2815,8 @@ function buildQueryContratos(p, off, limit){
   const cv = clausulaVinculo(
     ['proveedor_adjudicado','nombre_representante_legal','nombre_supervisor',
      'nombre_ordenador_del_gasto','objeto_del_contrato','descripcion_del_proceso'],
-    ['documento_proveedor'],
+    ['documento_proveedor','identificaci_n_representante_legal',
+     'n_mero_de_documento_supervisor','n_mero_de_documento_ordenador_del_gasto'],
     p.vinculo, sq);
   if(cv) where.push(cv);
 
@@ -2803,7 +2847,7 @@ function buildQuery(p, off, limit){
     const cv = clausulaVinculo(
       ['nombre_del_proveedor','nombre_del_adjudicador',
        'nombre_del_procedimiento','descripci_n_del_procedimiento'],
-      ['nit_del_proveedor_adjudicado','codigoproveedor'],
+      ['nit_del_proveedor_adjudicado'],
       p.vinculo, sq);
     if(cv) where.push(cv);
   }
