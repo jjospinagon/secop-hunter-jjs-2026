@@ -208,6 +208,7 @@
   .status.info{background:rgba(56,189,248,.1);border:1px solid var(--acc)}
   .status.ok{background:rgba(34,197,94,.1);border:1px solid var(--ok);color:#bbf7d0}
   .status.err{background:rgba(239,68,68,.1);border:1px solid var(--err);color:#fecaca}
+  .status.warn{background:rgba(245,158,11,.12);border:1px solid #f59e0b;color:#fde68a}
   .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--acc-bright);border-right-color:transparent;border-bottom-color:transparent;border-radius:50%;animation:spin 0.7s cubic-bezier(0.4,0,0.2,1) infinite;vertical-align:middle;margin-right:7px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
@@ -1532,7 +1533,7 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
     </button>
-    <span class="badge">v3.4 &middot; Powered by Groq AI</span>
+    <span class="badge">v3.5 &middot; Powered by Groq AI</span>
   </div>
 </header>
 
@@ -1566,7 +1567,7 @@
         <label for="vinculoInput">Vinculo con entidad <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(nombre <b>o</b> numero de identificacion: NIT o cedula)</small></label>
         <input name="vinculo" id="vinculoInput" autocomplete="off"
                placeholder="CONSTRUCTORA XYZ S.A.S  /  JUAN PEREZ RUIZ  /  900.123.456-7  /  10.123.456" />
-        <div class="money-hint" id="hintVinculo">Escribe un <b>nombre</b> (empresa, consorcio o persona natural) <b>o</b> un <b>NIT / cedula</b>. La app detecta cual es. Busca en contratista adjudicado, representante legal, supervisor, ordenador del gasto y en el titulo u objeto. Consulta ademas el dataset de <b>contratos ejecutados</b>. No distingue tildes ni digito de verificacion.</div>
+        <div class="money-hint" id="hintVinculo">Escribe un <b>nombre</b> (empresa, consorcio o persona natural) <b>o</b> un <b>NIT / cedula</b>. La app detecta cual es. Busca en contratista adjudicado, representante legal, supervisor, ordenador del gasto y en el titulo u objeto. Consulta ademas el dataset de <b>contratos ejecutados</b>. No distingue tildes ni digito de verificacion. Si el documento no aparece, la app averigua a quien pertenece y repite la busqueda por nombre.</div>
         <div class="money-hint" id="hintVinculoDet" style="display:none"></div>
       </div></div>
       <div class="row">
@@ -2728,6 +2729,12 @@ function clausulaVinculo(columnas, columnasDoc, termino, sq){
         partes.push(c + " like '%" + sq(d) + "%'");
       });
     });
+    // Algunas entidades escriben la cedula o el NIT dentro del titulo u objeto
+    columnas.forEach(function(c){
+      docs.forEach(function(d){
+        partes.push(c + " like '%" + sq(d) + "%'");
+      });
+    });
   } else {
     const lit  = sq(sinTildes(t).toUpperCase());
     const flex = sq(patronFlexible(t));
@@ -2827,6 +2834,61 @@ function buildQueryContratos(p, off, limit){
   params.set('$limit', String(limit));
   params.set('$offset', String(off));
   return API_CONTRATOS + '?' + params.toString();
+}
+
+/* -------------------------------------------------------------------------
+   Rescate cuando se busca por NIT/cedula y no aparece nada.
+
+   Muchas entidades NO diligencian el documento del contratista en datos
+   abiertos: dejan "No Definido" en nit_del_proveedor_adjudicado y escriben
+   el nombre del contratista en el titulo del proceso. PROYECTA- es un caso
+   tipico. Por eso, si la busqueda por documento vuelve vacia se intenta:
+
+     1) Resolver el documento a un nombre en cualquiera de los dos datasets
+        y repetir la busqueda con ese nombre.
+     2) Si no se puede, comprobar si la entidad publica documentos del
+        contratista, para explicarle al usuario por que no hay resultados
+        en vez de dejar un "sin resultados" mudo.
+   ------------------------------------------------------------------------- */
+async function resolverDocumentoANombre(docs, sq){
+  for(let i=0; i<docs.length; i++){
+    const d = docs[i];
+    const consultas = [
+      { url: API_CONTRATOS + '?$select=proveedor_adjudicado&$limit=1&$where=' +
+             encodeURIComponent("documento_proveedor='" + sq(d) + "'"),
+        campo: 'proveedor_adjudicado' },
+      { url: API + '?$select=nombre_del_proveedor&$limit=1&$where=' +
+             encodeURIComponent("nit_del_proveedor_adjudicado='" + sq(d) + "'"),
+        campo: 'nombre_del_proveedor' }
+    ];
+    for(let k=0; k<consultas.length; k++){
+      try{
+        const r = await fetch(consultas[k].url);
+        if(!r.ok) continue;
+        const j = await r.json();
+        if(Array.isArray(j) && j.length){
+          const n = j[0][consultas[k].campo] || '';
+          if(n && n !== 'No Definido' && n !== 'No definido') return n;
+        }
+      }catch(e){ /* se intenta con la siguiente */ }
+    }
+  }
+  return '';
+}
+
+async function entidadPublicaDocumentos(entidad, sq){
+  if(!entidad) return null;   // null = no se pudo determinar
+  try{
+    const u = API + '?$select=count(*)&$where=' + encodeURIComponent(
+      "upper(entidad) like upper('%" + sq(entidad) + "%') AND " +
+      "nit_del_proveedor_adjudicado is not null AND " +
+      "nit_del_proveedor_adjudicado != 'No Definido'");
+    const r = await fetch(u);
+    if(!r.ok) return null;
+    const j = await r.json();
+    if(!Array.isArray(j) || !j.length) return null;
+    return parseInt(j[0].count || '0', 10) > 0;
+  }catch(e){ return null; }
 }
 
 function buildQuery(p, off, limit){
@@ -2967,6 +3029,43 @@ async function runSearch(off){
           console.warn('[SECOP] Dataset de contratos respondio HTTP', respuestas[1].status);
         }
       }catch(e){ console.warn('[SECOP] Dataset de contratos no disponible:', e); }
+    }
+
+    // Sin resultados buscando por documento: intentar el rescate.
+    if(data.length === 0 && p.vinculo && esDocumento(p.vinculo)){
+      const sqr = (t)=> String(t).replace(/'/g,"''");
+      const docs = variantesDocumento(p.vinculo);
+      setStatus('info', 'Sin resultados con ese documento. Buscando a quien pertenece...', true);
+
+      const nombre = await resolverDocumentoANombre(docs, sqr);
+      if(nombre){
+        const campo = document.getElementById('vinculoInput');
+        if(campo){
+          campo.value = nombre;
+          campo.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        setStatus('info', 'El documento <b>' + esc(p.vinculo) + '</b> corresponde a <b>' +
+          esc(nombre) + '</b>. Repitiendo la busqueda por nombre...', true);
+        return runSearch(off);   // el nombre ya no es documento: no hay recursion
+      }
+
+      const publica = await entidadPublicaDocumentos(p.entidad, sqr);
+      lastResults = [];
+      render([], off);
+      if(publica === false){
+        setStatus('warn',
+          'El documento <b>' + esc(p.vinculo) + '</b> no aparece en datos abiertos, y ' +
+          '<b>' + esc(p.entidad) + '</b> no publica el NIT ni la cedula del contratista ' +
+          'en ninguno de sus procesos: deja el campo en "No Definido" y escribe el nombre ' +
+          'del contratista en el titulo del proceso.<br>' +
+          '<b>Busca por nombre en este caso</b> (ej: JUAN JOSE OSPINA GONZALEZ).');
+      } else {
+        setStatus('warn',
+          'El documento <b>' + esc(p.vinculo) + '</b> no aparece en el SECOP II ' +
+          '(ni en procesos ni en contratos). Puede que la entidad no lo haya ' +
+          'diligenciado. Intenta buscar por nombre.');
+      }
+      return;
     }
 
     lastResults = data;
