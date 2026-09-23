@@ -1532,7 +1532,7 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
     </button>
-    <span class="badge">v3.2 &middot; Powered by Groq AI</span>
+    <span class="badge">v3.3 &middot; Powered by Groq AI</span>
   </div>
 </header>
 
@@ -1562,6 +1562,12 @@
           <div class="ac-list" id="entidadAc" role="listbox"></div>
         </div>
       </div>
+      <div class="row full"><div>
+        <label for="vinculoInput">Vinculo con entidad <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(empresa, consorcio o persona natural que contrato con esa entidad)</small></label>
+        <input name="vinculo" id="vinculoInput" autocomplete="off"
+               placeholder="CONSTRUCTORA XYZ S.A.S / JUAN PEREZ RUIZ / 900123456 / 10123456" />
+        <div class="money-hint" id="hintVinculo">Busca el nombre (o el NIT/cedula) en contratista adjudicado, representante legal, supervisor, ordenador del gasto y en el titulo u objeto del proceso. Al llenarlo se consulta ademas el dataset de <b>contratos ejecutados</b> del SECOP II. No distingue tildes.</div>
+      </div></div>
       <div class="row">
         <div>
           <label>Departamento <small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(deja vacio = todos)</small></label><div class="chk-group" data-field="departamento"><label class="chk-all-row"><input type="checkbox" class="chk-all" data-target="departamento" /> <b>Seleccionar todos</b></label><label><input type="checkbox" name="departamento_chk" value="Amazonas" /> Amazonas</label><label><input type="checkbox" name="departamento_chk" value="Antioquia" /> Antioquia</label><label><input type="checkbox" name="departamento_chk" value="Arauca" /> Arauca</label><label><input type="checkbox" name="departamento_chk" value="Atlántico" /> Atlántico</label><label><input type="checkbox" name="departamento_chk" value="Distrito Capital de Bogotá" /> Bogotá D.C.</label><label><input type="checkbox" name="departamento_chk" value="Bolívar" /> Bolívar</label><label><input type="checkbox" name="departamento_chk" value="Boyacá" /> Boyacá</label><label><input type="checkbox" name="departamento_chk" value="Caldas" /> Caldas</label><label><input type="checkbox" name="departamento_chk" value="Caquetá" /> Caquetá</label><label><input type="checkbox" name="departamento_chk" value="Casanare" /> Casanare</label><label><input type="checkbox" name="departamento_chk" value="Cauca" /> Cauca</label><label><input type="checkbox" name="departamento_chk" value="Cesar" /> Cesar</label><label><input type="checkbox" name="departamento_chk" value="Chocó" /> Chocó</label><label><input type="checkbox" name="departamento_chk" value="Córdoba" /> Córdoba</label><label><input type="checkbox" name="departamento_chk" value="Cundinamarca" /> Cundinamarca</label><label><input type="checkbox" name="departamento_chk" value="Guainía" /> Guainía</label><label><input type="checkbox" name="departamento_chk" value="Guaviare" /> Guaviare</label><label><input type="checkbox" name="departamento_chk" value="Huila" /> Huila</label><label><input type="checkbox" name="departamento_chk" value="La Guajira" /> La Guajira</label><label><input type="checkbox" name="departamento_chk" value="Magdalena" /> Magdalena</label><label><input type="checkbox" name="departamento_chk" value="Meta" /> Meta</label><label><input type="checkbox" name="departamento_chk" value="Nariño" /> Nariño</label><label><input type="checkbox" name="departamento_chk" value="Norte de Santander" /> Norte de Santander</label><label><input type="checkbox" name="departamento_chk" value="Putumayo" /> Putumayo</label><label><input type="checkbox" name="departamento_chk" value="Quindío" /> Quindío</label><label><input type="checkbox" name="departamento_chk" value="Risaralda" /> Risaralda</label><label><input type="checkbox" name="departamento_chk" value="San Andrés Providencia y Santa Catalina" /> San Andrés y Providencia</label><label><input type="checkbox" name="departamento_chk" value="Santander" /> Santander</label><label><input type="checkbox" name="departamento_chk" value="Sucre" /> Sucre</label><label><input type="checkbox" name="departamento_chk" value="Tolima" /> Tolima</label><label><input type="checkbox" name="departamento_chk" value="Valle del Cauca" /> Valle del Cauca</label><label><input type="checkbox" name="departamento_chk" value="Vaupés" /> Vaupés</label><label><input type="checkbox" name="departamento_chk" value="Vichada" /> Vichada</label></div>
@@ -2646,6 +2652,139 @@ function fmtMoney(v){
 function fmtDate(s){ if(!s) return ''; return String(s).substring(0,10); }
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));}
 
+/* =========================================================================
+   VINCULO CON ENTIDAD
+   -------------------------------------------------------------------------
+   Cruza "entidad X" + "nombre de empresa o persona" para traer los procesos
+   y contratos donde esa persona/empresa aparece vinculada a la entidad.
+
+   SoQL no ignora tildes en upper()/like, asi que cada termino se consulta
+   con dos patrones unidos por OR:
+     1) el texto literal sin tildes, en mayusculas
+     2) el mismo texto con vocales y N convertidas en comodin "_"
+        ("GONZALEZ" -> "G_NZ_L_Z", que tambien encuentra "GONZALEZ" con tilde)
+   ========================================================================= */
+const API_CONTRATOS = "https://www.datos.gov.co/resource/jbjy-vk9h.json";
+
+function sinTildes(t){
+  return String(t == null ? '' : t).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function patronFlexible(t){
+  return sinTildes(t).toUpperCase().replace(/[AEIOUN]/g, '_');
+}
+function esDocumento(t){
+  // NIT o cedula: solo digitos (admite puntos, guiones y espacios), minimo 5
+  return /^[\d\.\-\s]{5,}$/.test(String(t).trim());
+}
+function clausulaVinculo(columnas, columnasDoc, termino, sq){
+  const t = String(termino == null ? '' : termino).trim();
+  if(!t) return '';
+  const partes = [];
+  if(esDocumento(t)){
+    const doc = t.replace(/[\.\-\s]/g, '');
+    columnasDoc.forEach(function(c){
+      partes.push(c + " like '%" + sq(doc) + "%'");
+    });
+  } else {
+    const lit  = sq(sinTildes(t).toUpperCase());
+    const flex = sq(patronFlexible(t));
+    columnas.forEach(function(c){
+      partes.push("upper(" + c + ") like '%" + lit + "%'");
+      if(flex !== lit) partes.push("upper(" + c + ") like '%" + flex + "%'");
+    });
+  }
+  return partes.length ? '(' + partes.join(' OR ') + ')' : '';
+}
+
+// Convierte un registro del dataset de CONTRATOS al formato de PROCESOS,
+// para que ambos se puedan pintar en la misma tabla.
+function normalizarContrato(c){
+  const objeto = c.objeto_del_contrato || c.descripcion_del_proceso || '';
+  return {
+    __fuente: 'CONTRATO',
+    entidad: c.nombre_entidad || '',
+    nit_entidad: c.nit_entidad || '',
+    referencia_del_proceso: c.referencia_del_contrato || c.id_contrato || '',
+    proceso_de_compra: c.proceso_de_compra || '',
+    id_del_proceso: c.id_contrato || '',
+    id_del_portafolio: c.proceso_de_compra || '',
+    nombre_del_procedimiento: objeto,
+    descripci_n_del_procedimiento: objeto,
+    modalidad_de_contratacion: c.modalidad_de_contratacion || '',
+    estado_del_procedimiento: c.estado_contrato || '',
+    estado_resumen: c.estado_contrato || '',
+    fase: 'Contrato',
+    tipo_de_contrato: c.tipo_de_contrato || '',
+    subtipo_de_contrato: '',
+    departamento_entidad: c.departamento || '',
+    ciudad_entidad: c.ciudad || '',
+    precio_base: c.valor_del_contrato || '',
+    fecha_de_publicacion_del: c.fecha_de_firma || '',
+    fecha_de_recepcion_de: c.fecha_de_fin_del_contrato || '',
+    urlproceso: c.urlproceso || null,
+    adjudicado: 'Si',
+    nombre_del_proveedor: c.proveedor_adjudicado || '',
+    nit_del_proveedor_adjudicado: c.documento_proveedor || '',
+    valor_total_adjudicacion: c.valor_del_contrato || '',
+    fecha_adjudicacion: c.fecha_de_firma || '',
+    // Campos propios del contrato (se muestran en Detalles)
+    contrato_valor_pagado: c.valor_pagado || '',
+    contrato_valor_facturado: c.valor_facturado || '',
+    contrato_fecha_inicio: c.fecha_de_inicio_del_contrato || '',
+    contrato_fecha_fin: c.fecha_de_fin_del_contrato || '',
+    contrato_duracion: c.duraci_n_del_contrato || '',
+    contrato_supervisor: c.nombre_supervisor || '',
+    contrato_rep_legal: c.nombre_representante_legal || '',
+    contrato_ordenador: c.nombre_ordenador_del_gasto || ''
+  };
+}
+
+// Consulta paralela al dataset de contratos ejecutados. Solo se arma cuando
+// el usuario lleno "Vinculo con entidad". Estado, fase, UNSPSC, fechas de
+// cierre y "abiertos hoy" no tienen equivalente y por eso no se aplican aqui.
+function buildQueryContratos(p, off, limit){
+  if(!p.vinculo) return null;
+  const where = [];
+  const sq = (t)=> String(t).replace(/'/g,"''");
+  if(p.entidad){
+    const e = String(p.entidad).trim();
+    if(/^[\d\-\.]+$/.test(e)) where.push("nit_entidad like '%"+sq(e.replace(/[\-\.]/g,''))+"%'");
+    else where.push("upper(nombre_entidad) like upper('%"+sq(e)+"%')");
+  }
+  if(p.proceso) where.push("upper(referencia_del_contrato) like upper('%"+sq(p.proceso)+"%')");
+  if(p.departamento && p.departamento.length){
+    where.push("upper(departamento) IN ("+p.departamento.map(d=>"upper('"+sq(d)+"')").join(',')+")");
+  }
+  if(p.ciudad) where.push("upper(ciudad)=upper('"+sq(p.ciudad)+"')");
+  if(p.modalidad && p.modalidad.length){
+    where.push("modalidad_de_contratacion IN ("+p.modalidad.map(v=>"'"+sq(v)+"'").join(',')+")");
+  }
+  if(p.tipo_contrato && p.tipo_contrato.length){
+    where.push("tipo_de_contrato IN ("+p.tipo_contrato.map(v=>"'"+sq(v)+"'").join(',')+")");
+  }
+  const vMin = montoANumero(p.valor_min);
+  const vMax = montoANumero(p.valor_max);
+  if(isFinite(vMin)) where.push("valor_del_contrato >= " + vMin);
+  if(isFinite(vMax)) where.push("valor_del_contrato <= " + vMax);
+  if(p.fecha_pub_desde) where.push("fecha_de_firma >= '"+p.fecha_pub_desde+"T00:00:00.000'");
+  if(p.fecha_pub_hasta) where.push("fecha_de_firma <= '"+p.fecha_pub_hasta+"T23:59:59.999'");
+
+  const cv = clausulaVinculo(
+    ['proveedor_adjudicado','nombre_representante_legal','nombre_supervisor',
+     'nombre_ordenador_del_gasto','objeto_del_contrato','descripcion_del_proceso'],
+    ['documento_proveedor'],
+    p.vinculo, sq);
+  if(cv) where.push(cv);
+
+  const params = new URLSearchParams();
+  if(where.length) params.set('$where', where.join(' AND '));
+  if(p.q) params.set('$q', p.q);
+  params.set('$order', 'fecha_de_firma DESC');
+  params.set('$limit', String(limit));
+  params.set('$offset', String(off));
+  return API_CONTRATOS + '?' + params.toString();
+}
+
 function buildQuery(p, off, limit){
   const where = [];
   const sq = (s)=> String(s).replace(/'/g,"''");
@@ -2660,6 +2799,14 @@ function buildQuery(p, off, limit){
     }
   }
   if(p.proceso) where.push("upper(referencia_del_proceso) like upper('%"+sq(p.proceso)+"%')");
+  if(p.vinculo){
+    const cv = clausulaVinculo(
+      ['nombre_del_proveedor','nombre_del_adjudicador',
+       'nombre_del_procedimiento','descripci_n_del_procedimiento'],
+      ['nit_del_proveedor_adjudicado','codigoproveedor'],
+      p.vinculo, sq);
+    if(cv) where.push(cv);
+  }
   if(p.departamento && p.departamento.length){ const ins = p.departamento.map(d=>"upper('"+sq(d)+"')").join(','); where.push("upper(departamento_entidad) IN ("+ins+")"); }
   if(p.ciudad) where.push("upper(ciudad_entidad)=upper('"+sq(p.ciudad)+"')");
   // Helper: filtro IN para multi-select
@@ -2737,23 +2884,77 @@ async function runSearch(off){
   clearStatus();
   setStatus('info', 'Consultando datos.gov.co... <a href="'+url+'" target="_blank" style="color:var(--acc);font-size:10px">(ver query)</a>', true);
   try{
-    const r = await fetch(url, { headers:{'Accept':'application/json'} });
+    // Si hay "Vinculo con entidad" se consulta tambien el dataset de contratos
+    // ejecutados, en paralelo, y se fusionan los dos resultados.
+    const urlC = buildQueryContratos(p, off, p.limit);
+    if(urlC) console.log('[SECOP] Query contratos:', urlC);
+    const peticiones = [fetch(url, { headers:{'Accept':'application/json'} })];
+    if(urlC) peticiones.push(fetch(urlC, { headers:{'Accept':'application/json'} }).catch(e=>e));
+    const respuestas = await Promise.all(peticiones);
+
+    const r = respuestas[0];
     if(!r.ok){
       const t = await r.text();
       throw new Error("HTTP "+r.status+": "+t.substring(0,300));
     }
-    const data = await r.json();
+    let data = await r.json();
     if(!Array.isArray(data)){
       throw new Error("Respuesta inesperada: " + JSON.stringify(data).substring(0,200));
     }
+    const nProcesos = data.length;
+
+    let nContratos = 0;
+    if(respuestas[1]){
+      try{
+        if(respuestas[1].ok){
+          const dc = await respuestas[1].json();
+          if(Array.isArray(dc)){
+            // Evitar duplicar un proceso que ya vino del dataset de procesos
+            const yaEsta = new Set(data.map(function(x){
+              return String(x.id_del_portafolio || x.id_del_proceso || '');
+            }).filter(Boolean));
+            const extra = dc.map(normalizarContrato).filter(function(x){
+              return !x.id_del_portafolio || !yaEsta.has(x.id_del_portafolio);
+            });
+            nContratos = extra.length;
+            data = data.concat(extra);
+          }
+        } else {
+          console.warn('[SECOP] Dataset de contratos respondio HTTP', respuestas[1].status);
+        }
+      }catch(e){ console.warn('[SECOP] Dataset de contratos no disponible:', e); }
+    }
+
     lastResults = data;
     render(data, off);
-    setStatus('ok', data.length+" proceso(s) cargado(s). "+(data.length === p.limit ? 'Hay mas, usa Siguiente.' : ''));
-    renderPager(p, off, data.length);
+    const detalle = urlC
+      ? (nProcesos + ' proceso(s) + ' + nContratos + ' contrato(s) ejecutado(s)')
+      : (data.length + ' proceso(s) cargado(s)');
+    setStatus('ok', detalle + '. ' + (nProcesos === p.limit ? 'Hay mas, usa Siguiente.' : ''));
+    renderPager(p, off, nProcesos);
   }catch(e){
     console.error('[SECOP] Error en fetch:', e);
     setStatus('err','Error: ' + (e.message||e) + ' <br><small>Abre la consola (F12) para mas detalle. Verifica conexion a internet y que datos.gov.co este disponible.</small>');
   }
+}
+
+// Prefijo de la celda "Objeto": marca CONTRATO y nombre del contratista.
+function etiquetaContratista(r, comoTexto){
+  const prov = r.nombre_del_proveedor || '';
+  const hayProv = prov && prov !== 'No Definido' && prov !== 'No definido';
+  if(comoTexto){
+    return (r.__fuente === 'CONTRATO' ? '[CONTRATO EJECUTADO] ' : '') +
+           (hayProv ? 'Contratista: ' + prov + ' | ' : '');
+  }
+  let html = '';
+  if(r.__fuente === 'CONTRATO'){
+    html += '<span style="background:#16a34a;color:#fff;font-size:9px;font-weight:700;' +
+            'padding:1px 5px;border-radius:4px;margin-right:5px;white-space:nowrap">CONTRATO</span>';
+  }
+  if(hayProv){
+    html += '<b style="color:var(--acc)">' + esc(prov) + '</b> &middot; ';
+  }
+  return html;
 }
 
 function render(rows, off){
@@ -2772,7 +2973,7 @@ function render(rows, off){
       '<td>'+(off+i+1)+'</td>'+
       '<td>'+esc(r.referencia_del_proceso || r.proceso_de_compra || '')+'</td>'+
       '<td class="truncate" title="'+esc(r.entidad)+'">'+esc(r.entidad)+'</td>'+
-      '<td class="truncate" title="'+esc(r.descripci_n_del_procedimiento)+'">'+esc(r.descripci_n_del_procedimiento)+'</td>'+
+      '<td class="truncate" title="'+esc(etiquetaContratista(r, true) + (r.descripci_n_del_procedimiento||''))+'">'+etiquetaContratista(r, false)+esc(r.descripci_n_del_procedimiento)+'</td>'+
       '<td>'+esc(r.modalidad_de_contratacion)+'</td>'+
       '<td>'+esc(r.estado_del_procedimiento)+'</td>'+
       '<td>'+esc(r.fase)+'</td>'+
@@ -2809,6 +3010,8 @@ function exportXlsx(){
     'Entidad': r.entidad || '',
     'NIT Entidad': r.nit_entidad || '',
     'Objeto': r.descripci_n_del_procedimiento || '',
+    'Contratista / Proveedor': (r.nombre_del_proveedor && r.nombre_del_proveedor !== 'No Definido') ? r.nombre_del_proveedor : '',
+    'NIT / CC Contratista': r.nit_del_proveedor_adjudicado || '',
     'Modalidad': r.modalidad_de_contratacion || '',
     'Estado': r.estado_del_procedimiento || '',
     'Fase': r.fase || '',
