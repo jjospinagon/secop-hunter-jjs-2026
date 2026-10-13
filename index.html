@@ -1533,7 +1533,7 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
     </button>
-    <span class="badge">v3.5 &middot; Powered by Groq AI</span>
+    <span class="badge">v3.6 &middot; Powered by Groq AI</span>
   </div>
 </header>
 
@@ -6140,6 +6140,9 @@ async function sincronizarFavoritos(silencioso){
 
     try{ localStorage.setItem(claveUsuario(SYNC_TS_KEY), String(Date.now())); }catch(e){}
     estadoSync('Sincronizado', 'ok');
+    if(!silencioso){
+      showToast('Favoritos sincronizados: ' + finales.length + ' en tu cuenta.', 'ok', {duration:4000});
+    }
 
     const fv = document.getElementById('favView');
     if(fv && fv.style.display !== 'none') renderFavoritos();
@@ -6164,6 +6167,45 @@ function programarSync(){
 }
 window.programarSync = programarSync;
 
+/* --------------------------------------------------------------------------
+   SINCRONIZACION AUTOMATICA DE BAJADA
+
+   Antes solo se bajaba de la nube ~1 segundo despues de cargar la pagina.
+   Si dejabas la app abierta en el equipo B y marcabas un favorito en el A,
+   el B no se enteraba hasta recargar. Ahora tambien se baja:
+
+     - al abrir la pestana de Favoritos        (si hace mas de 20 s)
+     - al volver a la ventana o a la app       (si hace mas de 45 s)
+     - cada 3 minutos con la ventana visible
+     - al reconectar el internet
+
+   El guardado de subida sigue igual: 2,5 s despues de marcar o quitar.
+   -------------------------------------------------------------------------- */
+function segundosDesdeSync(){
+  let ts = 0;
+  try{ ts = parseInt(localStorage.getItem(claveUsuario(SYNC_TS_KEY)) || '0', 10); }catch(e){}
+  if(!ts) return Infinity;
+  return (Date.now() - ts) / 1000;
+}
+
+async function autoSincronizarFavoritos(segundosMin){
+  if(!usuarioActual() || !tokenActual()) return;
+  if(_syncEnCurso) return;
+  if(segundosDesdeSync() < (segundosMin || 60)) return;
+  return sincronizarFavoritos(true);
+}
+window.autoSincronizarFavoritos = autoSincronizarFavoritos;
+
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible') autoSincronizarFavoritos(45);
+});
+window.addEventListener('focus',  function(){ autoSincronizarFavoritos(45); });
+window.addEventListener('online', function(){ autoSincronizarFavoritos(5);  });
+
+setInterval(function(){
+  if(document.visibilityState === 'visible') autoSincronizarFavoritos(170);
+}, 180000);
+
 function textoUltimaSync(){
   if(!usuarioActual()) return 'Solo en este equipo';
   let ts = 0;
@@ -6182,7 +6224,7 @@ function textoUltimaSync(){
    ========================================================================== */
 const VISTAS = [
   {boton:'viewTable',  panel:'tableView',    alMostrar:null},
-  {boton:'viewFav',    panel:'favView',      alMostrar:function(){ renderFavoritos(); autoActualizarFavoritos(); }},
+  {boton:'viewFav',    panel:'favView',      alMostrar:function(){ renderFavoritos(); autoSincronizarFavoritos(20); autoActualizarFavoritos(); }},
   {boton:'viewCal',    panel:'calendarView', alMostrar:function(){ if(typeof renderCalendar==='function') renderCalendar(); }},
   {boton:'viewKanban', panel:'kanbanView',   alMostrar:function(){ if(typeof renderKanban==='function') renderKanban(); }},
   {boton:'viewMap',    panel:'mapView',      alMostrar:function(){ if(typeof renderMap==='function') renderMap(); }}
