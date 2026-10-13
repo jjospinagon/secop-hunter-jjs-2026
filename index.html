@@ -1533,7 +1533,7 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
     </button>
-    <span class="badge">v3.6 &middot; Powered by Groq AI</span>
+    <span class="badge">v3.7 &middot; Powered by Groq AI</span>
   </div>
 </header>
 
@@ -2017,6 +2017,18 @@ window.cerrarAdmin = cerrarAdmin;
   }catch(e){}
 
   if(tokenActual()){
+    // La bajada de favoritos arranca de una. Antes esperaba a que el servidor
+    // confirmara la sesion primero: eran dos viajes seguidos a Apps Script
+    // (lento en frio) y por eso los favoritos tardaban 15-20 s en aparecer
+    // despues de recargar. Ahora las dos cosas van en paralelo.
+    let forzado = false;
+    try{
+      forzado = sessionStorage.getItem('secop_forzar_sync') === '1';
+      sessionStorage.removeItem('secop_forzar_sync');
+    }catch(e){}
+    if(forzado) showToast('Refrescando tus favoritos desde tu cuenta...', 'info', {duration:6000});
+    setTimeout(function(){ sincronizarFavoritos(!forzado); }, 150);
+
     setTimeout(async function(){
       const r = await apiCuenta('verificarSesion', {token: tokenActual()});
       if(!r.ok){
@@ -2025,7 +2037,6 @@ window.cerrarAdmin = cerrarAdmin;
       } else {
         const s3 = getSesion();
         setSesion(Object.assign({}, s3, {nombre:r.usuario.nombre, apellidos:r.usuario.apellidos, esAdmin:r.usuario.esAdmin}));
-        sincronizarFavoritos(true);
       }
     }, 900);
   }
@@ -2042,6 +2053,10 @@ window.cerrarAdmin = cerrarAdmin;
 async function refrescarDuro(){
   const btn = document.getElementById('btnRefrescar');
   if(btn) btn.classList.add('girando');
+
+  // Marca para que, al volver a cargar, la sincronizacion de favoritos se
+  // haga de inmediato y con aviso visible en vez de callada.
+  try{ sessionStorage.setItem('secop_forzar_sync', '1'); }catch(e){}
 
   try{
     if(window.caches && caches.keys){
@@ -2070,6 +2085,21 @@ window.refrescarDuro = refrescarDuro;
 (function initRefrescar(){
   const btn = document.getElementById('btnRefrescar');
   if(btn) btn.onclick = refrescarDuro;
+
+  // Mostrar en el tooltip la version cargada y cuando se sincronizo por
+  // ultima vez: sirve para comprobar de un vistazo que el equipo ya tiene
+  // la version nueva.
+  setInterval(function(){
+    const b = document.getElementById('btnRefrescar');
+    if(!b) return;
+    let v = '';
+    try{ v = (document.querySelector('.badge')||{textContent:''}).textContent.split('\u00b7')[0].trim(); }catch(e){}
+    try{
+      b.title = 'Recargar la app y bajar tus favoritos (como Ctrl+Shift+R)' +
+                (v ? '\nVersion cargada: ' + v : '') +
+                '\n' + textoUltimaSync();
+    }catch(e){}
+  }, 5000);
 
   try{
     const u = new URL(location.href);
@@ -6128,6 +6158,11 @@ async function sincronizarFavoritos(silencioso){
     try{ localStorage.setItem(claveUsuario(FAVS_KEY), JSON.stringify(finales.slice(-FAVS_MAX))); }catch(e){}
     setBorrados(delUnidos);
     actualizarContadoresFav();
+
+    // Pintar YA, sin esperar a que termine la subida: el usuario ve sus
+    // favoritos un viaje de red antes.
+    const fvYa = document.getElementById('favView');
+    if(fvYa && fvYa.style.display !== 'none') renderFavoritos();
 
     const r2 = await fetch(MAILER_URL, {
       method:'POST',
