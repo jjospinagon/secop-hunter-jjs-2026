@@ -1533,7 +1533,7 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
     </button>
-    <span class="badge">v3.7 &middot; Powered by Groq AI</span>
+    <span class="badge">v3.8 &middot; Powered by Groq AI</span>
   </div>
 </header>
 
@@ -5601,6 +5601,7 @@ function toggleFav(starEl, idx){
     if(!registro && lastResults){
       registro = lastResults.find(function(r){ return idDeProceso(r) === id; }) || null;
     }
+    quitarBorrado(id);
     favs.push({id:id, ts:Date.now(), data: registro ? recortarRegistro(registro) : null});
     starEl.classList.add('active');
     starEl.textContent = '★';
@@ -6106,6 +6107,11 @@ function marcarBorrado(id){
   b.push({id:String(id), ts:Date.now()});
   setBorrados(b);
 }
+// Al volver a marcar un favorito hay que retirar su lapida; si no, basta un
+// reloj desfasado entre equipos para que la fusion lo vuelva a descartar.
+function quitarBorrado(id){
+  setBorrados(getBorrados().filter(function(x){ return x.id !== String(id); }));
+}
 
 function fusionarPorId(a, b){
   const mapa = new Map();
@@ -6173,6 +6179,15 @@ async function sincronizarFavoritos(silencioso){
     const guardado = await r2.json();
     if(!guardado || guardado.ok === false) throw new Error(guardado && guardado.error ? guardado.error : 'no se pudo guardar');
 
+    // El servidor fusiona y devuelve la lista definitiva. Adoptarla evita que
+    // este equipo se quede con una version incompleta cuando otro equipo
+    // agrego algo entre la lectura y la escritura.
+    if(Array.isArray(guardado.favoritos)){
+      try{ localStorage.setItem(claveUsuario(FAVS_KEY), JSON.stringify(guardado.favoritos.slice(-FAVS_MAX))); }catch(e){}
+      if(Array.isArray(guardado.borrados)) setBorrados(guardado.borrados);
+      actualizarContadoresFav();
+    }
+
     try{ localStorage.setItem(claveUsuario(SYNC_TS_KEY), String(Date.now())); }catch(e){}
     estadoSync('Sincronizado', 'ok');
     if(!silencioso){
@@ -6230,6 +6245,18 @@ async function autoSincronizarFavoritos(segundosMin){
   return sincronizarFavoritos(true);
 }
 window.autoSincronizarFavoritos = autoSincronizarFavoritos;
+
+// En el celular, salir de la app mata el temporizador de 2,5 s y el favorito
+// recien marcado nunca se sube. Al ocultarse la pagina se fuerza la subida.
+function vaciarSyncPendiente(){
+  if(!_syncTimer) return;
+  clearTimeout(_syncTimer); _syncTimer = null;
+  if(usuarioActual() && tokenActual()) sincronizarFavoritos(true);
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'hidden') vaciarSyncPendiente();
+});
+window.addEventListener('pagehide', vaciarSyncPendiente);
 
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState === 'visible') autoSincronizarFavoritos(45);
